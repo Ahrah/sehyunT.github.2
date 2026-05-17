@@ -9,8 +9,14 @@ import {
   ArrowRight, CheckCircle2, GraduationCap, MessageCircle, 
   NotebookPen, Sparkles, Target, Users, BookOpen, 
   Layers, Quote, Mail, Instagram, Menu, X, ArrowUpRight,
-  ChevronDown, Award, BookCheck, ExternalLink, Plus
+  ChevronDown, Award, BookCheck, ExternalLink, Plus, LogOut, User as UserIcon,
+  ChevronRight
 } from 'lucide-react';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import { AuthModal } from './components/AuthModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { ShieldAlert } from 'lucide-react';
 
 // --- Types ---
 interface Program {
@@ -21,6 +27,8 @@ interface Program {
   features: string[];
   target: string[];
 }
+
+const ADMIN_EMAIL = "ahrah0365@gmail.com";
 
 // --- Data ---
 
@@ -259,7 +267,7 @@ const stagger = {
 
 // --- Views ---
 
-const Navbar = () => {
+const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, user: FirebaseUser | null, onOpenAdmin: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -269,11 +277,37 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-brand-bg/95 backdrop-blur-xl border-b border-brand-light-gray py-4' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <a href="#" className="group flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center bg-brand-text text-brand-bg font-black text-xl tracking-tighter">ST</div>
+          <div className="flex h-12 w-12 items-center justify-center bg-brand-bg border border-brand-light-gray overflow-hidden">
+            <img 
+              src="/IMG_1441.JPG" 
+              alt="SEHYUNT Logo" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                if (target.parentElement) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'w-full h-full flex items-center justify-center bg-brand-text text-brand-bg font-black text-xl tracking-tighter';
+                  fallback.innerText = 'ST';
+                  target.parentElement.appendChild(fallback);
+                }
+              }}
+            />
+          </div>
           <div>
             <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUNT</div>
             <div className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-accent">Admissions Lab</div>
@@ -286,9 +320,39 @@ const Navbar = () => {
               {item}
             </a>
           ))}
-          <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
-            <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[10px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
-          </a>
+          
+          <div className="flex items-center gap-6 pl-6 border-l border-brand-light-gray">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  {isAdmin ? <ShieldAlert size={14} className="text-brand-accent animate-pulse" /> : <UserIcon size={14} className="text-brand-accent" />}
+                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email?.split('@')[0]}님</span>
+                </div>
+                {isAdmin && (
+                  <button 
+                    onClick={onOpenAdmin}
+                    className="text-[10px] font-black uppercase tracking-widest text-brand-accent hover:underline"
+                  >
+                    Dashboard
+                  </button>
+                )}
+                <button onClick={handleLogout} className="text-brand-gray hover:text-brand-accent transition-colors">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={onOpenAuth}
+                className="text-[10px] font-black uppercase tracking-widest text-brand-text hover:text-brand-accent transition-colors flex items-center gap-2"
+              >
+                Login <ChevronRight size={14} />
+              </button>
+            )}
+            
+            <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+              <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[10px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
+            </a>
+          </div>
         </div>
 
         <button className="md:hidden text-brand-text" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -313,9 +377,22 @@ const Navbar = () => {
                   {item}
                 </a>
               ))}
-              <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
-                <Button className="w-full rounded-none py-8 text-xl font-black uppercase">상담 신청</Button>
-              </a>
+              <div className="pt-8 border-t border-brand-light-gray flex flex-col gap-8">
+                {user ? (
+                   <div className="flex flex-col gap-4">
+                      <p className="text-xl font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email}님 안녕하세요.</p>
+                      {isAdmin && (
+                        <button onClick={() => { setIsMenuOpen(false); onOpenAdmin(); }} className="text-brand-accent font-black uppercase tracking-widest text-left">Dashboard</button>
+                      )}
+                      <button onClick={handleLogout} className="text-brand-accent font-black uppercase tracking-widest text-left">Logout</button>
+                   </div>
+                ) : (
+                  <button onClick={() => { setIsMenuOpen(false); onOpenAuth(); }} className="text-4xl font-black uppercase tracking-tighter text-left">Login</button>
+                )}
+                <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+                  <Button className="w-full rounded-none py-8 text-xl font-black uppercase">상담 신청</Button>
+                </a>
+              </div>
             </div>
           </motion.div>
         )}
@@ -326,10 +403,32 @@ const Navbar = () => {
 
 export default function App() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser?.email !== ADMIN_EMAIL) {
+        setIsAdminOpen(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (isAdminOpen && user?.email === ADMIN_EMAIL) {
+    return <AdminDashboard onBack={() => setIsAdminOpen(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent">
-      <Navbar />
+      <Navbar 
+        onOpenAuth={() => setIsAuthModalOpen(true)} 
+        user={user} 
+        onOpenAdmin={() => setIsAdminOpen(true)}
+      />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
 
       <main>
         {/* Hero Section */}
@@ -346,8 +445,8 @@ export default function App() {
                 <span className="text-brand-accent not-italic">SUCCESS.</span>
               </motion.h1>
               <motion.p variants={fadeUp} className="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-light">
-                단순한 합격을 넘어, 학생의 고유한 서사와 
-                지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅입니다.
+                합격을 넘어, 학생의 고유한 서사와 
+                지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
               </motion.p>
               <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4">
                 <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
@@ -379,11 +478,14 @@ export default function App() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} className="relative">
               <div className="relative aspect-[4/5] bg-brand-secondary overflow-hidden group border border-brand-light-gray shadow-2xl">
                 <img 
-                  src="https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.webp" 
+                  src="/IMG_1441.JPG" 
                   alt="조세연" 
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                  className="w-full h-full object-cover transition-all duration-1000"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.png";
+                    const target = e.target as HTMLImageElement;
+                    // Fallback to previous GitHub images or placeholder
+                    target.src = "https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.webp";
+                    target.className = "w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000";
                   }}
                 />
                 <div className="absolute bottom-10 left-10 right-10 bg-brand-text/90 backdrop-blur p-8 text-brand-bg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
