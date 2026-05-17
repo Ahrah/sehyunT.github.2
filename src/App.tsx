@@ -16,6 +16,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth
 import { auth } from './lib/firebase';
 import { AuthModal } from './components/AuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { MyPage } from './components/MyPage';
 import { ShieldAlert } from 'lucide-react';
 
 // --- Types ---
@@ -267,7 +268,7 @@ const stagger = {
 
 // --- Views ---
 
-const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, user: FirebaseUser | null, onOpenAdmin: () => void }) => {
+const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: () => void, user: FirebaseUser | null, onOpenAdmin: () => void, onOpenMyPage: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -321,10 +322,13 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
           <div className="flex items-center gap-6 pl-6 border-l border-brand-light-gray">
             {user ? (
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
+                <button 
+                  onClick={onOpenMyPage}
+                  className="flex items-center gap-2 hover:text-brand-accent transition-colors"
+                >
                   {isAdmin ? <ShieldAlert size={14} className="text-brand-accent animate-pulse" /> : <UserIcon size={14} className="text-brand-accent" />}
                   <span className="text-[10px] font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email?.split('@')[0]}님</span>
-                </div>
+                </button>
                 {isAdmin && (
                   <button 
                     onClick={onOpenAdmin}
@@ -377,7 +381,9 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
               <div className="pt-8 border-t border-brand-light-gray flex flex-col gap-8">
                 {user ? (
                    <div className="flex flex-col gap-4">
-                      <p className="text-xl font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email}님 안녕하세요.</p>
+                      <button onClick={() => { setIsMenuOpen(false); onOpenMyPage(); }} className="text-xl font-black uppercase tracking-widest text-brand-text text-left">
+                        {user.displayName || user.email}님 안녕하세요.
+                      </button>
                       {isAdmin && (
                         <button onClick={() => { setIsMenuOpen(false); onOpenAdmin(); }} className="text-brand-accent font-black uppercase tracking-widest text-left">Dashboard</button>
                       )}
@@ -401,6 +407,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
 export default function App() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
@@ -419,18 +426,24 @@ export default function App() {
   }, [isAdminOpen]);
 
   useEffect(() => {
-    if (isAuthModalOpen || selectedProgram) {
+    if (isAuthModalOpen || selectedProgram || isMyPageOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isAuthModalOpen, selectedProgram]);
+  }, [isAuthModalOpen, selectedProgram, isMyPageOpen]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent overflow-x-hidden">
       <AnimatePresence>
         {isAuthModalOpen && (
           <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isMyPageOpen && (
+          <MyPage onClose={() => setIsMyPageOpen(false)} />
         )}
       </AnimatePresence>
 
@@ -510,6 +523,7 @@ export default function App() {
             onOpenAuth={() => setIsAuthModalOpen(true)} 
             user={user} 
             onOpenAdmin={() => setIsAdminOpen(true)}
+            onOpenMyPage={() => setIsMyPageOpen(true)}
           />
           
           <main>
