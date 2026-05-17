@@ -18,9 +18,6 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Force body scroll to be visible just in case some other component messed it up
-    document.body.style.overflow = 'auto';
-    document.documentElement.style.overflow = 'auto';
     
     const fetchUsers = async () => {
       try {

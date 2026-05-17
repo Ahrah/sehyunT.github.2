@@ -517,22 +517,26 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {isAdminOpen && user?.email === ADMIN_EMAIL && (
+      <AnimatePresence mode="wait">
+        {isAdminOpen && user?.email === ADMIN_EMAIL ? (
           <AdminDashboard onBack={() => setIsAdminOpen(false)} />
-        )}
-      </AnimatePresence>
-
-      <Navbar 
-        onOpenAuth={() => setIsAuthModalOpen(true)} 
-        user={user} 
-        onOpenAdmin={() => setIsAdminOpen(true)}
-        onOpenMyPage={() => setIsMyPageOpen(true)}
-      />
-      
-      <main>
-        {/* Hero Section */}
-        <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
+        ) : (
+          <motion.div 
+            key="site"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Navbar 
+              onOpenAuth={() => setIsAuthModalOpen(true)} 
+              user={user} 
+              onOpenAdmin={() => setIsAdminOpen(true)}
+              onOpenMyPage={() => setIsMyPageOpen(true)}
+            />
+            
+            <main>
+              {/* Hero Section */}
+              <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
           <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-brand-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
           
           <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.2fr_0.8fr] gap-16 items-center">
@@ -955,6 +959,9 @@ export default function App() {
            </div>
         </div>
       </footer>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
