@@ -292,15 +292,21 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <a href="#" className="group flex items-center gap-4">
           <div className="flex h-12 w-auto items-center justify-center font-black text-xl tracking-tighter">
-            <img src="/logo-black.png" alt="SEHYUNT" className="h-full w-auto object-contain" onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              const parent = (e.target as HTMLImageElement).parentElement!;
-              parent.classList.add('bg-brand-text', 'text-brand-bg', 'w-12');
-              parent.innerHTML = 'ST';
-            }} />
+            <img 
+              src="/logo-pic.png" 
+              alt="SEHYUNT" 
+              className="h-full w-auto object-contain" 
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement!;
+                parent.classList.add('bg-brand-text', 'text-brand-bg', 'w-12');
+                parent.innerHTML = 'ST';
+              }} 
+            />
           </div>
           <div>
-            <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUNT</div>
+            <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEH-YUN T</div>
             <div className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-accent">Admissions Lab</div>
           </div>
         </a>
@@ -419,7 +425,12 @@ export default function App() {
         user={user} 
         onOpenAdmin={() => setIsAdminOpen(true)}
       />
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      
+      <AnimatePresence>
+        {isAuthModalOpen && (
+          <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+        )}
+      </AnimatePresence>
 
       <main>
         {/* Hero Section */}
@@ -811,8 +822,8 @@ export default function App() {
            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-24">
               <div className="lg:col-span-2">
                 <div className="flex items-center gap-4 mb-8">
-                  <img src="/logo-black.png" alt="SEHYUNT" className="h-12 w-auto" />
-                  <div className="text-4xl font-black tracking-tighter">SEHYUNT.</div>
+                  <img src="/logo-pic.png" alt="SEH-YUN T" className="h-12 w-auto" />
+                  <div className="text-4xl font-black tracking-tighter">SEH-YUN T.</div>
                 </div>
                 <p className="text-brand-gray max-w-sm leading-relaxed font-light text-base">
                   Premium Admissions Strategy & Self-Directed Learning Lab. <br />
