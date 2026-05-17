@@ -291,22 +291,8 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-brand-bg/95 backdrop-blur-xl border-b border-brand-light-gray py-4' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <a href="#" className="group flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center bg-brand-bg border border-brand-light-gray overflow-hidden">
-            <img 
-              src="/IMG_1441.JPG" 
-              alt="SEHYUNT Logo" 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                if (target.parentElement) {
-                  const fallback = document.createElement('div');
-                  fallback.className = 'w-full h-full flex items-center justify-center bg-brand-text text-brand-bg font-black text-xl tracking-tighter';
-                  fallback.innerText = 'ST';
-                  target.parentElement.appendChild(fallback);
-                }
-              }}
-            />
+          <div className="flex h-12 w-12 items-center justify-center bg-brand-text text-brand-bg font-black text-xl tracking-tighter">
+            ST
           </div>
           <div>
             <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUNT</div>

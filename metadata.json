@@ -2,5 +2,5 @@
   "name": "SehyunT | 입시 컨설팅",
   "description": "학생의 성장을 함께하는 세연쌤의 자기주도학습 및 입시 컨설팅 플랫폼",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
