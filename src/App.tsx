@@ -428,15 +428,15 @@ export default function App() {
   }, [isAdminOpen]);
 
   useEffect(() => {
-    if (isAuthModalOpen || selectedProgram || isMyPageOpen) {
+    if (isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL)) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isAuthModalOpen, selectedProgram, isMyPageOpen]);
+  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen, user]);
 
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent overflow-x-hidden">
+    <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent">
       <AnimatePresence>
         {isAuthModalOpen && (
           <AuthModal onClose={() => setIsAuthModalOpen(false)} />
@@ -449,24 +449,20 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        {isAdminOpen && user?.email === ADMIN_EMAIL ? (
+      <AnimatePresence>
+        {isAdminOpen && user?.email === ADMIN_EMAIL && (
           <AdminDashboard onBack={() => setIsAdminOpen(false)} />
-        ) : (
-          <motion.div 
-            key="site"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <Navbar 
-              onOpenAuth={() => setIsAuthModalOpen(true)} 
-              user={user} 
-              onOpenAdmin={() => setIsAdminOpen(true)}
-              onOpenMyPage={() => setIsMyPageOpen(true)}
-            />
-            
-            <main>
+        )}
+      </AnimatePresence>
+
+      <Navbar 
+        onOpenAuth={() => setIsAuthModalOpen(true)} 
+        user={user} 
+        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenMyPage={() => setIsMyPageOpen(true)}
+      />
+      
+      <main>
               {/* Hero Section */}
               <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
           <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-brand-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
@@ -891,9 +887,6 @@ export default function App() {
            </div>
         </div>
       </footer>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
