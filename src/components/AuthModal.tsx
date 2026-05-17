@@ -108,21 +108,22 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     "생기부·대입 컨설팅"
   ];
 
-  if (!isOpen && !loading) return null;
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={onClose}
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-brand-text/90 backdrop-blur-md"
         >
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
             className="bg-brand-bg w-full max-w-lg max-h-[90vh] overflow-y-auto relative shadow-2xl"
           >
             <div className="sticky top-0 right-0 z-10 flex justify-end p-4 bg-gradient-to-b from-brand-bg to-transparent pointer-events-none">
@@ -234,7 +235,6 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
             </div>
           </motion.div>
         </motion.div>
-      )}
     </AnimatePresence>
   );
 };

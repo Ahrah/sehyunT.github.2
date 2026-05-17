@@ -291,8 +291,13 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin }: { onOpenAuth: () => void, use
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-brand-bg/95 backdrop-blur-xl border-b border-brand-light-gray py-4' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <a href="#" className="group flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center bg-brand-text text-brand-bg font-black text-xl tracking-tighter">
-            ST
+          <div className="flex h-12 w-auto items-center justify-center font-black text-xl tracking-tighter">
+            <img src="/logo-black.png" alt="SEHYUNT" className="h-full w-auto object-contain" onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const parent = (e.target as HTMLImageElement).parentElement!;
+              parent.classList.add('bg-brand-text', 'text-brand-bg', 'w-12');
+              parent.innerHTML = 'ST';
+            }} />
           </div>
           <div>
             <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUNT</div>
@@ -639,12 +644,14 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              onClick={() => setSelectedProgram(null)}
               className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
             >
               <motion.div 
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 50, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
                 className="bg-brand-bg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-12 lg:p-20 relative rounded-none"
               >
                 <button 
@@ -803,7 +810,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto">
            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-24">
               <div className="lg:col-span-2">
-                <div className="text-4xl font-black tracking-tighter mb-8">SEHYUNT.</div>
+                <div className="flex items-center gap-4 mb-8">
+                  <img src="/logo-black.png" alt="SEHYUNT" className="h-12 w-auto" />
+                  <div className="text-4xl font-black tracking-tighter">SEHYUNT.</div>
+                </div>
                 <p className="text-brand-gray max-w-sm leading-relaxed font-light text-base">
                   Premium Admissions Strategy & Self-Directed Learning Lab. <br />
                   성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
