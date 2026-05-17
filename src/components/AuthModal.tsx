@@ -9,7 +9,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 const authSchema = z.object({
-  email: z.string().email("올바른 이메일 형식이 아닙니다."),
+  email: z.string().email("올바른 이메일 형식이 아닙니다.").trim(),
   password: z.string()
     .min(8, "비밀번호는 8자 이상이어야 합니다.")
     .regex(/[0-9]/, "숫자를 포함해야 합니다.")
@@ -43,7 +43,8 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    setValue
   } = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
     defaultValues: {
@@ -75,27 +76,39 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
     } catch (err: any) {
       console.error(err);
       let message = '오류가 발생했습니다. 다시 시도해주세요.';
+      const errorCode = err.code || '';
       
-      const errorCode = (err.code || err.message || "").toLowerCase();
-      
-      if (errorCode.includes('auth/invalid-credential') || errorCode.includes('auth/wrong-password') || errorCode.includes('auth/user-not-found')) {
-        message = '이메일 또는 비밀번호가 올바르지 않습니다.';
-      } else if (errorCode.includes('auth/email-already-in-use')) {
-        message = '이미 사용 중인 이메일입니다.';
-      } else if (errorCode.includes('auth/network-request-failed')) {
-        message = 'Firebase 연결 실패: 현재 도메인이 Firebase 콘솔의 "승인된 도메인"에 등록되어 있는지 확인해주세요.';
-      } else if (errorCode.includes('auth/operation-not-allowed')) {
-        message = 'Firebase 설정 오류: "Email/Password" 로그인 방식이 활성화되어 있는지 확인해주세요.';
-      } else if (errorCode.includes('dummy-key') || errorCode.includes('api key')) {
-        message = 'Firebase API Key 설정이 올바르지 않습니다. 환경 변수 입력을 확인해주세요.';
+      if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found') {
+        message = '이메일 또는 비밀번호가 올바르지 않습니다. 가입되지 않은 이메일이거나 비밀번호가 틀렸을 수 있습니다.';
+      } else if (errorCode === 'auth/email-already-in-use') {
+        message = '이미 가입된 이메일입니다. 로그인으로 전환해주세요.';
+      } else if (errorCode === 'auth/too-many-requests') {
+        message = '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
+      } else if (errorCode === 'auth/network-request-failed') {
+        message = '네트워크 연결 상태를 확인해주세요.';
       } else {
-        message = `오류가 발생했습니다 (${err.code || err.message}). 다시 시도해주세요.`;
+        message = `인증 오류: ${err.message || errorCode}`;
       }
       
       setError(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleMode = () => {
+    const newMode = !isSignUp;
+    setIsSignUp(newMode);
+    setValue('isSignUp', newMode);
+    setError(null);
+    reset({
+      email: '',
+      password: '',
+      isSignUp: newMode,
+      childName: '',
+      interestService: '',
+      phone: ''
+    });
   };
 
   const services = [
@@ -143,8 +156,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <input type="hidden" {...register("isSignUp")} value={isSignUp ? "true" : "false"} />
-                
                 <div className="space-y-4">
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
@@ -218,11 +229,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
 
               <div className="mt-8 text-center">
                 <button
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setError(null);
-                    reset();
-                  }}
+                  onClick={handleToggleMode}
                   className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
                 >
                   {isSignUp ? '이미 회원이신가요? 로그인' : '아직 회원이 아니신가요? 회원가입'}
