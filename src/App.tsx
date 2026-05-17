@@ -414,7 +414,9 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser?.email !== ADMIN_EMAIL) {
+      if (currentUser?.email === ADMIN_EMAIL) {
+        setIsAdminOpen(true);
+      } else {
         setIsAdminOpen(false);
       }
     });
@@ -426,12 +428,12 @@ export default function App() {
   }, [isAdminOpen]);
 
   useEffect(() => {
-    if (isAuthModalOpen || selectedProgram || isMyPageOpen) {
+    if (isAuthModalOpen || selectedProgram || isMyPageOpen || isAdminOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isAuthModalOpen, selectedProgram, isMyPageOpen]);
+  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent overflow-x-hidden">
@@ -515,19 +517,21 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {isAdminOpen && user?.email === ADMIN_EMAIL ? (
-        <AdminDashboard onBack={() => setIsAdminOpen(false)} />
-      ) : (
-        <>
-          <Navbar 
-            onOpenAuth={() => setIsAuthModalOpen(true)} 
-            user={user} 
-            onOpenAdmin={() => setIsAdminOpen(true)}
-            onOpenMyPage={() => setIsMyPageOpen(true)}
-          />
-          
-          <main>
-            {/* Hero Section */}
+      <AnimatePresence>
+        {isAdminOpen && user?.email === ADMIN_EMAIL && (
+          <AdminDashboard onBack={() => setIsAdminOpen(false)} />
+        )}
+      </AnimatePresence>
+
+      <Navbar 
+        onOpenAuth={() => setIsAuthModalOpen(true)} 
+        user={user} 
+        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenMyPage={() => setIsMyPageOpen(true)}
+      />
+      
+      <main>
+        {/* Hero Section */}
         <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
           <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-brand-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
           
@@ -951,8 +955,6 @@ export default function App() {
            </div>
         </div>
       </footer>
-        </>
-      )}
     </div>
   );
 }

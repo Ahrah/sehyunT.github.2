@@ -48,7 +48,12 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   ];
 
   return (
-    <div className="relative z-10 w-full min-h-screen bg-brand-bg py-20 px-6 overflow-y-auto pointer-events-auto">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] w-full h-full bg-brand-bg md:py-20 py-10 px-6 overflow-y-auto"
+    >
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
@@ -137,6 +142,6 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
