@@ -428,12 +428,12 @@ export default function App() {
   }, [isAdminOpen]);
 
   useEffect(() => {
-    if (isAuthModalOpen || selectedProgram || isMyPageOpen || isAdminOpen) {
+    if (isAuthModalOpen || selectedProgram || isMyPageOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen]);
+  }, [isAuthModalOpen, selectedProgram, isMyPageOpen]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent overflow-x-hidden">
@@ -446,74 +446,6 @@ export default function App() {
       <AnimatePresence>
         {isMyPageOpen && (
           <MyPage onClose={() => setIsMyPageOpen(false)} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {selectedProgram && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedProgram(null)}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-brand-bg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-12 lg:p-20 relative rounded-none"
-            >
-              <button 
-                onClick={() => setSelectedProgram(null)}
-                className="absolute top-10 right-10 p-2 hover:bg-brand-secondary transition-colors"
-              >
-                <X size={32} />
-              </button>
-
-              <div className="max-w-2xl">
-                <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-6">{selectedProgram.title}</p>
-                <h2 className="text-5xl font-black mb-12 tracking-tighter leading-tight italic">{selectedProgram.subtitle}</h2>
-                
-                <div className="prose prose-lg text-brand-text font-light mb-16 leading-[1.8]">
-                  <p>{selectedProgram.content}</p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-12">
-                  <div>
-                    <h4 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent mb-8">Curriculum</h4>
-                    <ul className="space-y-4">
-                      {selectedProgram.features.map(feat => (
-                        <li key={feat} className="flex items-start gap-4 text-sm font-bold leading-tight">
-                          <span className="text-brand-accent">/</span> {feat}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent mb-8">Candidates</h4>
-                    <ul className="space-y-4">
-                      {selectedProgram.target.map(t => (
-                        <li key={t} className="flex items-start gap-4 text-sm text-brand-gray">
-                          <Plus size={14} className="mt-1 text-brand-accent shrink-0" /> {t}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="mt-20 pt-12 border-t border-brand-light-gray flex items-center justify-between">
-                  <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
-                    <Button className="px-12 py-8 bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors">프로그램 신청하기</Button>
-                  </a>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-brand-gray flex items-center gap-3">
-                    SehyunT Strategy Lab <Sparkles size={14} className="text-brand-accent" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
 
