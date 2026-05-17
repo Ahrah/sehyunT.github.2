@@ -414,26 +414,26 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (isAdminOpen && user?.email === ADMIN_EMAIL) {
-    return <AdminDashboard onBack={() => setIsAdminOpen(false)} />;
-  }
-
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent">
-      <Navbar 
-        onOpenAuth={() => setIsAuthModalOpen(true)} 
-        user={user} 
-        onOpenAdmin={() => setIsAdminOpen(true)}
-      />
-      
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <AuthModal onClose={() => setIsAuthModalOpen(false)} />
-        )}
-      </AnimatePresence>
+      {isAdminOpen && user?.email === ADMIN_EMAIL ? (
+        <AdminDashboard onBack={() => setIsAdminOpen(false)} />
+      ) : (
+        <>
+          <Navbar 
+            onOpenAuth={() => setIsAuthModalOpen(true)} 
+            user={user} 
+            onOpenAdmin={() => setIsAdminOpen(true)}
+          />
+          
+          <AnimatePresence>
+            {isAuthModalOpen && (
+              <AuthModal onClose={() => setIsAuthModalOpen(false)} />
+            )}
+          </AnimatePresence>
 
-      <main>
-        {/* Hero Section */}
+          <main>
+            {/* Hero Section */}
         <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
           <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-brand-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
           
@@ -857,6 +857,8 @@ export default function App() {
            </div>
         </div>
       </footer>
+        </>
+      )}
     </div>
   );
 }

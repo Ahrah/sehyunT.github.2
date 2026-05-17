@@ -17,6 +17,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const fetchUsers = async () => {
       try {
         const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
@@ -43,7 +44,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-brand-bg pt-32 pb-20 px-6">
+    <div className="relative z-[200] min-h-screen bg-brand-bg pt-32 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
