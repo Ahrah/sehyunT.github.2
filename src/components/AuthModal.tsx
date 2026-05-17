@@ -85,8 +85,12 @@ export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         message = '이미 사용 중인 이메일입니다.';
       } else if (errorCode.includes('auth/network-request-failed')) {
         message = 'Firebase 연결 실패: 현재 도메인이 Firebase 콘솔의 "승인된 도메인"에 등록되어 있는지 확인해주세요.';
+      } else if (errorCode.includes('auth/operation-not-allowed')) {
+        message = 'Firebase 설정 오류: "Email/Password" 로그인 방식이 활성화되어 있는지 확인해주세요.';
       } else if (errorCode.includes('dummy-key') || errorCode.includes('api key')) {
         message = 'Firebase API Key 설정이 올바르지 않습니다. 환경 변수 입력을 확인해주세요.';
+      } else {
+        message = `오류가 발생했습니다 (${err.code || err.message}). 다시 시도해주세요.`;
       }
       
       setError(message);
