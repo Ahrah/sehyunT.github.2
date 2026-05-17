@@ -18,6 +18,10 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Force body scroll to be visible just in case some other component messed it up
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+    
     const fetchUsers = async () => {
       try {
         const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
@@ -44,7 +48,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   ];
 
   return (
-    <div className="relative z-[200] min-h-screen bg-brand-bg pt-32 pb-20 px-6">
+    <div className="relative z-10 w-full min-h-screen bg-brand-bg py-20 px-6 overflow-y-auto pointer-events-auto">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
