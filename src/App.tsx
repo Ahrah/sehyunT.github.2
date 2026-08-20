@@ -353,7 +353,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
               </button>
             )}
             
-            <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+            <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
               <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[10px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
             </a>
           </div>
@@ -395,7 +395,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
                 ) : (
                   <button onClick={() => { setIsMenuOpen(false); onOpenAuth(); }} className="text-4xl font-black uppercase tracking-tighter text-left">Login</button>
                 )}
-                <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
                   <Button className="w-full rounded-none py-8 text-xl font-black uppercase">상담 신청</Button>
                 </a>
               </div>
@@ -491,7 +491,7 @@ export default function App() {
                 지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
               </motion.p>
               <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4">
-                <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
                   <Button className="px-12 py-8 text-base bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors duration-500 rounded-none uppercase tracking-widest font-bold">
                     상담 신청하기 <ArrowRight className="ml-3" size={18} />
                   </Button>
@@ -745,7 +745,7 @@ export default function App() {
                   </div>
 
                   <div className="mt-20 pt-12 border-t border-brand-light-gray flex items-center justify-between">
-                    <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer">
+                    <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
                       <Button className="px-12 py-8 bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors">프로그램 신청하기</Button>
                     </a>
                     <div className="text-[10px] font-black uppercase tracking-widest text-brand-gray flex items-center gap-3">
@@ -846,7 +846,7 @@ export default function App() {
              </h2>
              
              <div className="flex flex-col sm:flex-row justify-center gap-8 mb-32">
-                <a href="https://tally.so/r/w4l51A" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
+                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
                   <Button className="w-full py-10 text-xl font-black uppercase rounded-none bg-brand-bg text-brand-text hover:bg-brand-accent hover:text-brand-bg transition-all duration-700">Get Consult</Button>
                 </a>
                 <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
