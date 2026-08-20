@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { X, User, Phone, Sparkles, Mail, Lock, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { updateProfile, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 
 const profileSchema = z.object({
   childName: z.string().min(1, "이름을 입력해주세요."),
@@ -25,6 +25,11 @@ export const MyPage = ({ onClose }: MyPageProps) => {
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  const [showDirectChange, setShowDirectChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
 
   const {
     register,
@@ -37,7 +42,10 @@ export const MyPage = ({ onClose }: MyPageProps) => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!auth.currentUser) return;
+      if (!auth.currentUser) {
+        setLoading(false);
+        return;
+      }
       
       try {
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
@@ -57,7 +65,7 @@ export const MyPage = ({ onClose }: MyPageProps) => {
     };
 
     fetchUserData();
-  }, [reset]);
+  }, [reset, auth.currentUser]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     if (!auth.currentUser) return;
@@ -99,6 +107,57 @@ export const MyPage = ({ onClose }: MyPageProps) => {
       setMessage({ type: 'error', text: '이메일 발송 실패: ' + (error.message || '다시 시도해주세요.') });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDirectPasswordChange = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser || !auth.currentUser.email) return;
+
+    if (!currentPassword) {
+      setMessage({ type: 'error', text: '현재 비밀번호를 입력해주세요.' });
+      return;
+    }
+
+    if (newPassword.length < 8 || !/[0-9]/.test(newPassword) || !/[^a-zA-Z0-9]/.test(newPassword)) {
+      setMessage({ type: 'error', text: '새 비밀번호는 8자 이상이며, 숫자와 특수문자를 각각 최소 1개 이상 포함해야 합니다.' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: '새 비밀번호와 비밀번호 확인이 일치하지 않습니다.' });
+      return;
+    }
+
+    setPasswordUpdating(true);
+    setMessage(null);
+
+    try {
+      // Re-authenticate user first using current password
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+
+      // Update password
+      await updatePassword(auth.currentUser, newPassword);
+
+      setMessage({ type: 'success', text: '비밀번호가 성공적으로 변경되었습니다.' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowDirectChange(false);
+    } catch (error: any) {
+      console.error("Error updating password directly:", error);
+      let errorMsg = '비밀번호 변경 중 오류가 발생했습니다.';
+      if (error.code === 'auth/wrong-password') {
+        errorMsg = '현재 비밀번호가 일치하지 않습니다.';
+      } else if (error.code === 'auth/requires-recent-login') {
+        errorMsg = '보안을 위해 다시 로그인한 뒤 시도해주세요.';
+      } else {
+        errorMsg = error.message || errorMsg;
+      }
+      setMessage({ type: 'error', text: errorMsg });
+    } finally {
+      setPasswordUpdating(false);
     }
   };
 
@@ -220,18 +279,87 @@ export const MyPage = ({ onClose }: MyPageProps) => {
           {/* Security Section */}
           <div className="pt-8 border-t border-brand-light-gray space-y-6">
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent">Security</h3>
-            <p className="text-xs text-brand-gray leading-relaxed font-light">
-              비밀번호를 분실하셨거나 변경하고 싶으신 경우, 가입하신 이메일로 재설정 링크를 보내드립니다.
-            </p>
-            <button
-              type="button"
-              onClick={handlePasswordReset}
-              disabled={updating || resetSent}
-              className="w-full border border-brand-text text-brand-text h-14 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-brand-text hover:text-brand-bg transition-all disabled:opacity-50"
-            >
-              <Lock size={14} />
-              {resetSent ? 'Link Sent to Email' : 'Reset Password via Email'}
-            </button>
+            
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDirectChange(!showDirectChange);
+                  setMessage(null);
+                }}
+                className={`flex-1 border border-brand-text h-14 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 transition-all ${
+                  showDirectChange 
+                    ? 'bg-brand-text text-brand-bg' 
+                    : 'text-brand-text hover:bg-brand-text hover:text-brand-bg'
+                }`}
+              >
+                <Lock size={14} />
+                {showDirectChange ? 'Cancel Direct Change' : 'Direct Password Change'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={updating || resetSent}
+                className="flex-1 border border-brand-text text-brand-text h-14 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-brand-text hover:text-brand-bg transition-all disabled:opacity-50"
+              >
+                <Mail size={14} />
+                {resetSent ? 'Re-link Sent' : 'Reset via Email'}
+              </button>
+            </div>
+
+            {showDirectChange && (
+              <motion.form 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                onSubmit={handleDirectPasswordChange}
+                className="space-y-4 pt-4 border-t border-brand-light-gray overflow-hidden"
+              >
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="현재 비밀번호 (본인 확인용)"
+                    required
+                    className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="새 비밀번호 (8자 이상, 숫자+특수문자)"
+                    required
+                    className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="새 비밀번호 확인"
+                    required
+                    className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passwordUpdating}
+                  className="w-full bg-brand-text text-brand-bg h-14 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
+                >
+                  {passwordUpdating ? 'Updating Password...' : 'Update Password Now'}
+                </button>
+              </motion.form>
+            )}
           </div>
         </div>
       </motion.div>

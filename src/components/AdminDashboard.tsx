@@ -38,6 +38,41 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     fetchUsers();
   }, []);
 
+  const handleExportCSV = () => {
+    if (users.length === 0) {
+      alert("내보낼 데이터가 없습니다.");
+      return;
+    }
+    
+    // CSV Headers
+    const headers = ["아이디(순번)", "자녀이름", "이메일(아이디)", "연락처", "관심서비스", "가입일"];
+    
+    // CSV Rows
+    const rows = users.map((u, i) => [
+      (users.length - i).toString(),
+      u.childName || '',
+      u.email || '',
+      u.phone || '',
+      u.interestService || '',
+      u.createdAt?.toDate ? u.createdAt.toDate().toLocaleString() : 'N/A'
+    ]);
+    
+    // UTF-8 BOM for Excel compatibility with Korean characters
+    const csvContent = "\uFEFF" + [
+      headers.join(","),
+      ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `sehyunt_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const stats = [
     { label: "Total Members", value: users.length.toString(), icon: Users, color: "text-blue-500" },
     { label: "Avg. Session", value: "8m 42s", icon: Clock, color: "text-emerald-500" },
@@ -67,7 +102,10 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
             <p className="text-brand-gray text-xs uppercase tracking-widest font-black">실시간 사용자 가입 및 분석 현황</p>
           </div>
 
-          <button className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3">
+          <button 
+            onClick={handleExportCSV}
+            className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3 cursor-pointer"
+          >
             <Download size={16} /> Export Data
           </button>
         </div>

@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Mail, Lock, User, Phone, Sparkles, ChevronRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -38,6 +38,38 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleForgotSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      setForgotError("이메일을 입력해주세요.");
+      return;
+    }
+    setForgotLoading(true);
+    setForgotError(null);
+    setForgotSuccess(null);
+    try {
+      await sendPasswordResetEmail(auth, forgotEmail.trim());
+      setForgotSuccess("비밀번호 재설정 이메일이 발송되었습니다. 이메일을 확인해 주세요.");
+    } catch (err: any) {
+      console.error(err);
+      let errMsg = "이메일 발송 중 오류가 발생했습니다. 이메일 주소를 다시 확인해 주세요.";
+      if (err.code === 'auth/user-not-found') {
+        errMsg = "가입되지 않은 이메일 주소입니다.";
+      } else if (err.code === 'auth/invalid-email') {
+        errMsg = "올바르지 않은 이메일 형식입니다.";
+      }
+      setForgotError(errMsg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const {
     register,
@@ -148,93 +180,156 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
               <div className="mb-8">
                 <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-6">ST</div>
                 <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2">
-                  {isSignUp ? 'Member Join' : 'Log In'}
+                  {isForgotPassword ? 'Reset PW' : (isSignUp ? 'Member Join' : 'Log In')}
                 </h2>
                 <p className="text-brand-gray text-[10px] uppercase tracking-widest font-black">
-                  {isSignUp ? '맞춤형 입시 전략의 시작' : '다시 오신 것을 환영합니다'}
+                  {isForgotPassword ? '비밀번호를 분실하셨나요?' : (isSignUp ? '맞춤형 입시 전략의 시작' : '다시 오신 것을 환영합니다')}
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                <div className="space-y-4">
+              {isForgotPassword ? (
+                <form onSubmit={handleForgotSubmit} className="space-y-6">
+                  <p className="text-xs text-brand-gray leading-relaxed font-light">
+                    가입하신 이메일 주소를 입력하시면, 안전하게 비밀번호를 재설정할 수 있는 링크를 전송해 드립니다.
+                  </p>
+                  
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                     <input
-                      {...register("email")}
-                      placeholder="아이디 (이메일)"
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="가입한 이메일 주소"
+                      required
                       className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                     />
-                    {errors.email && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.email.message}</p>}
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
-                    <input
-                      {...register("password")}
-                      type="password"
-                      placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
-                      className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
-                    />
-                    {errors.password && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.password.message}</p>}
-                  </div>
+                  {forgotError && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest text-center">{forgotError}</p>}
+                  {forgotSuccess && <p className="text-xs text-green-600 font-bold text-center leading-relaxed">{forgotSuccess}</p>}
 
-                  {isSignUp && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="space-y-4 overflow-hidden pt-2"
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
+                  >
+                    {forgotLoading ? 'Sending link...' : 'Send Reset Link'}
+                    <ChevronRight size={18} />
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setForgotError(null);
+                        setForgotSuccess(null);
+                      }}
+                      className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
                     >
+                      로그인 화면으로 돌아가기
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                    <div className="space-y-4">
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                         <input
-                          {...register("childName")}
-                          placeholder="자녀 이름"
+                          {...register("email")}
+                          placeholder="아이디 (이메일)"
                           className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                         />
+                        {errors.email && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.email.message}</p>}
                       </div>
 
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                         <input
-                          {...register("phone")}
-                          placeholder="휴대폰 번호 (- 제외)"
+                          {...register("password")}
+                          type="password"
+                          placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
                           className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                         />
+                        {errors.password && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.password.message}</p>}
                       </div>
 
-                      <div className="relative">
-                        <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
-                        <select
-                          {...register("interestService")}
-                          className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors appearance-none"
+                      {!isSignUp && (
+                        <div className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsForgotPassword(true);
+                              setError(null);
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
+                          >
+                            비밀번호를 잊으셨나요?
+                          </button>
+                        </div>
+                      )}
+
+                      {isSignUp && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="space-y-4 overflow-hidden pt-2"
                         >
-                          <option value="">관심 서비스 선택</option>
-                          {services.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                            <input
+                              {...register("childName")}
+                              placeholder="자녀 이름"
+                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                            />
+                          </div>
 
-                {error && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest text-center">{error}</p>}
+                          <div className="relative">
+                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                            <input
+                              {...register("phone")}
+                              placeholder="휴대폰 번호 (- 제외)"
+                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                            />
+                          </div>
 
-                <button
-                  disabled={loading}
-                  className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : (isSignUp ? 'Join Now' : 'Login Now')}
-                  <ChevronRight size={18} />
-                </button>
-              </form>
+                          <div className="relative">
+                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                            <select
+                              {...register("interestService")}
+                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors appearance-none"
+                            >
+                              <option value="">관심 서비스 선택</option>
+                              {services.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
 
-              <div className="mt-8 text-center">
-                <button
-                  onClick={handleToggleMode}
-                  className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
-                >
-                  {isSignUp ? '이미 회원이신가요? 로그인' : '아직 회원이 아니신가요? 회원가입'}
-                </button>
-              </div>
+                    {error && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest text-center">{error}</p>}
+
+                    <button
+                      disabled={loading}
+                      className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Processing...' : (isSignUp ? 'Join Now' : 'Login Now')}
+                      <ChevronRight size={18} />
+                    </button>
+                  </form>
+
+                  <div className="mt-8 text-center border-t border-brand-light-gray/40 pt-6">
+                    <button
+                      onClick={handleToggleMode}
+                      className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
+                    >
+                      {isSignUp ? '이미 회원이신가요? 로그인' : '아직 회원이 아니신가요? 회원가입'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

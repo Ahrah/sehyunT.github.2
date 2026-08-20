@@ -1,10 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -13,10 +9,25 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "ahrah0365@gmail.com";
+    }
+
     match /users/{userId} {
-      allow read: if isOwner(userId) || (isSignedIn() && request.auth.token.email == "ahrah0365@gmail.com");
+      allow read: if isOwner(userId) || isAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /gallery/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /resources/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
   }
 }

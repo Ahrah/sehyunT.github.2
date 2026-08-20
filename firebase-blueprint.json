@@ -12,12 +12,46 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["email", "childName", "phone"]
+    },
+    "GalleryItem": {
+      "title": "Gallery Item",
+      "description": "Photo and visual archive element uploadable by admin",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "imageUrl"]
+    },
+    "ResourceItem": {
+      "title": "Resource Item",
+      "description": "Educational resource download/link element like PDF",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "fileUrl"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": "User",
       "description": "User profiles keyed by uid"
+    },
+    "gallery/{itemId}": {
+      "schema": "GalleryItem",
+      "description": "Gallery items accessible to all, writeable by admin"
+    },
+    "resources/{itemId}": {
+      "schema": "ResourceItem",
+      "description": "Resource download documents accessible to all, writeable by admin"
     }
   }
 }

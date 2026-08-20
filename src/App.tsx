@@ -18,6 +18,9 @@ import { AuthModal } from './components/AuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MyPage } from './components/MyPage';
 import { ShieldAlert } from 'lucide-react';
+import { GallerySection } from './components/GallerySection';
+import { ResourcesSection } from './components/ResourcesSection';
+import { LegalModal } from './components/LegalModals';
 
 // --- Types ---
 interface Program {
@@ -313,7 +316,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
         </a>
 
         <div className="hidden md:flex items-center gap-12">
-          {['About', 'Programs', 'Method', 'Contact'].map((item) => (
+          {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
             <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-text/40 hover:text-brand-accent transition-colors">
               {item}
             </a>
@@ -373,7 +376,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
               <X size={32} />
             </button>
             <div className="flex flex-col gap-12">
-              {['About', 'Programs', 'Method', 'Contact'].map((item) => (
+              {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
                 <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMenuOpen(false)} className="text-6xl font-black uppercase tracking-tighter text-brand-text hover:text-brand-accent transition-colors">
                   {item}
                 </a>
@@ -410,6 +413,7 @@ export default function App() {
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -428,12 +432,12 @@ export default function App() {
   }, [isAdminOpen]);
 
   useEffect(() => {
-    if (isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL)) {
+    if (isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen, user]);
+  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen, user, legalModalType]);
 
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent">
@@ -454,6 +458,12 @@ export default function App() {
           <AdminDashboard onBack={() => setIsAdminOpen(false)} />
         )}
       </AnimatePresence>
+
+      <LegalModal 
+        isOpen={!!legalModalType} 
+        type={legalModalType} 
+        onClose={() => setLegalModalType(null)} 
+      />
 
       <Navbar 
         onOpenAuth={() => setIsAuthModalOpen(true)} 
@@ -510,13 +520,14 @@ export default function App() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} className="relative">
               <div className="relative aspect-[4/5] bg-brand-secondary overflow-hidden group border border-brand-light-gray shadow-2xl">
                 <img 
-                  src="/IMG_1441.JPG" 
+                  src="https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.webp" 
                   alt="조세연" 
+                  loading="eager"
+                  decoding="async"
                   className="w-full h-full object-cover transition-all duration-1000"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    // Fallback to previous GitHub images or placeholder
-                    target.src = "https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.webp";
+                    target.src = "/IMG_1441.JPG";
                     target.className = "w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000";
                   }}
                 />
@@ -815,6 +826,12 @@ export default function App() {
           </div>
         </section>
 
+        {/* Gallery Section */}
+        <GallerySection isAdmin={user?.email === ADMIN_EMAIL} />
+
+        {/* Resources Section */}
+        <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} />
+
         {/* Call to Action Section */}
         <section id="contact" className="bg-brand-text py-48 px-6 lg:px-8 text-center text-brand-bg overflow-hidden relative">
            <div className="absolute inset-x-0 bottom-0 opacity-5 pointer-events-none select-none text-[30vw] font-black leading-none whitespace-nowrap overflow-hidden">
@@ -838,8 +855,8 @@ export default function App() {
              </div>
 
              <div className="flex flex-wrap justify-center gap-16 text-brand-bg/40 text-[10px] font-black uppercase tracking-[0.4em]">
-                <div className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-default"><Mail size={16} /> ahrah0365@gmail.com</div>
-                <div className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-default"><Instagram size={16} /> @sehyunt.study</div>
+                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Mail size={16} /> consultantsyssam@gmail.com</a>
+                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Instagram size={16} /> @consultant.sy</a>
                 <div className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-default"><MessageCircle size={16} /> Kakao Channel</div>
              </div>
            </div>
@@ -847,21 +864,21 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="py-32 px-6 lg:px-8 border-t border-brand-light-gray bg-brand-bg">
+      <footer className="py-24 sm:py-32 px-6 lg:px-8 border-t border-brand-light-gray bg-brand-bg">
         <div className="max-w-7xl mx-auto">
-           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-24">
+           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-16 lg:gap-24">
               <div className="lg:col-span-2">
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-6 sm:mb-8">
                   <img src="/logo-pic.png" alt="SEH-YUN T" className="h-12 w-auto" />
-                  <div className="text-4xl font-black tracking-tighter">SEH-YUN T.</div>
+                  <div className="text-3xl sm:text-4xl font-black tracking-tighter">SEH-YUN T.</div>
                 </div>
-                <p className="text-brand-gray max-w-sm leading-relaxed font-light text-base">
+                <p className="text-brand-gray max-w-sm leading-relaxed font-light text-sm sm:text-base">
                   Premium Admissions Strategy & Self-Directed Learning Lab. <br />
                   성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
                 </p>
               </div>
               <div>
-                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-10 text-brand-accent">Official Channels</h4>
+                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Official Channels</h4>
                  <ul className="space-y-4 text-[10px] font-black uppercase tracking-[0.2em]">
                     {blogs.map((blog) => (
                       <li key={blog.name}>
@@ -873,16 +890,46 @@ export default function App() {
                  </ul>
               </div>
               <div>
-                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-10 text-brand-accent">Inquiry</h4>
-                 <p className="text-sm font-black tracking-widest text-brand-text">ahrah0365@gmail.com</p>
+                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Inquiry</h4>
+                 <a href="mailto:consultantsyssam@gmail.com" className="text-sm font-black tracking-widest text-brand-text hover:text-brand-accent transition-colors">
+                   consultantsyssam@gmail.com
+                 </a>
               </div>
            </div>
            
-           <div className="mt-40 pt-12 border-t border-brand-light-gray flex flex-col md:flex-row justify-between items-center gap-8">
-              <p className="text-brand-gray text-[9px] tracking-[0.4em] font-black uppercase">© 2025 SEHYUNT. ALL RIGHTS RESERVED.</p>
-              <div className="flex gap-12 text-[9px] text-brand-gray tracking-[0.4em] font-black uppercase">
-                <a className="hover:text-brand-accent cursor-pointer transition-colors">Privacy Policy</a>
-                <a className="hover:text-brand-accent cursor-pointer transition-colors">Terms of Use</a>
+           {/* Business Information */}
+           <div className="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[11px] sm:text-xs text-brand-gray space-y-2">
+             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+               <span><strong className="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>
+               <span><strong className="font-bold text-brand-text">사업자등록번호:</strong> 612-69-00756</span>
+               <span><strong className="font-bold text-brand-text">대표:</strong> 조세연</span>
+               <span><strong className="font-bold text-brand-text">이메일:</strong> consultantsyssam@gmail.com</span>
+             </div>
+             <p className="text-[10px] sm:text-[11px] text-brand-gray/80 font-light">
+               입시 전략 컨설팅 · 고입/대입 학종 로드맵 · 1:1 자기주도학습 코칭
+             </p>
+           </div>
+
+           {/* Copyright & Legal Links */}
+           <div className="mt-8 pt-8 border-t border-brand-light-gray flex flex-col md:flex-row justify-between items-center gap-6">
+              <p className="text-brand-gray text-[9px] sm:text-[10px] tracking-[0.3em] font-black uppercase">
+                © 2023 SEHYUNT. ALL RIGHTS RESERVED.
+              </p>
+              <div className="flex gap-8 sm:gap-12 text-[9px] sm:text-[10px] text-brand-gray tracking-[0.3em] font-black uppercase">
+                <button 
+                  type="button"
+                  onClick={() => setLegalModalType('privacy')}
+                  className="hover:text-brand-accent cursor-pointer transition-colors"
+                >
+                  Privacy Policy
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setLegalModalType('terms')}
+                  className="hover:text-brand-accent cursor-pointer transition-colors"
+                >
+                  Terms of Use
+                </button>
               </div>
            </div>
         </div>
