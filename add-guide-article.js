@@ -1,6 +1,9 @@
 /**
  * Script to add parent guide article to Firestore
- * Run with: node add-guide-article.js
+ * Run with: node --experimental-modules add-guide-article.js
+ * 
+ * This adds the initial "외고·자사고 입시 컨설팅, 이렇게 고르세요" article.
+ * After running once, future articles can be added via the admin UI.
  */
 
 import { initializeApp } from 'firebase/app';
@@ -8,11 +11,21 @@ import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { readFileSync } from 'fs';
 
 // Load Firebase config
-const firebaseConfig = JSON.parse(readFileSync('./firebase-applet-config.json', 'utf-8'));
+const config = JSON.parse(readFileSync('./firebase-applet-config.json', 'utf-8'));
+const firebaseConfig = {
+  apiKey: config.apiKey,
+  authDomain: config.authDomain,
+  projectId: config.projectId,
+  storageBucket: config.storageBucket,
+  messagingSenderId: config.messagingSenderId,
+  appId: config.appId
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = config.firestoreDatabaseId 
+  ? getFirestore(app, config.firestoreDatabaseId)
+  : getFirestore(app);
 
 // Article content
 const articleContent = `외고·국제고·자사고 입시는 일반 대입 컨설팅과 결이 다릅니다.
