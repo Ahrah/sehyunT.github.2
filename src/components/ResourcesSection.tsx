@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen } from 'lucide-react';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen, Edit2 } from 'lucide-react';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
@@ -28,7 +28,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   );
   const [selectedArticle, setSelectedArticle] = useState<ResourceItem | null>(null);
 
-  // Upload Form State
+  // Upload/Edit Form State
+  const [editingItem, setEditingItem] = useState<ResourceItem | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [fileType, setFileType] = useState('pdf');
@@ -121,7 +122,12 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       let finalFileName = "";
       let storagePath = "";
 
-      if (uploadMode === 'file') {
+      // If editing and no new file selected, keep existing file info
+      if (editingItem && uploadMode === 'file' && !file) {
+        finalFileUrl = editingItem.fileUrl;
+        finalFileName = editingItem.fileName;
+        storagePath = editingItem.storagePath || "";
+      } else if (uploadMode === 'file') {
         if (!file) {
           setErrorMsg("업로드할 자료 파일을 선택해주세요.");
           setUploading(false);
@@ -158,7 +164,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         finalFileName = title.trim() + (fileType === 'pdf' ? '.pdf' : '.xlsx');
       }
 
-      await addDoc(collection(db, 'resources'), {
+      const resourceData = {
         title: title.trim(),
         description: description.trim(),
         fileUrl: finalFileUrl,
@@ -166,8 +172,18 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         fileType: fileType,
         storagePath: storagePath || null,
         content: fileType === 'article' ? articleContent.trim() : null,
-        createdAt: new Date()
-      });
+      };
+
+      if (editingItem) {
+        // Update existing document
+        await updateDoc(doc(db, 'resources', editingItem.id), resourceData);
+      } else {
+        // Create new document
+        await addDoc(collection(db, 'resources'), {
+          ...resourceData,
+          createdAt: new Date()
+        });
+      }
 
       // Reset Form
       setTitle('');
@@ -176,14 +192,48 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setFile(null);
       setExternalUrl('');
       setArticleContent('');
+      setEditingItem(null);
       setIsUploadOpen(false);
       fetchItems();
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || "자료 등록 중 오류가 발생했습니다.");
+      setErrorMsg(err.message || (editingItem ? "자료 수정 중 오류가 발생했습니다." : "자료 등록 중 오류가 발생했습니다."));
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleEdit = (item: ResourceItem, e: MouseEvent) => {
+    e.stopPropagation();
+    setEditingItem(item);
+    setTitle(item.title);
+    setDescription(item.description || '');
+    setFileType(item.fileType);
+    
+    // Pre-fill article content if editing an article
+    if (item.fileType === 'article' && item.content) {
+      setArticleContent(item.content);
+    } else {
+      setArticleContent('');
+    }
+    
+    // Determine upload mode based on existing data
+    if (item.fileUrl.startsWith('http://') || item.fileUrl.startsWith('https://')) {
+      if (!item.storagePath || item.storagePath === 'null') {
+        setUploadMode('link');
+        setExternalUrl(item.fileUrl);
+      } else {
+        setUploadMode('file');
+        setExternalUrl('');
+      }
+    } else {
+      setUploadMode('file');
+      setExternalUrl('');
+    }
+    
+    setFile(null);
+    setErrorMsg('');
+    setIsUploadOpen(true);
   };
 
   const handleDelete = async (item: ResourceItem, e: MouseEvent) => {
@@ -398,13 +448,22 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     )}
                   </button>
                   {isAdmin && (
-                    <button 
-                      onClick={(e) => handleDelete(item, e)}
-                      className="p-3 border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
-                      title="자료 영구 삭제"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <>
+                      <button 
+                        onClick={(e) => handleEdit(item, e)}
+                        className="p-3 border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="자료 수정"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDelete(item, e)}
+                        className="p-3 border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                        title="자료 영구 삭제"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -413,14 +472,20 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         )}
       </div>
 
-      {/* Upload Dialog */}
+      {/* Upload/Edit Dialog */}
       <AnimatePresence>
         {isUploadOpen && isAdmin && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => { if (!uploading) setIsUploadOpen(false); }}
+            onClick={() => { 
+              if (!uploading) {
+                setIsUploadOpen(false);
+                setEditingItem(null);
+                setArticleContent('');
+              }
+            }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
           >
             <motion.div 
@@ -431,7 +496,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
               className="bg-brand-bg w-full max-w-lg p-10 relative border border-brand-light-gray"
             >
               <button 
-                onClick={() => setIsUploadOpen(false)}
+                onClick={() => {
+                  setIsUploadOpen(false);
+                  setEditingItem(null);
+                  setArticleContent('');
+                }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
               >
@@ -439,9 +508,15 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
               </button>
 
               <div className="mb-8">
-                <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-4">+DOC</div>
-                <h2 className="text-3xl font-black uppercase tracking-tighter">Add Resource</h2>
-                <p className="text-brand-gray text-[10px] uppercase tracking-widest font-black">자료실용 프리미엄 배포 자료를 등록합니다.</p>
+                <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-4">
+                  {editingItem ? '✎' : '+DOC'}
+                </div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter">
+                  {editingItem ? 'Edit Resource' : 'Add Resource'}
+                </h2>
+                <p className="text-brand-gray text-[10px] uppercase tracking-widest font-black">
+                  {editingItem ? '기존 자료 정보를 수정합니다.' : '자료실용 프리미엄 배포 자료를 등록합니다.'}
+                </p>
               </div>
 
               {errorMsg && (
@@ -520,7 +595,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 <div>
                   {fileType === 'article' ? null : uploadMode === 'file' ? (
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">파일 선택</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">
+                        파일 선택 {editingItem && '(선택사항: 새 파일로 교체하려면 선택)'}
+                      </label>
                       <div className="border border-dashed border-brand-light-gray hover:border-brand-text transition-colors p-8 text-center bg-brand-secondary flex flex-col items-center justify-center cursor-pointer relative">
                         <input 
                           type="file" 
@@ -529,7 +606,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                         />
                         <FileText className="text-brand-gray mb-3" size={28} />
                         <p className="text-xs font-black uppercase text-brand-gray tracking-wider">
-                          {file ? file.name : "컴퓨터나 모바일에서 학습 자료 선택"}
+                          {file ? file.name : (editingItem ? `기존 파일: ${editingItem.fileName}` : "컴퓨터나 모바일에서 학습 자료 선택")}
                         </p>
                         <p className="text-[10px] text-brand-gray/50 mt-1 font-bold">최대 15MB 용량 지원</p>
                       </div>
@@ -555,7 +632,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     disabled={uploading}
                     className="w-full h-16 bg-brand-text text-brand-bg font-black uppercase tracking-widest hover:bg-brand-accent transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
                   >
-                    {uploading ? "Publishing Database..." : "Add to Library"}
+                    {uploading ? (editingItem ? "Updating..." : "Publishing Database...") : (editingItem ? "Update Resource" : "Add to Library")}
                   </button>
                 </div>
               </form>
