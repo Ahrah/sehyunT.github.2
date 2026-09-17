@@ -94,6 +94,14 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
 
   const handleUploadSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    // Security: Only admin can upload
+    if (!isAdmin) {
+      setErrorMsg("권한이 없습니다. 관리자만 갤러리에 사진을 등록할 수 있습니다.");
+      setUploading(false);
+      return;
+    }
+    
     if (!title.trim()) {
       setErrorMsg("제목을 입력해주세요.");
       return;
@@ -166,6 +174,13 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
 
   const handleDelete = async (item: GalleryItem, e: MouseEvent) => {
     e.stopPropagation();
+    
+    // Security: Only admin can delete
+    if (!isAdmin) {
+      alert("권한이 없습니다. 관리자만 사진을 삭제할 수 있습니다.");
+      return;
+    }
+    
     if (!window.confirm("정말로 이 이미지를 삭제하시겠습니까?")) return;
 
     try {

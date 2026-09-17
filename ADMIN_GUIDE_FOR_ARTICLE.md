@@ -98,8 +98,15 @@ http://sehyunt.re.kr/
 
 ## 등록 절차
 
-1. http://sehyunt.re.kr/ 로그인 (관리자 계정)
-2. Resources 섹션으로 이동 (#resources)
+### 방법 1: 스크립트 실행 (빠름, 권장)
+```bash
+npm install  # Firebase SDK 설치
+node add-guide-article.js
+```
+
+### 방법 2: 웹 UI 사용 (권장 - 향후 모든 기사는 이 방법 사용)
+1. http://sehyunt.re.kr/ 로그인 (관리자 계정: ahrah0365@gmail.com)
+2. Resources 섹션으로 이동 (`#resources`)
 3. 우측 상단 "Add Resource" 버튼 클릭
 4. 위 정보를 입력:
    - 자료 명칭
@@ -108,14 +115,26 @@ http://sehyunt.re.kr/
    - 기사 본문 내용에 위 텍스트 전체 복사-붙여넣기
 5. "Add to Library" 버튼 클릭
 
+## 중요: 향후 칼럼 작성
+
+**이 파일은 초기 기사 한 번만 사용합니다.**
+
+향후 모든 칼럼/기사는:
+1. 관리자 로그인
+2. Resources → Add Resource
+3. Article 타입 선택 후 직접 작성
+4. **소스 코드 수정 없이** 즉시 발행
+
+**자세한 가이드**: `ADMIN_WORKFLOW.md` 참조
+
 ## 확인 사항
 
 등록 후 다음을 확인하세요:
 - Resources 목록에 새 기사가 ARTICLE 타입으로 표시
 - "Read Article" 버튼이 표시됨 (Download File 아님)
 - 클릭 시 모달이 열리고 본문이 정상 표시
-- 소제목([H]...[/H])이 볼드 + 큰 글씨로 표시
-- 강조 부분([HIGHLIGHT]...[/HIGHLIGHT])이 파란색으로 표시
+- 소제목(`[H]...[/H]`)이 볼드 + 큰 글씨로 표시
+- 강조 부분(`[HIGHLIGHT]...[/HIGHLIGHT]`)이 파란색으로 표시
 - 모바일에서도 정상 작동
 
 ## 수정이 필요한 경우
@@ -123,3 +142,15 @@ http://sehyunt.re.kr/
 관리자는 기존 기사를 삭제하고 새로 등록할 수 있습니다:
 1. 기사 카드의 휴지통 아이콘 클릭 (삭제)
 2. 위 절차대로 재등록
+
+## 관리자 워크플로우
+
+**전체 관리자 기능 가이드**: `ADMIN_WORKFLOW.md` 파일을 참조하세요.
+
+주요 내용:
+- 관리자 로그인 방법
+- 새 칼럼 작성 워크플로우
+- 포맷팅 태그 사용법
+- 콘텐츠 저장 방식
+- 환경 설정
+- FAQ

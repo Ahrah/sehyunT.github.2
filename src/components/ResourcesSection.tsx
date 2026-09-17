@@ -100,6 +100,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
   const handleUploadSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    // Security: Only admin can upload
+    if (!isAdmin) {
+      setErrorMsg("권한이 없습니다. 관리자만 자료를 등록할 수 있습니다.");
+      setUploading(false);
+      return;
+    }
+    
     if (!title.trim()) {
       setErrorMsg("자료 명칭을 입력해주세요.");
       return;
@@ -180,6 +188,13 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
   const handleDelete = async (item: ResourceItem, e: MouseEvent) => {
     e.stopPropagation();
+    
+    // Security: Only admin can delete
+    if (!isAdmin) {
+      alert("권한이 없습니다. 관리자만 자료를 삭제할 수 있습니다.");
+      return;
+    }
+    
     if (!window.confirm("정말로 이 학습 자료파일을 영구 삭제하시겠습니까?")) return;
 
     try {
@@ -400,7 +415,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
       {/* Upload Dialog */}
       <AnimatePresence>
-        {isUploadOpen && (
+        {isUploadOpen && isAdmin && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
