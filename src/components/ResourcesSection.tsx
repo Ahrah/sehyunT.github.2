@@ -15,6 +15,7 @@ interface ResourceItem {
   fileType: string;
   createdAt: any;
   storagePath?: string;
+  content?: string;
 }
 
 export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) => {
@@ -25,6 +26,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [isAdminState, setIsAdminState] = useState<boolean>(
     propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === "ahrah0365@gmail.com")
   );
+  const [selectedArticle, setSelectedArticle] = useState<ResourceItem | null>(null);
 
   // Upload Form State
   const [title, setTitle] = useState('');
@@ -35,6 +37,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [articleContent, setArticleContent] = useState('');
 
   useEffect(() => {
     if (propIsAdmin !== undefined) {
@@ -154,6 +157,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         fileName: finalFileName,
         fileType: fileType,
         storagePath: storagePath || null,
+        content: fileType === 'article' ? articleContent.trim() : null,
         createdAt: new Date()
       });
 
@@ -163,6 +167,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setFileType('pdf');
       setFile(null);
       setExternalUrl('');
+      setArticleContent('');
       setIsUploadOpen(false);
       fetchItems();
     } catch (err: any) {
@@ -196,6 +201,12 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   };
 
   const handleDownload = (item: ResourceItem) => {
+    // If it's an article, open in modal instead
+    if (item.fileType === 'article') {
+      setSelectedArticle(item);
+      return;
+    }
+    
     // If it's a data url / base64 or self-hosted, we can trigger direct download
     if (item.fileUrl.startsWith('data:')) {
       const link = document.createElement("a");
@@ -208,6 +219,81 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       // Normal external URL or raw cloud endpoint, open or trigger download in new tab
       window.open(item.fileUrl, '_blank');
     }
+  };
+
+  const parseArticleContent = (content: string) => {
+    if (!content) return null;
+    
+    const lines = content.split('\n');
+    const elements: JSX.Element[] = [];
+    let key = 0;
+
+    lines.forEach((line, idx) => {
+      // Parse [H]...[/H] subheadings
+      const headingMatch = line.match(/\[H\](.*?)\[\/H\]/);
+      if (headingMatch) {
+        const text = headingMatch[1];
+        elements.push(
+          <h3 key={key++} className="text-xl font-black mt-8 mb-4 text-brand-text" style={{ fontSize: '1.25rem' }}>
+            {text}
+          </h3>
+        );
+        return;
+      }
+
+      // Parse [HIGHLIGHT]...[/HIGHLIGHT] within text
+      if (line.includes('[HIGHLIGHT]')) {
+        const parts: (string | JSX.Element)[] = [];
+        let remaining = line;
+        let partKey = 0;
+
+        while (remaining.includes('[HIGHLIGHT]')) {
+          const startIdx = remaining.indexOf('[HIGHLIGHT]');
+          const endIdx = remaining.indexOf('[/HIGHLIGHT]');
+          
+          if (endIdx === -1) break;
+
+          // Text before highlight
+          if (startIdx > 0) {
+            parts.push(remaining.substring(0, startIdx));
+          }
+
+          // Highlighted text
+          const highlightText = remaining.substring(startIdx + 11, endIdx);
+          parts.push(
+            <span key={partKey++} className="text-[#1a4f8b] font-bold">
+              {highlightText}
+            </span>
+          );
+
+          remaining = remaining.substring(endIdx + 12);
+        }
+
+        if (remaining) {
+          parts.push(remaining);
+        }
+
+        elements.push(
+          <p key={key++} className="text-base leading-relaxed mb-4 text-brand-text">
+            {parts}
+          </p>
+        );
+        return;
+      }
+
+      // Regular paragraph
+      if (line.trim()) {
+        elements.push(
+          <p key={key++} className="text-base leading-relaxed mb-4 text-brand-text">
+            {line}
+          </p>
+        );
+      } else {
+        elements.push(<div key={key++} className="h-2" />);
+      }
+    });
+
+    return elements;
   };
 
   const filteredItems = items.filter(item => 
@@ -290,7 +376,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     onClick={() => handleDownload(item)}
                     className="flex-1 md:flex-initial h-12 px-6 bg-brand-text text-brand-bg hover:bg-brand-accent transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer"
                   >
-                    <Download size={14} /> Download File
+                    {item.fileType === 'article' ? (
+                      <><BookOpen size={14} /> Read Article</>
+                    ) : (
+                      <><Download size={14} /> Download File</>
+                    )}
                   </button>
                   {isAdmin && (
                     <button 
@@ -380,6 +470,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                       <option value="xlsx">Excel File (.xlsx)</option>
                       <option value="docx">Word File (.docx)</option>
                       <option value="hwpx">Hangul File (.hwpx)</option>
+                      <option value="article">Article (온라인 기사)</option>
                       <option value="link">External Resource</option>
                     </select>
                   </div>
@@ -397,8 +488,22 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   </div>
                 </div>
 
+                {fileType === 'article' && (
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">기사 본문 내용</label>
+                    <textarea 
+                      value={articleContent} 
+                      onChange={e => setArticleContent(e.target.value)}
+                      placeholder="기사 본문을 입력하세요. [H]제목[/H]으로 소제목, [HIGHLIGHT]강조 텍스트[/HIGHLIGHT]로 강조 표시"
+                      rows={12}
+                      className="w-full bg-brand-secondary border border-brand-light-gray p-4 text-xs font-bold focus:border-brand-text outline-none transition-colors resize-none font-mono"
+                    />
+                    <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">[H]...[/H]는 부제목으로, [HIGHLIGHT]...[/HIGHLIGHT]는 강조 텍스트로 표시됩니다.</p>
+                  </div>
+                )}
+
                 <div>
-                  {uploadMode === 'file' ? (
+                  {fileType === 'article' ? null : uploadMode === 'file' ? (
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">파일 선택</label>
                       <div className="border border-dashed border-brand-light-gray hover:border-brand-text transition-colors p-8 text-center bg-brand-secondary flex flex-col items-center justify-center cursor-pointer relative">
@@ -439,6 +544,64 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Article Reading Modal */}
+      <AnimatePresence>
+        {selectedArticle && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedArticle(null)}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-brand-bg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-10 lg:p-16 relative border border-brand-light-gray my-6"
+            >
+              <button 
+                onClick={() => setSelectedArticle(null)}
+                className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+              >
+                <X size={24} />
+              </button>
+
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-brand-secondary text-brand-accent">
+                    {selectedArticle.fileType.toUpperCase()}
+                  </span>
+                  <span className="text-[10px] text-brand-gray/60 font-bold">
+                    {selectedArticle.createdAt?.toDate ? selectedArticle.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 leading-tight">{selectedArticle.title}</h2>
+                {selectedArticle.description && (
+                  <p className="text-sm text-brand-gray leading-relaxed mb-8">
+                    {selectedArticle.description}
+                  </p>
+                )}
+              </div>
+
+              <div className="prose prose-lg max-w-none">
+                {parseArticleContent(selectedArticle.content || '')}
+              </div>
+
+              <div className="mt-12 pt-8 border-t border-brand-light-gray flex justify-center">
+                <button
+                  onClick={() => setSelectedArticle(null)}
+                  className="h-12 px-8 bg-brand-text text-brand-bg text-xs font-black uppercase tracking-widest hover:bg-brand-accent transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
