@@ -42,6 +42,8 @@ jobs:
         run: npm run build
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VITE_PAYUP_ADMISSION_CONSULTING_URL: ${{ vars.VITE_PAYUP_ADMISSION_CONSULTING_URL }}
+          VITE_PAYUP_HOBBY_SUBSCRIPTION_URL: ${{ vars.VITE_PAYUP_HOBBY_SUBSCRIPTION_URL }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
