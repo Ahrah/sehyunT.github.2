@@ -48,6 +48,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [htmlContent, setHtmlContent] = useState('');
   const [resourcePassword, setResourcePassword] = useState('');
   const [unlockExisting, setUnlockExisting] = useState(false);
+  const [publishDate, setPublishDate] = useState('');
   const [passwordPromptItem, setPasswordPromptItem] = useState<ResourceItem | null>(null);
   const [attemptPassword, setAttemptPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -242,12 +243,24 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         resourceData.fileName = finalFileName;
       }
 
+      const finalDate = publishDate ? (() => {
+        const [year, month, day] = publishDate.split('-').map(Number);
+        const koreaDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const offset = koreaDate.getTimezoneOffset();
+        const koreaOffset = -540;
+        const diff = koreaOffset - offset;
+        return new Date(koreaDate.getTime() + diff * 60 * 1000);
+      })() : new Date();
+
       if (editingItem) {
-        await updateDoc(doc(db, 'resources', editingItem.id), resourceData);
+        await updateDoc(doc(db, 'resources', editingItem.id), {
+          ...resourceData,
+          createdAt: finalDate
+        });
       } else {
         await addDoc(collection(db, 'resources'), {
           ...resourceData,
-          createdAt: new Date()
+          createdAt: finalDate
         });
       }
 
@@ -260,6 +273,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setHtmlContent('');
       setResourcePassword('');
       setUnlockExisting(false);
+      setPublishDate('');
       setEditingItem(null);
       setIsUploadOpen(false);
       fetchItems();
@@ -301,6 +315,17 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     } else {
       setUploadMode('file');
       setExternalUrl('');
+    }
+    
+    if (item.createdAt) {
+      const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+      const localDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
+      setPublishDate(`${year}-${month}-${day}`);
+    } else {
+      setPublishDate('');
     }
     
     setFile(null);
@@ -547,7 +572,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                         {item.fileType.toUpperCase()}
                       </span>
                       <span className="text-[10px] text-brand-gray/60 font-bold">
-                        {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                        {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : 'N/A'}
                       </span>
                       {item.locked && (
                         <div className="flex items-center gap-1 text-brand-accent" title="비밀번호 보호">
@@ -613,7 +638,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => { 
+              onClick={() => { 
               if (!uploading) {
                 setIsUploadOpen(false);
                 setEditingItem(null);
@@ -621,6 +646,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 setHtmlContent('');
                 setResourcePassword('');
                 setUnlockExisting(false);
+                setPublishDate('');
               }
             }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
@@ -640,6 +666,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   setHtmlContent('');
                   setResourcePassword('');
                   setUnlockExisting(false);
+                  setPublishDate('');
                 }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
@@ -686,6 +713,17 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     rows={3}
                     className="w-full bg-brand-secondary border border-brand-light-gray p-4 text-xs font-bold focus:border-brand-text outline-none transition-colors resize-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">게시일 (선택)</label>
+                  <input 
+                    type="date" 
+                    value={publishDate} 
+                    onChange={e => setPublishDate(e.target.value)}
+                    className="w-full bg-brand-secondary border border-brand-light-gray h-12 px-4 text-xs font-bold focus:border-brand-text outline-none transition-colors"
+                  />
+                  <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">빈 칸으로 두면 오늘 날짜가 자동 설정됩니다. 과거 날짜 선택 가능.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -852,7 +890,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     {selectedArticle.fileType.toUpperCase()}
                   </span>
                   <span className="text-[10px] text-brand-gray/60 font-bold">
-                    {selectedArticle.createdAt?.toDate ? selectedArticle.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                    {selectedArticle.createdAt?.toDate ? selectedArticle.createdAt.toDate().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : 'N/A'}
                   </span>
                 </div>
                 <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 leading-tight">{selectedArticle.title}</h2>
