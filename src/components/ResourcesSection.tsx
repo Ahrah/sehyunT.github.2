@@ -626,8 +626,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                       <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-brand-secondary text-brand-accent rounded-none">
                         {item.fileType.toUpperCase()}
                       </span>
-                      <span className="text-[10px] text-brand-gray/60 font-bold">
-                        {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : 'N/A'}
+                      <span className="text-[14px] text-[#71717A] font-bold">
+                        {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : ''}
                       </span>
                       {item.locked && (
                         <div className="flex items-center gap-1 text-brand-accent" title="비밀번호 보호">
@@ -640,8 +640,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                       {item.locked && <Lock size={16} className="text-brand-accent shrink-0" />}
                       {item.title}
                     </h3>
-                    <p className="text-xs text-brand-gray font-light max-w-2xl leading-relaxed">
-                      {item.description || "이 학습자료에 대한 추가 설명이 기재되어 있지 않습니다."}
+                    <p className="text-[14px] text-[#52525B] font-normal max-w-2xl leading-relaxed">
+                      {item.description || ""}
                     </p>
                   </div>
                 </div>
