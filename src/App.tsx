@@ -850,9 +850,8 @@ export default function App() {
              </div>
 
              <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
-                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer">
-                  <Mail size={16} className="shrink-0" /> 
-                  <span className="break-all">consultantsyssam@gmail.com</span>
+                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
+                  <Mail size={16} className="shrink-0" /> consultantsyssam@gmail.com
                 </a>
                 <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
                   <Instagram size={16} className="shrink-0" /> @consultant.sy
