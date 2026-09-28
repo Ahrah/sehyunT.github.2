@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SehyunT | 입시 컨설팅</title>
+    <title>입시는세연쌤 | 프리미엄 입시 전략 컨설팅</title>
+    <meta name="robots" content="noindex" />
     <script type="text/javascript">
-      // Simple SPA redirect for GitHub Pages
+      // SPA redirect for GitHub Pages
       var l = window.location;
       if (l.search[1] === '/' ) {
         var decoded = l.search.slice(1).split('&').map(function(s) { 
@@ -19,17 +20,13 @@
   </head>
   <body>
     <div id="root">
-      <div style="display: flex; height: 100vh; align-items: center; justify-content: center; font-family: sans-serif;">
-        <p>페이지를 불러오는 중입니다...</p>
+      <div style="display: flex; height: 100vh; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #333;">
+        <div style="text-align: center;">
+          <h1 style="font-size: 2rem; margin-bottom: 1rem;">페이지를 불러오는 중입니다...</h1>
+          <p style="color: #666;">잠시만 기다려주세요.</p>
+        </div>
       </div>
     </div>
-    <script>
-      // If we are at the root or a subpath, redirect to index.html logic
-      // For now, GitHub Pages will serve this 404.html if the path doesn't exist.
-      // We want it to redirect back to the home page so React Router can handle it.
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
-      }
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
