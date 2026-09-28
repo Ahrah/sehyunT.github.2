@@ -148,6 +148,11 @@ const homePageContent = `
           성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
         </p>
       </div>
+      <nav aria-label="컨설팅 안내" class="mt-16 flex flex-wrap gap-x-6 gap-y-3 text-sm font-black">
+        <a href="/saenggibu-consulting/">생기부 컨설팅</a>
+        <a href="/jasoseo-consulting/">자소서 컨설팅</a>
+        <a href="/interview-consulting/">면접 컨설팅</a>
+      </nav>
       <div class="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
           <span><strong class="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>

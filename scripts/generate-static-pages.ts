@@ -12,6 +12,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { KEYWORD_PAGES, keywordPageHtml, resourcePageHtml } from './seo-pages';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -150,98 +151,9 @@ async function fetchResourcesPublic(): Promise<ResourceItem[]> {
   return resources;
 }
 
-// Generate HTML for a resource page
+// Generate HTML for a resource page (full article body for public articles, no redirect)
 function generateResourceHTML(resource: ResourceItem): string {
-  const title = resource.title;
-  const description = resource.description || '입시는세연쌤의 전략 자료';
-  const category = resource.category || '대입';
-  const publishedDate = resource.createdAt?.toDate 
-    ? resource.createdAt.toDate().toISOString() 
-    : new Date().toISOString();
-
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} | 입시는세연쌤</title>
-  <meta name="description" content="${description}">
-  <link rel="canonical" href="${DOMAIN}/resources/${resource.id}">
-  
-  <!-- Open Graph -->
-  <meta property="og:type" content="article">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:url" content="${DOMAIN}/resources/${resource.id}">
-  <meta property="og:site_name" content="입시는세연쌤">
-  <meta property="article:published_time" content="${publishedDate}">
-  <meta property="article:author" content="조세연">
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
-  
-  <!-- JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "${title}",
-    "description": "${description}",
-    "author": {
-      "@type": "Person",
-      "name": "조세연"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "입시는세연쌤",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "${DOMAIN}/logo-pic.png"
-      }
-    },
-    "datePublished": "${publishedDate}",
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": "${DOMAIN}/resources/${resource.id}"
-    }
-  }
-  </script>
-  
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem;
-      color: #333;
-    }
-    h1 { font-size: 2rem; margin-bottom: 1rem; }
-    .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
-    .category { background: #1a4f8b; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; }
-    .content { margin-top: 2rem; }
-  </style>
-</head>
-<body>
-  <h1>${title}</h1>
-  <div class="meta">
-    <span class="category">${category}</span>
-    <span>${new Date(publishedDate).toLocaleDateString('ko-KR')}</span>
-  </div>
-  ${description ? `<p><strong>${description}</strong></p>` : ''}
-  <div class="content">
-    <p>이 자료는 회원 전용입니다. <a href="${DOMAIN}">사이트로 이동하여</a> 로그인 후 열람하실 수 있습니다.</p>
-  </div>
-  
-  <!-- Redirect to SPA -->
-  <script>
-    // For JS-enabled browsers, redirect to the SPA
-    window.location.href = '${DOMAIN}/#resources';
-  </script>
-</body>
-</html>`;
+  return resourcePageHtml(resource);
 }
 
 // Generate sitemap.xml
@@ -252,6 +164,11 @@ function generateSitemap(resources: ResourceItem[]): string {
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>`,
+    ...KEYWORD_PAGES.map(p => `  <url>
+    <loc>${DOMAIN}/${p.slug}/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>`),
   ];
 
   // Add public (non-locked) resources
@@ -320,6 +237,15 @@ async function main() {
     });
     console.log(`✅ Generated ${publicResources.length} resource pages`);
 
+    // Generate keyword landing pages (e.g. /saenggibu-consulting/)
+    console.log('🔑 Generating keyword landing pages...');
+    KEYWORD_PAGES.forEach(page => {
+      const dir = path.join(DIST_DIR, page.slug);
+      ensureDir(dir);
+      fs.writeFileSync(path.join(dir, 'index.html'), keywordPageHtml(page));
+    });
+    console.log(`✅ Generated ${KEYWORD_PAGES.length} keyword pages`);
+
     // Generate sitemap.xml (always, even if no resources)
     console.log('🗺️  Generating sitemap.xml...');
     const sitemap = generateSitemap(publicResources);
@@ -334,7 +260,7 @@ async function main() {
 
     console.log('\n✨ Static site generation complete!');
     console.log(`   - ${publicResources.length} resource pages`);
-    console.log(`   - sitemap.xml with ${publicResources.length + 1} URLs`);
+    console.log(`   - sitemap.xml with ${publicResources.length + 1 + KEYWORD_PAGES.length} URLs`);
     console.log(`   - robots.txt`);
     
   } catch (error) {

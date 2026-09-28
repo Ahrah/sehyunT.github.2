@@ -896,6 +896,14 @@ export default function App() {
               </div>
            </div>
            
+           {/* Consulting landing pages */}
+           <nav aria-label="컨설팅 안내" className="mt-16 sm:mt-20 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-black">
+             <span className="text-xs uppercase tracking-[0.4em] text-brand-accent">Consulting</span>
+             <a href="/saenggibu-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">생기부 컨설팅</a>
+             <a href="/jasoseo-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">자소서 컨설팅</a>
+             <a href="/interview-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">면접 컨설팅</a>
+           </nav>
+
            {/* Business Information */}
            <div className="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
