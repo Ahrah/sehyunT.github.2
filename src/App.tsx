@@ -21,6 +21,7 @@ import { ShieldAlert } from 'lucide-react';
 import { GallerySection } from './components/GallerySection';
 import { ResourcesSection } from './components/ResourcesSection';
 import { LegalModal } from './components/LegalModals';
+import { PaymentPage, PaymentStatusPage } from './components/PaymentPage';
 
 // --- Types ---
 interface Program {
@@ -316,8 +317,8 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
         </a>
 
         <div className="hidden md:flex items-center gap-12">
-          {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-text/40 hover:text-brand-accent transition-colors">
+          {['About', 'Programs', 'Gallery', 'Resources', 'Contact', 'Payment'].map((item) => (
+            <a key={item} href={item === 'Payment' ? '/payment' : `#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-text/40 hover:text-brand-accent transition-colors">
               {item}
             </a>
           ))}
@@ -376,8 +377,8 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
               <X size={32} />
             </button>
             <div className="flex flex-col gap-12">
-              {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
-                <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMenuOpen(false)} className="text-6xl font-black uppercase tracking-tighter text-brand-text hover:text-brand-accent transition-colors">
+              {['About', 'Programs', 'Gallery', 'Resources', 'Contact', 'Payment'].map((item) => (
+                <a key={item} href={item === 'Payment' ? '/payment' : `#${item.toLowerCase()}`} onClick={() => setIsMenuOpen(false)} className="text-5xl font-black uppercase tracking-tighter text-brand-text hover:text-brand-accent transition-colors">
                   {item}
                 </a>
               ))}
@@ -407,7 +408,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
   );
 };
 
-export default function App() {
+function HomePage() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
@@ -936,4 +937,13 @@ export default function App() {
       </footer>
     </div>
   );
+}
+
+export default function App() {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/payment') return <PaymentPage />;
+  if (path === '/payment/success') return <PaymentStatusPage status="success" />;
+  if (path === '/payment/cancel') return <PaymentStatusPage status="cancel" />;
+  if (path === '/payment/fail') return <PaymentStatusPage status="fail" />;
+  return <HomePage />;
 }

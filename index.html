@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SehyunT | 입시 컨설팅</title>
+    <script>
+      if (location.search.startsWith('?/')) {
+        const route = location.search.slice(1).replace(/~and~/g, '&');
+        history.replaceState(null, '', route + location.hash);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

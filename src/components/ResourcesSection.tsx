@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent, ReactElement } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen, Edit2 } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
@@ -290,7 +290,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     if (!content) return null;
     
     const lines = content.split('\n');
-    const elements: JSX.Element[] = [];
+    const elements: ReactElement[] = [];
     let key = 0;
 
     lines.forEach((line, idx) => {
@@ -308,7 +308,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
       // Parse [HIGHLIGHT]...[/HIGHLIGHT] within text
       if (line.includes('[HIGHLIGHT]')) {
-        const parts: (string | JSX.Element)[] = [];
+        const parts: (string | ReactElement)[] = [];
         let remaining = line;
         let partKey = 0;
 
