@@ -28,16 +28,19 @@ interface ResourceItem {
 const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' => {
   if (item.category) return item.category;
   
-  const text = `${item.title} ${item.description || ''} ${item.content || ''}`.toLowerCase();
+  const title = item.title.toLowerCase();
   
-  const 고입Keywords = ['외고', '국제고', '자사고', '특목고', '고입', '중학생', '중3', '자소서', '면접'];
+  const 대입Keywords = ['학종', '생기부', '세특', '대입', '고1', '고2', '고3', '수행평가', '[탐구주제추천]'];
+  for (const keyword of 대입Keywords) {
+    if (title.includes(keyword)) {
+      return '대입';
+    }
+  }
   
+  const 고입Keywords = ['외고', '국제고', '자사고', '특목고', '특목자사고', '고입', '중학생', '중3'];
   for (const keyword of 고입Keywords) {
-    if (text.includes(keyword)) {
-      const context = text.substring(Math.max(0, text.indexOf(keyword) - 10), text.indexOf(keyword) + keyword.length + 10);
-      if (!context.includes('대입') || text.indexOf(keyword) < text.indexOf('대입')) {
-        return '고입';
-      }
+    if (title.includes(keyword)) {
+      return '고입';
     }
   }
   
