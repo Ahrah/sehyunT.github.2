@@ -23,6 +23,7 @@ interface ResourceItem {
   lockIter?: number;
   lockCipher?: string;
   category?: '대입' | '고입';
+  pinned?: boolean;
 }
 
 const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' => {
@@ -74,6 +75,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [resourcePassword, setResourcePassword] = useState('');
   const [unlockExisting, setUnlockExisting] = useState(false);
   const [publishDate, setPublishDate] = useState('');
+  const [pinned, setPinned] = useState(false);
   const [passwordPromptItem, setPasswordPromptItem] = useState<ResourceItem | null>(null);
   const [attemptPassword, setAttemptPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -222,6 +224,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         fileType: fileType,
         storagePath: storagePath || null,
         category: category,
+        pinned: pinned,
       };
 
       const shouldEncrypt = resourcePassword.trim() && !unlockExisting;
@@ -301,6 +304,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setResourcePassword('');
       setUnlockExisting(false);
       setPublishDate('');
+      setPinned(false);
       setEditingItem(null);
       setIsUploadOpen(false);
       fetchItems();
@@ -319,6 +323,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     setDescription(item.description || '');
     setCategory(item.category || '대입');
     setFileType(item.fileType);
+    setPinned(item.pinned || false);
     
     if (item.fileType === 'article' && item.content) {
       setArticleContent(item.content);
@@ -543,6 +548,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesTab && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
     });
 
   return (
@@ -615,7 +628,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
             {filteredItems.map((item) => (
               <div 
                 key={item.id}
-                className="group bg-brand-bg border border-brand-light-gray p-8 hover:border-brand-text transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative overflow-hidden"
+                className={`group bg-brand-bg border p-8 hover:border-brand-text transition-all duration-300 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 relative overflow-hidden ${
+                  item.pinned 
+                    ? 'border-[#1a4f8b] border-2 bg-[#1a4f8b]/5' 
+                    : 'border-brand-light-gray'
+                }`}
               >
                 <div className="flex items-center gap-6">
                   <div className="h-14 w-14 bg-brand-secondary border border-brand-light-gray flex items-center justify-center text-brand-text shrink-0">
@@ -623,6 +640,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   </div>
                   <div>
                     <div className="flex items-center gap-4 mb-2">
+                      {item.pinned && (
+                        <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-[#1a4f8b] text-white rounded-none">
+                          공지
+                        </span>
+                      )}
                       <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-brand-secondary text-brand-accent rounded-none">
                         {item.fileType.toUpperCase()}
                       </span>
@@ -705,6 +727,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 setResourcePassword('');
                 setUnlockExisting(false);
                 setPublishDate('');
+                setPinned(false);
               }
             }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
@@ -728,6 +751,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   setResourcePassword('');
                   setUnlockExisting(false);
                   setPublishDate('');
+                  setPinned(false);
                 }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
@@ -798,6 +822,23 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     <option value="고입">고입</option>
                   </select>
                   <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">자료가 표시될 탭을 선택하세요.</p>
+                </div>
+
+                <div className="pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={pinned} 
+                      onChange={e => setPinned(e.target.checked)}
+                      className="w-5 h-5 accent-brand-text cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-brand-text group-hover:text-brand-accent transition-colors">
+                        공지로 고정 (상단 고정)
+                      </span>
+                      <p className="text-[10px] text-brand-gray/50 mt-1 font-bold">체크하면 이 자료가 목록 최상단에 고정되어 표시됩니다.</p>
+                    </div>
+                  </label>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
