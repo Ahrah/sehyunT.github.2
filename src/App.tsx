@@ -496,8 +496,9 @@ export default function App() {
                 </a>
               </motion.div>
               
-              <motion.div variants={fadeUp} className="mt-20 grid grid-cols-1 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
+              <motion.div variants={fadeUp} className="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
                 {[
+                  { val: "07+", label: "Years Exp" },
                   { val: "1:1", label: "Customized" }
                 ].map((stat) => (
                   <div key={stat.label}>

@@ -33,6 +33,17 @@ const homePageContent = `
           합격을 넘어, 학생의 고유한 서사와 
           지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
         </p>
+        
+        <div class="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
+          <div>
+            <div class="text-3xl font-black tracking-tighter text-brand-text">07+</div>
+            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Years Exp</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black tracking-tighter text-brand-text">1:1</div>
+            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Customized</div>
+          </div>
+        </div>
       </div>
     </section>
 
