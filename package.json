@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && npm run generate-static",
+    "build": "vite build && npm run inject-content && npm run generate-static",
+    "inject-content": "tsx scripts/inject-prerendered-content.ts",
     "generate-static": "tsx scripts/generate-static-pages.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -16,6 +17,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react-refresh": "^1.3.6",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.13.0",
@@ -26,6 +28,7 @@
     "react-dom": "^19.0.1",
     "react-hook-form": "^7.75.0",
     "vite": "^6.2.3",
+    "vite-plugin-ssr": "^0.4.142",
     "zod": "^4.4.3"
   },
   "devDependencies": {

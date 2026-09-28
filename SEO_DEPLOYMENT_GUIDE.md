@@ -6,23 +6,57 @@
 
 ### 주요 개선 사항
 
-1. **정적 페이지 생성 (SSG)**
+1. **홈페이지 사전 렌더링 (Prerendering)**
+   - 빌드 시 홈페이지의 주요 섹션을 정적 HTML로 생성
+   - 초기 HTML에 실제 텍스트 콘텐츠 포함 (Philosophy, Programs, Contact 등)
+   - React 하이드레이션으로 인터랙티브 기능 유지
+
+2. **리소스 정적 페이지 생성 (SSG)**
    - 빌드 시 Firestore에서 공개 리소스를 읽어 각 게시물마다 정적 HTML 페이지 생성
    - 비밀번호로 보호된 게시물은 제외 (보안 유지)
 
-2. **향상된 메타 태그 및 구조화 데이터**
+3. **향상된 메타 태그 및 구조화 데이터**
    - `index.html`에 완전한 메타 태그 추가 (제목, 설명, 키워드)
    - Open Graph 및 Twitter Card 메타 태그
    - JSON-LD 구조화 데이터 (Organization, Person, ProfessionalService)
    - 대표 이름 "조세연" 및 사업명 "입시는세연쌤" 포함
 
-3. **sitemap.xml 및 robots.txt**
+4. **sitemap.xml 및 robots.txt**
    - 모든 공개 페이지가 포함된 자동 생성 사이트맵
    - 검색 엔진 크롤링을 허용하는 robots.txt
 
-4. **초기 HTML 콘텐츠**
-   - `<noscript>` 태그 내 실제 텍스트 콘텐츠로 SEO 개선
-   - JavaScript 비활성화 시에도 기본 정보 표시
+## 보안: 비밀번호 보호 게시물
+
+### 현재 저장 방식
+비밀번호로 보호된 게시물은 Firestore에 다음과 같이 저장됩니다:
+- `locked: true` - 잠김 상태 표시
+- `content: null` - 본문 내용 없음
+- `fileUrl: ""` - 파일 URL 없음
+- `fileName: ""` - 파일 이름 없음
+- `lockCipher: "<encrypted>"` - 실제 데이터가 AES-GCM 암호화되어 저장
+- `lockSalt`, `lockIv`, `lockIter` - 암호화 파라미터
+
+**중요**: 실제 콘텐츠는 클라이언트 측에서만 복호화되며, 올바른 비밀번호 없이는 절대 읽을 수 없습니다.
+
+### Firestore 보안 규칙
+현재 규칙 (`firestore.rules`):
+```javascript
+match /resources/{itemId} {
+  allow read: if true;  // 이미 공개 읽기
+  allow create, update, delete: if isAdmin();
+}
+```
+
+**이 규칙은 안전합니다** 왜냐하면:
+1. 비밀번호 보호 게시물의 실제 콘텐츠는 `lockCipher` 필드에 암호화되어 있음
+2. `content`, `fileUrl`, `fileName` 필드는 `null` 또는 빈 문자열
+3. 빌드 스크립트는 `locked: true`인 문서를 필터링하여 정적 페이지 생성에서 제외
+
+### 빌드 시 보안
+정적 페이지 생성 스크립트는:
+- `locked: true`인 모든 리소스를 **완전히 제외**
+- sitemap.xml에 포함하지 않음
+- 제목과 설명만 표시 (공개 메타데이터)
 
 ## 작동 방식
 
@@ -30,19 +64,19 @@
 
 1. `npm run build` 실행 시:
    - Vite가 React 앱을 먼저 빌드
-   - 빌드 후 `scripts/generate-static-pages.ts` 자동 실행
+   - `scripts/inject-prerendered-content.ts` 실행: 홈페이지 콘텐츠 주입
+   - `scripts/generate-static-pages.ts` 실행: 리소스 정적 페이지 생성
    
-2. 정적 페이지 생성 스크립트:
-   - Firebase Web SDK를 사용하여 Firestore의 `resources` 컬렉션 읽기 (공개 읽기 권한 필요)
+2. 홈페이지 사전 렌더링:
+   - 주요 섹션의 정적 HTML을 `index.html`의 `<div id="root">`에 주입
+   - React 앱이 로드되면 기존 콘텐츠 위에 하이드레이션
+   - 검색 엔진은 초기 HTML의 실제 텍스트를 크롤링
+
+3. 리소스 정적 페이지 생성:
+   - Firebase Web SDK를 사용하여 Firestore의 `resources` 컬렉션 읽기
    - 비밀번호로 보호된 게시물(`locked: true`)은 **완전히 제외**
    - 각 공개 리소스마다 `/dist/resources/{resourceId}.html` 생성
    - `/dist/sitemap.xml` 및 `/dist/robots.txt` 생성
-
-### 보안
-
-- **비밀번호 보호 게시물**: `locked: true`인 모든 리소스는 정적 페이지 생성에서 **완전히 제외**됩니다
-- 게시물 본문(`content`), 파일 URL, 파일 이름 등 민감한 정보는 절대 노출되지 않습니다
-- 정적 페이지에는 제목과 설명만 포함되며, 실제 콘텐츠는 SPA에서만 비밀번호 입력 후 접근 가능
 
 ## 필수 설정
 
@@ -60,23 +94,7 @@ VITE_FIREBASE_APP_ID
 GEMINI_API_KEY (기존)
 ```
 
-### Firestore 보안 규칙
-
-정적 페이지 생성이 작동하려면 Firestore의 `resources` 컬렉션에 대한 **공개 읽기 권한**이 필요합니다:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /resources/{document=**} {
-      allow read: if true;  // 공개 읽기 허용
-      allow write: if request.auth != null;  // 인증된 사용자만 쓰기 가능
-    }
-  }
-}
-```
-
-**중요**: 비밀번호로 보호된 게시물의 경우, `locked: true` 필드가 설정되어 있고 실제 콘텐츠는 암호화된 `lockCipher` 필드에만 저장되므로, 공개 읽기 권한이 있어도 콘텐츠를 읽을 수 없습니다.
+이 Secrets는 GitHub Actions 워크플로우(`deploy.yml`)에서 정적 페이지 생성 시 Firestore 접근에 사용됩니다.
 
 ## 새 게시물 반영
 
@@ -84,10 +102,10 @@ service cloud.firestore {
 
 새 리소스를 Firestore에 추가한 후:
 
-1. **GitHub Actions 트리거**: 
+1. **GitHub Actions 수동 트리거**: 
    - 저장소의 Actions 탭으로 이동
    - "Deploy static content to Pages" 워크플로우 선택
-   - "Run workflow" 클릭 (수동 트리거)
+   - "Run workflow" 클릭
 
 2. **자동 스케줄** (선택사항):
    - `.github/workflows/deploy.yml`에 스케줄 추가:
@@ -96,17 +114,6 @@ service cloud.firestore {
      schedule:
        - cron: '0 0 * * *'  # 매일 자정 (UTC)
    ```
-
-### 수동 방법
-
-로컬에서 빌드하고 푸시:
-
-```bash
-npm run build
-git add dist/
-git commit -m "Update static pages"
-git push
-```
 
 ## 검증
 
@@ -118,23 +125,29 @@ git push
    curl https://sehyunt.re.kr/robots.txt
    ```
 
-2. **메타 태그 확인**:
+2. **홈페이지 실제 콘텐츠 확인**:
    ```bash
-   curl -s https://sehyunt.re.kr/ | grep -i "meta name"
+   curl -s https://sehyunt.re.kr/ | grep "성적을 넘어"
+   curl -s https://sehyunt.re.kr/ | grep "프리미엄 전략 컨설팅"
    ```
 
-3. **구조화 데이터 확인**:
+3. **메타 태그 확인**:
+   ```bash
+   curl -s https://sehyunt.re.kr/ | grep -i "조세연"
+   curl -s https://sehyunt.re.kr/ | grep -i "입시는세연쌤"
+   ```
+
+4. **구조화 데이터 확인**:
    - Google의 Rich Results Test: https://search.google.com/test/rich-results
    - URL 입력: https://sehyunt.re.kr/
 
-4. **리소스 페이지 확인**:
-   ```bash
-   curl -s https://sehyunt.re.kr/resources/{resourceId}.html | grep -i "조세연"
-   ```
-
 5. **비밀번호 보호 게시물 제외 확인**:
-   - sitemap.xml에 잠긴 게시물이 포함되지 않았는지 확인
-   - `/dist/resources/` 디렉토리에 잠긴 게시물의 HTML 파일이 없는지 확인
+   ```bash
+   # sitemap에 잠긴 게시물이 없는지 확인
+   curl -s https://sehyunt.re.kr/sitemap.xml
+   # dist/resources/ 디렉토리 확인 (로컬)
+   ls dist/resources/
+   ```
 
 ### Google Search Console 설정
 
@@ -151,7 +164,7 @@ git push
 - **해결**: `npm install` 실행하여 의존성 설치
 
 **오류**: `Failed to fetch resources from Firestore`
-- **해결**: Firestore 보안 규칙 확인 (위 참조)
+- **해결**: GitHub Secrets에 Firebase 환경 변수가 올바르게 설정되었는지 확인
 
 ### 정적 페이지가 생성되지 않음
 
@@ -165,47 +178,23 @@ git push
    npm run generate-static
    ```
 
-3. Firebase 설정 확인:
-   - `firebase-applet-config.json` 파일이 존재하는지 확인
-   - 환경 변수가 올바르게 설정되었는지 확인
+### 홈페이지에 실제 콘텐츠가 없음
 
-### 잠긴 게시물이 노출됨
+1. 빌드 후 `dist/index.html` 확인:
+   ```bash
+   grep "성적을 넘어" dist/index.html
+   ```
 
-이는 절대 발생하지 않아야 합니다. 만약 발생한다면:
+2. 사전 렌더링 스크립트 직접 실행:
+   ```bash
+   npm run inject-content
+   ```
 
-1. Firestore에서 해당 게시물의 `locked` 필드가 `true`로 설정되었는지 확인
-2. 빌드 로그에서 "locked resources" 카운트 확인
-3. `scripts/generate-static-pages.ts` 스크립트 검토
+## 기존 기능 유지
 
-## 추가 개선 사항 (선택사항)
-
-### 1. 자동 재배포 트리거
-
-Firebase Functions를 사용하여 새 리소스 추가 시 자동으로 GitHub Actions 트리거:
-
-```javascript
-// Firebase Functions
-exports.triggerRebuild = functions.firestore
-  .document('resources/{resourceId}')
-  .onCreate((snap, context) => {
-    // GitHub Actions API 호출
-  });
-```
-
-### 2. CDN 캐싱
-
-GitHub Pages는 기본적으로 CDN을 사용하지만, 추가 최적화를 위해:
-- Cloudflare 등의 CDN 사용
-- 캐시 헤더 최적화
-
-### 3. 이미지 최적화
-
-- `logo-pic.png` 및 기타 이미지를 WebP 형식으로 변환
-- 반응형 이미지 사용
-
-## 라이선스 및 연락처
-
-- **사업명**: 입시는세연쌤
-- **대표**: 조세연
-- **사업자등록번호**: 612-69-00756
-- **이메일**: consultantsyssam@gmail.com
+모든 기존 기능은 변경 없이 작동합니다:
+- ✅ 비밀번호 보호 게시물
+- ✅ 대입/고입 탭
+- ✅ 관리자 폼
+- ✅ 사용자 인증
+- ✅ CNAME 및 SPA fallback (404.html)
