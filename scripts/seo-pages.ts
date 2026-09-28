@@ -142,11 +142,15 @@ ${o.body}
 </html>`;
 }
 
-const ctaBlock = `
+/** Link to the home 자료실 section with the matching 고입/대입 tab opened. */
+export const resourcesHref = (category?: '대입' | '고입') =>
+  category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : '/#resources';
+
+const ctaBlock = (category?: '대입' | '고입') => `
     <div class="cta">
       <p><strong>상담 문의</strong><br>카카오톡에서 '입시는세연쌤' 채널을 찾아 남겨 주세요. 아래 상담 신청서로도 받습니다.</p>
       <a class="btn" href="${CONSULT_URL}" target="_blank" rel="noopener">상담 신청하기</a>
-      <a class="btn ghost" href="/#resources">입시 자료실 보기</a>
+      <a class="btn ghost" href="${resourcesHref(category)}">${category ? `${category} 입시 자료실 보기` : '입시 자료실 보기'}</a>
     </div>`;
 
 // ---------------------------------------------------------------------------
@@ -312,7 +316,7 @@ export function keywordPageHtml(p: KeywordPage): string {
     <table>${summaryRows}</table>
 ${sections}
 ${faqs}
-${ctaBlock}
+${ctaBlock(p.slug === 'saenggibu-consulting' ? '대입' : '고입')}
 ${related}`;
 
   return pageShell({
@@ -373,19 +377,19 @@ export function resourcePageHtml(r: ResourceLike): string {
   if (hasArticle) {
     content = articleToHtml(r.content as string);
   } else if (r.locked) {
-    content = `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="/#resources">자료실</a>에서 열람하실 수 있습니다.</p>`;
+    content = `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="${resourcesHref(category)}">자료실</a>에서 열람하실 수 있습니다.</p>`;
   } else {
-    content = `${r.description ? `<p>${escapeHtml(r.description)}</p>` : ''}<p>이 자료는 <a href="/#resources">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
+    content = `${r.description ? `<p>${escapeHtml(r.description)}</p>` : ''}<p>이 자료는 <a href="${resourcesHref(category)}">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
   }
 
   const body = `
-    <div class="crumb"><a href="/">홈</a> › <a href="/#resources">자료실</a> › ${escapeHtml(category)}</div>
+    <div class="crumb"><a href="/">홈</a> › <a href="${resourcesHref(category)}">자료실</a> › ${escapeHtml(category)}</div>
     <div><span class="tag">${escapeHtml(category)}</span><span class="date">${escapeHtml(dateLabel)}</span></div>
     <h1>${escapeHtml(r.title)}</h1>
     <article>
 ${content}
     </article>
-${ctaBlock}
+${ctaBlock(category)}
     <div class="related">
       ${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">→ 입시는세연쌤 ${k.label} 안내</a>`).join('\n      ')}
     </div>`;

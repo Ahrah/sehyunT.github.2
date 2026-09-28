@@ -127,6 +127,32 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     fetchItems();
   }, []);
 
+  // Deep link: /?cat=goip#resources (고입) or /?cat=daeip#resources (대입)
+  // The section renders after the page loads, so the browser's own #hash jump misses it.
+  useEffect(() => {
+    const cat = new URLSearchParams(window.location.search).get('cat');
+    if (cat === 'goip') setSelectedTab('고입');
+    else if (cat === 'daeip') setSelectedTab('대입');
+
+    const scrollToResources = () => {
+      if (window.location.hash === '#resources') {
+        document.getElementById('resources')?.scrollIntoView({ block: 'start' });
+      }
+    };
+    const timers = [0, 400, 1200].map(ms => window.setTimeout(scrollToResources, ms));
+    window.addEventListener('hashchange', scrollToResources);
+    return () => {
+      timers.forEach(t => window.clearTimeout(t));
+      window.removeEventListener('hashchange', scrollToResources);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading && window.location.hash === '#resources') {
+      window.setTimeout(() => document.getElementById('resources')?.scrollIntoView({ block: 'start' }), 100);
+    }
+  }, [loading]);
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
@@ -559,7 +585,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     });
 
   return (
-    <section id="resources" className="py-40 px-6 lg:px-8 bg-brand-secondary">
+    <section id="resources" className="py-40 px-6 lg:px-8 bg-brand-secondary scroll-mt-20">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-24 pb-12 border-b-2 border-brand-text/10">
           <div className="space-y-4">
