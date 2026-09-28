@@ -2,6 +2,30 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Stale-page guard: after a redeploy, a cached copy of this page can point to
+      // a JS/CSS bundle that no longer exists (404). Reload once with a fresh URL.
+      (function () {
+        var KEY = 'st-asset-reload';
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          var url = t && (t.src || t.href);
+          if (!url || url.indexOf('/assets/') === -1) return;
+          try {
+            var last = Number(sessionStorage.getItem(KEY) || 0);
+            if (Date.now() - last < 300000) return; // at most once per 5 minutes
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (_) { return; }
+          var u = new URL(location.href);
+          u.searchParams.set('r', Date.now().toString());
+          location.replace(u.toString());
+        }, true);
+        window.addEventListener('load', function () {
+          var u = new URL(location.href);
+          if (u.searchParams.has('r')) { u.searchParams.delete('r'); history.replaceState(null, '', u.toString()); }
+        });
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
