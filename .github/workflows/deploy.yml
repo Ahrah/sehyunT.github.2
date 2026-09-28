@@ -6,6 +6,10 @@ on:
   push:
     branches: ["main"]
 
+  # Runs daily at 03:17 KST (18:17 UTC)
+  schedule:
+    - cron: '17 18 * * *'
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
