@@ -33,6 +33,17 @@ const homePageContent = `
           합격을 넘어, 학생의 고유한 서사와 
           지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
         </p>
+        
+        <div class="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
+          <div>
+            <div class="text-3xl font-black tracking-tighter text-brand-text">07+</div>
+            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Years Exp</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black tracking-tighter text-brand-text">1:1</div>
+            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Customized</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -102,14 +113,26 @@ const homePageContent = `
     <!-- Contact Section -->
     <section class="bg-brand-text py-48 px-6 lg:px-8 text-center text-brand-bg">
       <div class="max-w-5xl mx-auto">
-        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-12">Contact Us</p>
+        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
         <h2 class="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
           Master your <br />
           <span class="text-brand-accent not-italic">Future.</span>
         </h2>
-        <div class="flex flex-wrap justify-center gap-16 text-brand-bg/40 text-[10px] font-black uppercase tracking-[0.4em]">
-          <div class="flex items-center gap-4">이메일: consultantsyssam@gmail.com</div>
-          <div class="flex items-center gap-4">인스타그램: @consultant.sy</div>
+        <div class="flex flex-col sm:flex-row justify-center gap-8 mb-32">
+          <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
+            <button class="w-full py-10 text-xl font-black uppercase rounded-none bg-white text-black hover:bg-brand-accent hover:text-white transition-all duration-700 border border-white">
+              Get Consult
+            </button>
+          </a>
+          <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
+            <button class="w-full py-10 text-xl font-black uppercase rounded-none bg-transparent text-white border-2 border-white hover:bg-white hover:text-brand-text transition-all duration-700">
+              Official Blog
+            </button>
+          </a>
+        </div>
+        <div class="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
+          <div class="flex items-center gap-2 md:gap-4">이메일: consultantsyssam@gmail.com</div>
+          <div class="flex items-center gap-2 md:gap-4">인스타그램: @consultant.sy</div>
         </div>
       </div>
     </section>
@@ -119,26 +142,26 @@ const homePageContent = `
   <footer class="py-24 sm:py-32 px-6 lg:px-8 border-t border-brand-light-gray bg-brand-bg">
     <div class="max-w-7xl mx-auto">
       <div class="mb-8">
-        <div class="text-3xl sm:text-4xl font-black tracking-tighter">SEH-YUN T.</div>
-        <p class="text-brand-gray max-w-sm leading-relaxed font-light text-sm sm:text-base mt-4">
+        <div class="text-3xl sm:text-4xl font-black tracking-tighter">SEHYUN T</div>
+        <p class="text-brand-gray max-w-sm leading-relaxed font-normal text-sm sm:text-base mt-4">
           Premium Admissions Strategy & Self-Directed Learning Lab. 
           성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
         </p>
       </div>
-      <div class="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[11px] sm:text-xs text-brand-gray space-y-2">
+      <div class="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
           <span><strong class="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>
           <span><strong class="font-bold text-brand-text">사업자등록번호:</strong> 612-69-00756</span>
           <span><strong class="font-bold text-brand-text">대표:</strong> 조세연</span>
           <span><strong class="font-bold text-brand-text">이메일:</strong> consultantsyssam@gmail.com</span>
         </div>
-        <p class="text-[10px] sm:text-[11px] text-brand-gray/80 font-light">
+        <p class="text-[14px] sm:text-[14px] text-[#71717A] font-normal">
           입시 전략 컨설팅 · 고입/대입 학종 로드맵 · 1:1 자기주도학습 코칭
         </p>
       </div>
       <div class="mt-8 pt-8 border-t border-brand-light-gray">
-        <p class="text-brand-gray text-[9px] sm:text-[10px] tracking-[0.3em] font-black uppercase text-center">
-          © 2023 SEHYUNT. ALL RIGHTS RESERVED.
+        <p class="text-[#71717A] text-[13px] sm:text-[13px] tracking-[0.3em] font-black uppercase text-center">
+          © 2026 SEHYUN T. ALL RIGHTS RESERVED.
         </p>
       </div>
     </div>

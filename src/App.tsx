@@ -310,32 +310,32 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
             />
           </div>
           <div>
-            <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEH-YUN T</div>
+            <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUN T</div>
             <div className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-accent">Admissions Lab</div>
           </div>
         </a>
 
         <div className="hidden md:flex items-center gap-12">
-          {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-text/40 hover:text-brand-accent transition-colors">
+          {['About', 'Programs', 'Resources', 'Contact'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className="text-[13px] font-black uppercase tracking-[0.3em] text-[#52525B] hover:text-brand-accent transition-colors">
               {item}
             </a>
           ))}
           
           <div className="flex items-center gap-6 pl-6 border-l border-brand-light-gray">
-            {user ? (
+            {user && (
               <div className="flex items-center gap-4">
                 <button 
                   onClick={onOpenMyPage}
                   className="flex items-center gap-2 hover:text-brand-accent transition-colors"
                 >
                   {isAdmin ? <ShieldAlert size={14} className="text-brand-accent animate-pulse" /> : <UserIcon size={14} className="text-brand-accent" />}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email?.split('@')[0]}님</span>
+                  <span className="text-[13px] font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email?.split('@')[0]}님</span>
                 </button>
                 {isAdmin && (
                   <button 
                     onClick={onOpenAdmin}
-                    className="text-[10px] font-black uppercase tracking-widest text-brand-accent hover:underline"
+                    className="text-[13px] font-black uppercase tracking-widest text-brand-accent hover:underline"
                   >
                     Dashboard
                   </button>
@@ -344,17 +344,10 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
                   <LogOut size={16} />
                 </button>
               </div>
-            ) : (
-              <button 
-                onClick={onOpenAuth}
-                className="text-[10px] font-black uppercase tracking-widest text-brand-text hover:text-brand-accent transition-colors flex items-center gap-2"
-              >
-                Login <ChevronRight size={14} />
-              </button>
             )}
             
             <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
-              <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[10px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
+              <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[13px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
             </a>
           </div>
         </div>
@@ -376,7 +369,7 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
               <X size={32} />
             </button>
             <div className="flex flex-col gap-12">
-              {['About', 'Programs', 'Gallery', 'Resources', 'Contact'].map((item) => (
+              {['About', 'Programs', 'Resources', 'Contact'].map((item) => (
                 <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMenuOpen(false)} className="text-6xl font-black uppercase tracking-tighter text-brand-text hover:text-brand-accent transition-colors">
                   {item}
                 </a>
@@ -486,7 +479,7 @@ export default function App() {
                 DESIGN YOUR <br />
                 <span className="text-brand-accent not-italic">SUCCESS.</span>
               </motion.h1>
-              <motion.p variants={fadeUp} className="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-light">
+              <motion.p variants={fadeUp} className="text-lg md:text-xl text-[#3F3F46] leading-relaxed max-w-xl mb-12 font-normal">
                 합격을 넘어, 학생의 고유한 서사와 
                 지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
               </motion.p>
@@ -503,15 +496,14 @@ export default function App() {
                 </a>
               </motion.div>
               
-              <motion.div variants={fadeUp} className="mt-20 grid grid-cols-3 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
+              <motion.div variants={fadeUp} className="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
                 {[
                   { val: "07+", label: "Years Exp" },
-                  { val: "100%", label: "Satisfaction" },
                   { val: "1:1", label: "Customized" }
                 ].map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl font-black tracking-tighter text-brand-text">{stat.val}</div>
-                    <div className="text-[10px] text-brand-gray uppercase tracking-[0.2em] mt-2 font-bold">{stat.label}</div>
+                    <div className="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">{stat.label}</div>
                   </div>
                 ))}
               </motion.div>
@@ -541,7 +533,7 @@ export default function App() {
                 </div>
               </div>
               <div className="absolute -bottom-6 -left-6 bg-brand-accent p-6 text-brand-bg font-black italic tracking-tighter text-xl">
-                SEHYUN T.
+                SEHYUN T
               </div>
             </motion.div>
           </div>
@@ -560,8 +552,8 @@ export default function App() {
               <motion.div variants={fadeUp} className="flex gap-8 group">
                 <div className="text-brand-accent font-black text-6xl opacity-10 group-hover:opacity-100 transition-opacity">01</div>
                 <div>
-                   <h3 className="text-2xl font-black mb-6 uppercase tracking-tight">나만의 고유한 서사 구축</h3>
-                   <p className="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
+                   <h3 className="text-2xl font-black mb-6 uppercase">나만의 고유한 서사 구축</h3>
+                   <p className="text-[17px] text-[#52525B] leading-relaxed font-normal max-w-2xl">
                      단순한 스펙 나열이 아닌, 학생의 고유한 관심사와 문제의식을 
                      설득력 있는 성장 이야기로 연결하여 독보적인 경쟁력을 만듭니다.
                    </p>
@@ -570,8 +562,8 @@ export default function App() {
               <motion.div variants={fadeUp} className="flex gap-8 group">
                 <div className="text-brand-accent font-black text-6xl opacity-10 group-hover:opacity-100 transition-opacity">02</div>
                 <div>
-                   <h3 className="text-2xl font-black mb-6 uppercase tracking-tight">스스로 움직이는 학습 시스템</h3>
-                   <p className="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
+                   <h3 className="text-2xl font-black mb-6 uppercase">스스로 움직이는 학습 시스템</h3>
+                   <p className="text-[17px] text-[#52525B] leading-relaxed font-normal max-w-2xl">
                      입시는 성장의 과정입니다. 스스로 목표를 설정하고 
                      끝까지 완주할 수 있는 단단한 기초와 학습 구조를 함께 설계합니다.
                    </p>
@@ -593,7 +585,7 @@ export default function App() {
               <div key={axis.id} className="bg-brand-bg p-12 hover:bg-brand-text group transition-all duration-700">
                 <div className="text-brand-accent font-bold text-xs tracking-widest mb-12">AXIS {axis.id}</div>
                 <h3 className="text-2xl font-black mb-6 group-hover:text-brand-bg transition-colors leading-tight">{axis.subtitle}</h3>
-                <p className="text-brand-gray group-hover:text-brand-bg/60 transition-colors text-sm font-light leading-relaxed mb-12 min-h-[80px]">
+                <p className="text-[#52525B] group-hover:text-brand-bg/60 transition-colors text-[15px] font-normal leading-relaxed mb-12 min-h-[80px]">
                   {axis.desc}
                 </p>
                 <div className="overflow-hidden h-[1px] w-0 group-hover:w-full bg-brand-accent transition-all duration-700" />
@@ -618,8 +610,8 @@ export default function App() {
                   </div>
                   {compareTable.map(([a, b], i) => (
                     <div key={i} className="grid grid-cols-[1fr_1.2fr] border-t border-white/10 hover:bg-white/5 transition-colors">
-                      <div className="p-8 border-r border-white/10 text-brand-bg/30 text-sm font-light italic">{a}</div>
-                      <div className="p-8 text-brand-bg text-sm font-bold tracking-tight">{b}</div>
+                      <div className="p-8 border-r border-white/10 text-brand-bg/60 text-[15px] font-normal italic">{a}</div>
+                      <div className="p-8 text-brand-bg text-[15px] font-bold">{b}</div>
                     </div>
                   ))}
                </div>
@@ -634,7 +626,7 @@ export default function App() {
               <p className="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Professional Curriculum</p>
               <h2 className="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] uppercase leading-none">Programs</h2>
             </div>
-            <p className="text-brand-gray text-left md:text-right max-w-sm font-light text-base md:text-lg leading-[1.6] mt-8 md:mt-0 italic">
+            <p className="text-[#52525B] text-left md:text-right max-w-sm font-normal text-base md:text-lg leading-[1.6] mt-8 md:mt-0 italic">
               단순한 입시 관리가 아닌, <br className="hidden md:block" />체계적인 분석을 기반으로 한 맞춤형 솔루션.
             </p>
           </div>
@@ -658,17 +650,17 @@ export default function App() {
                       variants={fadeUp}
                       className="group bg-white border border-brand-light-gray p-10 hover:border-brand-text transition-all duration-500 flex flex-col"
                     >
-                      <h4 className="text-[11px] uppercase tracking-[0.3em] font-black text-brand-gray mb-6 group-hover:text-brand-accent transition-colors">
+                      <div className="text-[11px] uppercase font-black text-brand-gray mb-6 group-hover:text-brand-accent transition-colors">
                         {prog.title}
-                      </h4>
-                      <h5 className="text-2xl font-black mb-8 leading-tight">{prog.subtitle}</h5>
-                      <p className="text-brand-gray font-light text-sm leading-relaxed mb-10 flex-grow italic">
+                      </div>
+                      <h3 className="text-2xl font-black mb-8 leading-tight">{prog.subtitle}</h3>
+                      <p className="text-[#52525B] font-normal text-[15px] leading-relaxed mb-10 flex-grow italic">
                         "{prog.desc}"
                       </p>
                       
                       <div className="space-y-3 pt-8 border-t border-brand-light-gray group-hover:border-brand-accent transition-colors">
                         {prog.features.slice(0, 3).map((feat) => (
-                          <div key={feat} className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-widest text-brand-text/60">
+                          <div key={feat} className="flex items-center gap-4 text-[12px] font-bold uppercase text-[#52525B]">
                              <div className="w-1 h-1 bg-brand-light-gray group-hover:bg-brand-accent" />
                              {feat}
                           </div>
@@ -749,7 +741,7 @@ export default function App() {
                       <Button className="px-12 py-8 bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors">프로그램 신청하기</Button>
                     </a>
                     <div className="text-[10px] font-black uppercase tracking-widest text-brand-gray flex items-center gap-3">
-                      SehyunT Strategy Lab <Sparkles size={14} className="text-brand-accent" />
+                      SEHYUN T Strategy Lab <Sparkles size={14} className="text-brand-accent" />
                     </div>
                   </div>
                 </div>
@@ -776,11 +768,11 @@ export default function App() {
                  { q: "진로와 기록의 불일치", a: "단순 희망 사항이 아닌 구체적 증거로 채워지는 생기부. 면접에서 막힘 없는 답변으로 이어지는 실전형 기록 전략입니다." }
                ].map((item, i) => (
                  <div key={i} className="bg-brand-bg p-16 group hover:bg-brand-text transition-all duration-500">
-                    <h4 className="text-xl font-black mb-6 uppercase tracking-tight flex items-center gap-4 group-hover:text-brand-bg transition-colors">
+                    <h3 className="text-xl font-black mb-6 uppercase flex items-center gap-4 group-hover:text-brand-bg transition-colors">
                       <span className="w-8 h-px bg-brand-accent" />
                       {item.q}
-                    </h4>
-                    <p className="text-brand-gray leading-relaxed font-light group-hover:text-brand-bg/60 transition-colors">
+                    </h3>
+                    <p className="text-[#52525B] leading-relaxed font-normal text-[15px] group-hover:text-brand-bg/60 transition-colors">
                       {item.a}
                     </p>
                  </div>
@@ -813,9 +805,9 @@ export default function App() {
                       <span key={tag} className="text-[10px] font-black uppercase tracking-widest text-brand-accent">#{tag}</span>
                     ))}
                   </div>
-                  <h3 className="text-3xl font-black uppercase tracking-tighter">{offering.title}</h3>
+                  <h3 className="text-3xl font-black uppercase">{offering.title}</h3>
                 </div>
-                <p className="flex-1 text-brand-gray font-light text-base leading-relaxed">
+                <p className="flex-1 text-[#52525B] font-normal text-[15px] leading-relaxed">
                   {offering.desc}
                 </p>
                 <div className="flex items-center gap-4 font-black text-xs uppercase tracking-[0.3em] group-hover:text-brand-accent transition-colors">
@@ -826,8 +818,8 @@ export default function App() {
           </div>
         </section>
 
-        {/* Gallery Section */}
-        <GallerySection isAdmin={user?.email === ADMIN_EMAIL} />
+        {/* Gallery Section - Hidden until photos are added */}
+        {/* <GallerySection isAdmin={user?.email === ADMIN_EMAIL} /> */}
 
         {/* Resources Section */}
         <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} />
@@ -839,7 +831,7 @@ export default function App() {
            </div>
            
            <div className="max-w-5xl mx-auto relative z-10">
-             <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-12">Contact Us</p>
+             <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
              <h2 className="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
                Master your <br />
                <span className="text-brand-accent not-italic">Future.</span>
@@ -847,17 +839,24 @@ export default function App() {
              
              <div className="flex flex-col sm:flex-row justify-center gap-8 mb-32">
                 <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
-                  <Button className="w-full py-10 text-xl font-black uppercase rounded-none bg-brand-bg text-brand-text hover:bg-brand-accent hover:text-brand-bg transition-all duration-700">Get Consult</Button>
+                  <button className="w-full py-10 text-xl font-black uppercase rounded-none bg-white text-black hover:bg-brand-accent hover:text-white transition-all duration-700 border border-white">
+                    Get Consult
+                  </button>
                 </a>
                 <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
-                   <Button variant="outline" className="w-full py-10 text-xl font-black uppercase rounded-none border-white hover:bg-white hover:text-brand-text transition-all duration-700">Official Blog</Button>
+                  <button className="w-full py-10 text-xl font-black uppercase rounded-none bg-transparent text-white border-2 border-white hover:bg-white hover:text-brand-text transition-all duration-700">
+                    Official Blog
+                  </button>
                 </a>
              </div>
 
-             <div className="flex flex-wrap justify-center gap-16 text-brand-bg/40 text-[10px] font-black uppercase tracking-[0.4em]">
-                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Mail size={16} /> consultantsyssam@gmail.com</a>
-                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Instagram size={16} /> @consultant.sy</a>
-                <div className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-default"><MessageCircle size={16} /> Kakao Channel</div>
+             <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
+                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
+                  <Mail size={16} className="shrink-0" /> consultantsyssam@gmail.com
+                </a>
+                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
+                  <Instagram size={16} className="shrink-0" /> @consultant.sy
+                </a>
              </div>
            </div>
         </section>
@@ -869,20 +868,20 @@ export default function App() {
            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-16 lg:gap-24">
               <div className="lg:col-span-2">
                 <div className="flex items-center gap-4 mb-6 sm:mb-8">
-                  <img src="/logo-pic.png" alt="SEH-YUN T" className="h-12 w-auto" />
-                  <div className="text-3xl sm:text-4xl font-black tracking-tighter">SEH-YUN T.</div>
+                  <img src="/logo-pic.png" alt="SEHYUN T" className="h-12 w-auto" />
+                  <div className="text-3xl sm:text-4xl font-black tracking-tighter">SEHYUN T</div>
                 </div>
-                <p className="text-brand-gray max-w-sm leading-relaxed font-light text-sm sm:text-base">
+                <p className="text-[#52525B] max-w-sm leading-relaxed font-normal text-sm sm:text-base">
                   Premium Admissions Strategy & Self-Directed Learning Lab. <br />
                   성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
                 </p>
               </div>
               <div>
                  <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Official Channels</h4>
-                 <ul className="space-y-4 text-[10px] font-black uppercase tracking-[0.2em]">
+                 <ul className="space-y-4 text-[13px] font-black uppercase tracking-[0.2em]">
                     {blogs.map((blog) => (
                       <li key={blog.name}>
-                        <a href={blog.url} target="_blank" rel="noopener noreferrer" className="text-brand-gray hover:text-brand-accent transition-colors">
+                        <a href={blog.url} target="_blank" rel="noopener noreferrer" className="text-[#52525B] hover:text-brand-accent transition-colors">
                           {blog.name}
                         </a>
                       </li>
@@ -891,46 +890,30 @@ export default function App() {
               </div>
               <div>
                  <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Inquiry</h4>
-                 <a href="mailto:consultantsyssam@gmail.com" className="text-sm font-black tracking-widest text-brand-text hover:text-brand-accent transition-colors">
+                 <a href="mailto:consultantsyssam@gmail.com" className="text-sm font-black tracking-widest text-[#52525B] hover:text-brand-accent transition-colors">
                    consultantsyssam@gmail.com
                  </a>
               </div>
            </div>
            
            {/* Business Information */}
-           <div className="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[11px] sm:text-xs text-brand-gray space-y-2">
+           <div className="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                <span><strong className="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>
                <span><strong className="font-bold text-brand-text">사업자등록번호:</strong> 612-69-00756</span>
                <span><strong className="font-bold text-brand-text">대표:</strong> 조세연</span>
                <span><strong className="font-bold text-brand-text">이메일:</strong> consultantsyssam@gmail.com</span>
              </div>
-             <p className="text-[10px] sm:text-[11px] text-brand-gray/80 font-light">
+             <p className="text-[14px] sm:text-[14px] text-[#71717A] font-normal">
                입시 전략 컨설팅 · 고입/대입 학종 로드맵 · 1:1 자기주도학습 코칭
              </p>
            </div>
 
-           {/* Copyright & Legal Links */}
+           {/* Copyright */}
            <div className="mt-8 pt-8 border-t border-brand-light-gray flex flex-col md:flex-row justify-between items-center gap-6">
-              <p className="text-brand-gray text-[9px] sm:text-[10px] tracking-[0.3em] font-black uppercase">
-                © 2023 SEHYUNT. ALL RIGHTS RESERVED.
+              <p className="text-[#71717A] text-[13px] sm:text-[13px] tracking-[0.3em] font-black uppercase">
+                © {new Date().getFullYear()} SEHYUN T. ALL RIGHTS RESERVED.
               </p>
-              <div className="flex gap-8 sm:gap-12 text-[9px] sm:text-[10px] text-brand-gray tracking-[0.3em] font-black uppercase">
-                <button 
-                  type="button"
-                  onClick={() => setLegalModalType('privacy')}
-                  className="hover:text-brand-accent cursor-pointer transition-colors"
-                >
-                  Privacy Policy
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setLegalModalType('terms')}
-                  className="hover:text-brand-accent cursor-pointer transition-colors"
-                >
-                  Terms of Use
-                </button>
-              </div>
            </div>
         </div>
       </footer>
