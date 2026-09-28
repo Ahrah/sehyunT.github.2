@@ -830,7 +830,7 @@ export default function App() {
            </div>
            
            <div className="max-w-5xl mx-auto relative z-10">
-             <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-12">Contact Us</p>
+             <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
              <h2 className="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
                Master your <br />
                <span className="text-brand-accent not-italic">Future.</span>
@@ -849,9 +849,14 @@ export default function App() {
                 </a>
              </div>
 
-             <div className="flex flex-wrap justify-center gap-16 text-brand-bg/70 text-[14px] font-black uppercase tracking-[0.3em]">
-                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Mail size={16} /> consultantsyssam@gmail.com</a>
-                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 transition-colors hover:text-brand-accent cursor-pointer"><Instagram size={16} /> @consultant.sy</a>
+             <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
+                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer">
+                  <Mail size={16} className="shrink-0" /> 
+                  <span className="break-all">consultantsyssam@gmail.com</span>
+                </a>
+                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
+                  <Instagram size={16} className="shrink-0" /> @consultant.sy
+                </a>
              </div>
            </div>
         </section>

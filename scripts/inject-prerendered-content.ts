@@ -102,7 +102,7 @@ const homePageContent = `
     <!-- Contact Section -->
     <section class="bg-brand-text py-48 px-6 lg:px-8 text-center text-brand-bg">
       <div class="max-w-5xl mx-auto">
-        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-12">Contact Us</p>
+        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
         <h2 class="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
           Master your <br />
           <span class="text-brand-accent not-italic">Future.</span>
@@ -119,9 +119,9 @@ const homePageContent = `
             </button>
           </a>
         </div>
-        <div class="flex flex-wrap justify-center gap-16 text-brand-bg/70 text-[14px] font-black uppercase tracking-[0.3em]">
-          <div class="flex items-center gap-4">이메일: consultantsyssam@gmail.com</div>
-          <div class="flex items-center gap-4">인스타그램: @consultant.sy</div>
+        <div class="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
+          <div class="flex items-center gap-2 md:gap-4">이메일: consultantsyssam@gmail.com</div>
+          <div class="flex items-center gap-2 md:gap-4">인스타그램: @consultant.sy</div>
         </div>
       </div>
     </section>
