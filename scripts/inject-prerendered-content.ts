@@ -33,6 +33,11 @@ const homePageContent = `
           합격을 넘어, 학생의 고유한 서사와 
           지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
         </p>
+        <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
+          <a href="/saenggibu-consulting/">생기부 컨설팅</a>
+          <a href="/jasoseo-consulting/">자소서 컨설팅</a>
+          <a href="/interview-consulting/">면접 컨설팅</a>
+        </nav>
         
         <div class="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
           <div>

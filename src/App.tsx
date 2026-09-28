@@ -30,6 +30,7 @@ interface Program {
   content: string;
   features: string[];
   target: string[];
+  landing?: { href: string; label: string };
 }
 
 const ADMIN_EMAIL = "ahrah0365@gmail.com";
@@ -90,6 +91,7 @@ const programCategories = [
     programs: [
       {
         title: "Admissions Consulting",
+        landing: { href: "/jasoseo-consulting/", label: "자소서 컨설팅" },
         subtitle: "자기소개서 집중 컨설팅",
         desc: "나의 경험이 학교의 인재상과 만나는 지점. 설득력 있는 서사를 설계합니다.",
         content: "단순 첨삭을 넘어 학생의 모든 활동과 경험을 재해석합니다. 핵심 메시지를 도출하고 문항별 스토리라인을 구성하며, 최종적으로 면접과의 연결성까지 고려한 완성도 높은 서사를 만듭니다.",
@@ -98,6 +100,7 @@ const programCategories = [
       },
       {
         title: "Interview Coaching",
+        landing: { href: "/interview-consulting/", label: "면접 컨설팅" },
         subtitle: "특목·자사고 면접 대비",
         desc: "암기가 아닌 사고력을 증명하는 시간. 실전보다 더 실전 같은 훈련입니다.",
         content: "학교별 면접 유형을 분석하고 예상 질문에 대한 구조적 답변 능력을 키웁니다. 특히 면접 태도와 전달력까지 코칭하여 학생이 자신의 경험을 스스로 설명할 수 있도록 훈련합니다.",
@@ -121,6 +124,7 @@ const programCategories = [
     programs: [
       {
         title: "Student Record Strategy",
+        landing: { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
         subtitle: "학기별 생기부 통합 컨설팅",
         desc: "학생부는 숫자가 아닌 '연결'입니다. 세특과 탐구활동을 하나의 방향으로 엮습니다.",
         content: "한 학기 동안의 진로 관심사와 학업 흐름을 기반으로 세특, 탐구활동, 발표, 독서가 유기적으로 이어지도록 설계합니다. 대학이 매력을 느낄 수 있는 장기적인 성장 흐름을 만듭니다.",
@@ -129,6 +133,7 @@ const programCategories = [
       },
       {
         title: "Performance & Statement",
+        landing: { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
         subtitle: "수행평가·생기부 상시 컨설팅",
         desc: "단순 결과 요약이 아닌, 학생의 사고 과정이 드러나는 질 높은 기록을 만듭니다.",
         content: "수행평가와 수시 활동 내용을 단순 정리가 아닌 학생의 탐구 방향과 사고 흐름이 드러나도록 구체화합니다. 발표 및 보고서 작성을 위한 논리 구조와 최종 세특 기재 포인트까지 조력합니다.",
@@ -495,6 +500,21 @@ export default function App() {
                   </Button>
                 </a>
               </motion.div>
+              <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-3" aria-label="컨설팅 바로가기">
+                {[
+                  { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
+                  { href: "/jasoseo-consulting/", label: "자소서 컨설팅" },
+                  { href: "/interview-consulting/", label: "면접 컨설팅" },
+                ].map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center gap-2 border border-brand-light-gray bg-brand-bg px-5 py-3 text-sm font-black text-brand-text hover:border-brand-accent hover:text-brand-accent transition-colors"
+                  >
+                    {link.label} <ArrowRight size={14} />
+                  </a>
+                ))}
+              </motion.div>
               
               <motion.div variants={fadeUp} className="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
                 {[
@@ -673,6 +693,14 @@ export default function App() {
                       >
                         Learn More <Plus size={14} className="group-hover:rotate-90 transition-transform duration-500" />
                       </button>
+                      {prog.landing && (
+                        <a
+                          href={prog.landing.href}
+                          className="mt-4 inline-flex items-center gap-2 text-[13px] font-black text-brand-accent hover:underline underline-offset-4"
+                        >
+                          {prog.landing.label} 비용·진행 방식 보기 <ArrowRight size={14} />
+                        </a>
+                      )}
                     </motion.div>
                   ))}
                 </div>
@@ -736,10 +764,18 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="mt-20 pt-12 border-t border-brand-light-gray flex items-center justify-between">
+                  <div className="mt-20 pt-12 border-t border-brand-light-gray flex flex-wrap items-center justify-between gap-6">
                     <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
                       <Button className="px-12 py-8 bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors">프로그램 신청하기</Button>
                     </a>
+                    {selectedProgram.landing && (
+                      <a
+                        href={selectedProgram.landing.href}
+                        className="inline-flex items-center gap-2 text-sm font-black text-brand-accent hover:underline underline-offset-4"
+                      >
+                        비용·진행 방식 보기 <ArrowRight size={16} />
+                      </a>
+                    )}
                     <div className="text-[10px] font-black uppercase tracking-widest text-brand-gray flex items-center gap-3">
                       SEHYUN T Strategy Lab <Sparkles size={14} className="text-brand-accent" />
                     </div>
