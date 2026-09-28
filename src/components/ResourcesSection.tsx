@@ -22,12 +22,33 @@ interface ResourceItem {
   lockIv?: string;
   lockIter?: number;
   lockCipher?: string;
+  category?: '대입' | '고입';
 }
+
+const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' => {
+  if (item.category) return item.category;
+  
+  const text = `${item.title} ${item.description || ''} ${item.content || ''}`.toLowerCase();
+  
+  const 고입Keywords = ['외고', '국제고', '자사고', '특목고', '고입', '중학생', '중3', '자소서', '면접'];
+  
+  for (const keyword of 고입Keywords) {
+    if (text.includes(keyword)) {
+      const context = text.substring(Math.max(0, text.indexOf(keyword) - 10), text.indexOf(keyword) + keyword.length + 10);
+      if (!context.includes('대입') || text.indexOf(keyword) < text.indexOf('대입')) {
+        return '고입';
+      }
+    }
+  }
+  
+  return '대입';
+};
 
 export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) => {
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'대입' | '고입'>('대입');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isAdminState, setIsAdminState] = useState<boolean>(
     propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === "ahrah0365@gmail.com")
@@ -38,6 +59,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [editingItem, setEditingItem] = useState<ResourceItem | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState<'대입' | '고입'>('대입');
   const [fileType, setFileType] = useState('pdf');
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
   const [externalUrl, setExternalUrl] = useState('');
@@ -196,6 +218,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         description: description.trim(),
         fileType: fileType,
         storagePath: storagePath || null,
+        category: category,
       };
 
       const shouldEncrypt = resourcePassword.trim() && !unlockExisting;
@@ -266,6 +289,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
       setTitle('');
       setDescription('');
+      setCategory('대입');
       setFileType('pdf');
       setFile(null);
       setExternalUrl('');
@@ -290,6 +314,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     setEditingItem(item);
     setTitle(item.title);
     setDescription(item.description || '');
+    setCategory(item.category || '대입');
     setFileType(item.fileType);
     
     if (item.fileType === 'article' && item.content) {
@@ -509,10 +534,13 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     return elements;
   };
 
-  const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredItems = items
+    .filter(item => {
+      const matchesTab = classifyResourceCategory(item) === selectedTab;
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesTab && matchesSearch;
+    });
 
   return (
     <section id="resources" className="py-40 px-6 lg:px-8 bg-brand-secondary">
@@ -543,6 +571,30 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
               </button>
             )}
           </div>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="mb-8 flex gap-2 sm:gap-4">
+          <button
+            onClick={() => setSelectedTab('대입')}
+            className={`flex-1 sm:flex-initial px-6 sm:px-12 py-4 text-base sm:text-lg font-black uppercase tracking-tight transition-all ${
+              selectedTab === '대입'
+                ? 'bg-brand-text text-brand-bg'
+                : 'bg-brand-bg text-brand-text border border-brand-light-gray hover:border-brand-text'
+            }`}
+          >
+            대입
+          </button>
+          <button
+            onClick={() => setSelectedTab('고입')}
+            className={`flex-1 sm:flex-initial px-6 sm:px-12 py-4 text-base sm:text-lg font-black uppercase tracking-tight transition-all ${
+              selectedTab === '고입'
+                ? 'bg-brand-text text-brand-bg'
+                : 'bg-brand-bg text-brand-text border border-brand-light-gray hover:border-brand-text'
+            }`}
+          >
+            고입
+          </button>
         </div>
 
         {loading ? (
@@ -642,6 +694,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
               if (!uploading) {
                 setIsUploadOpen(false);
                 setEditingItem(null);
+                setTitle('');
+                setDescription('');
+                setCategory('대입');
                 setArticleContent('');
                 setHtmlContent('');
                 setResourcePassword('');
@@ -662,6 +717,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 onClick={() => {
                   setIsUploadOpen(false);
                   setEditingItem(null);
+                  setTitle('');
+                  setDescription('');
+                  setCategory('대입');
                   setArticleContent('');
                   setHtmlContent('');
                   setResourcePassword('');
@@ -724,6 +782,19 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     className="w-full bg-brand-secondary border border-brand-light-gray h-12 px-4 text-xs font-bold focus:border-brand-text outline-none transition-colors"
                   />
                   <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">빈 칸으로 두면 오늘 날짜가 자동 설정됩니다. 과거 날짜 선택 가능.</p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">카테고리</label>
+                  <select
+                    value={category}
+                    onChange={e => setCategory(e.target.value as '대입' | '고입')}
+                    className="w-full bg-brand-secondary border border-brand-light-gray h-12 px-4 text-xs font-bold focus:border-brand-text outline-none transition-colors"
+                  >
+                    <option value="대입">대입</option>
+                    <option value="고입">고입</option>
+                  </select>
+                  <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">자료가 표시될 탭을 선택하세요.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
