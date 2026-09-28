@@ -64,8 +64,8 @@ function ensureDir(dir: string) {
 
 // Fetch resources from Firestore using Web SDK (for public access)
 async function fetchResourcesPublic(): Promise<ResourceItem[]> {
-  const { initializeApp: webInitializeApp, getApps: webGetApps } = await import('firebase/app');
-  const { getFirestore: webGetFirestore, collection, getDocs, query, orderBy } = await import('firebase/firestore');
+  const { initializeApp: webInitializeApp, getApps: webGetApps, deleteApp } = await import('firebase/app');
+  const { getFirestore: webGetFirestore, collection, getDocs, query, orderBy, terminate } = await import('firebase/firestore');
 
   const firebaseConfig = {
     apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
@@ -82,26 +82,65 @@ async function fetchResourcesPublic(): Promise<ResourceItem[]> {
   const resources: ResourceItem[] = [];
   
   try {
-    const q = query(collection(db, 'resources'), orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    
-    querySnapshot.forEach((doc) => {
-      resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
-    });
-  } catch (orderErr) {
-    console.warn('Ordered query failed, falling back to unordered:', orderErr);
-    const { getDocs: getDocsPlain, collection: collectionPlain } = await import('firebase/firestore');
-    const querySnapshot = await getDocsPlain(collectionPlain(db, 'resources'));
-    
-    querySnapshot.forEach((doc) => {
-      resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
-    });
-    
-    resources.sort((a, b) => {
-      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-      return timeB - timeA;
-    });
+    // Add timeout to Firestore operations (30 seconds)
+    const fetchWithTimeout = async () => {
+      const q = query(collection(db, 'resources'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      
+      querySnapshot.forEach((doc) => {
+        resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
+      });
+    };
+
+    await Promise.race([
+      fetchWithTimeout(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firestore fetch timeout')), 30000)
+      )
+    ]);
+  } catch (orderErr: any) {
+    if (orderErr.message === 'Firestore fetch timeout') {
+      console.warn('⚠️  Firestore fetch timed out after 30 seconds');
+    } else {
+      console.warn('Ordered query failed, falling back to unordered:', orderErr.message);
+      
+      try {
+        const fetchUnorderedWithTimeout = async () => {
+          const querySnapshot = await getDocs(collection(db, 'resources'));
+          
+          querySnapshot.forEach((doc) => {
+            resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
+          });
+          
+          resources.sort((a, b) => {
+            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return timeB - timeA;
+          });
+        };
+
+        await Promise.race([
+          fetchUnorderedWithTimeout(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Firestore fetch timeout')), 30000)
+          )
+        ]);
+      } catch (fallbackErr: any) {
+        if (fallbackErr.message === 'Firestore fetch timeout') {
+          console.warn('⚠️  Firestore unordered fetch also timed out');
+        } else {
+          console.warn('⚠️  Fallback fetch also failed:', fallbackErr.message);
+        }
+      }
+    }
+  } finally {
+    // Clean up Firestore connection
+    try {
+      await terminate(db);
+      await deleteApp(app);
+    } catch (cleanupErr) {
+      console.warn('Warning: Could not clean up Firebase app:', cleanupErr);
+    }
   }
 
   return resources;
@@ -249,8 +288,15 @@ async function main() {
   try {
     // Fetch resources from Firestore
     console.log('📦 Fetching resources from Firestore...');
-    const resources = await fetchResourcesPublic();
-    console.log(`✅ Found ${resources.length} resources`);
+    let resources: ResourceItem[] = [];
+    
+    try {
+      resources = await fetchResourcesPublic();
+      console.log(`✅ Found ${resources.length} resources`);
+    } catch (fetchError) {
+      console.warn('⚠️  Failed to fetch resources from Firestore:', fetchError);
+      console.log('⚠️  Continuing with empty resource list...');
+    }
 
     // Filter out locked resources
     const publicResources = resources.filter(r => !r.locked);
@@ -269,13 +315,13 @@ async function main() {
     });
     console.log(`✅ Generated ${publicResources.length} resource pages`);
 
-    // Generate sitemap.xml
+    // Generate sitemap.xml (always, even if no resources)
     console.log('🗺️  Generating sitemap.xml...');
     const sitemap = generateSitemap(publicResources);
     fs.writeFileSync(path.join(DIST_DIR, 'sitemap.xml'), sitemap);
     console.log('✅ Generated sitemap.xml');
 
-    // Generate robots.txt
+    // Generate robots.txt (always)
     console.log('🤖 Generating robots.txt...');
     const robotsTxt = generateRobotsTxt();
     fs.writeFileSync(path.join(DIST_DIR, 'robots.txt'), robotsTxt);
@@ -288,8 +334,29 @@ async function main() {
     
   } catch (error) {
     console.error('❌ Error during static site generation:', error);
-    process.exit(1);
+    
+    // Even on error, ensure basic files exist
+    try {
+      ensureDir(DIST_DIR);
+      
+      if (!fs.existsSync(path.join(DIST_DIR, 'sitemap.xml'))) {
+        console.log('⚠️  Generating minimal sitemap.xml...');
+        const minimalSitemap = generateSitemap([]);
+        fs.writeFileSync(path.join(DIST_DIR, 'sitemap.xml'), minimalSitemap);
+      }
+      
+      if (!fs.existsSync(path.join(DIST_DIR, 'robots.txt'))) {
+        console.log('⚠️  Generating robots.txt...');
+        const robotsTxt = generateRobotsTxt();
+        fs.writeFileSync(path.join(DIST_DIR, 'robots.txt'), robotsTxt);
+      }
+    } catch (recoveryError) {
+      console.error('❌ Could not recover from error:', recoveryError);
+    }
   }
+  
+  // Explicitly exit to ensure Node process terminates
+  process.exit(0);
 }
 
 main();
