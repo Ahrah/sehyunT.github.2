@@ -77,7 +77,11 @@ async function fetchResourcesPublic(): Promise<ResourceItem[]> {
   };
 
   const app = webGetApps().length === 0 ? webInitializeApp(firebaseConfig, 'ssg-app') : webGetApps()[0];
-  const db = webGetFirestore(app);
+  
+  // Use the specific Firestore database ID if configured (matches live app behavior)
+  const db = firebaseAppletConfig.firestoreDatabaseId
+    ? webGetFirestore(app, firebaseAppletConfig.firestoreDatabaseId)
+    : webGetFirestore(app);
 
   const resources: ResourceItem[] = [];
   
@@ -300,7 +304,8 @@ async function main() {
 
     // Filter out locked resources
     const publicResources = resources.filter(r => !r.locked);
-    console.log(`🔓 ${publicResources.length} public resources (${resources.length - publicResources.length} locked)`);
+    const lockedCount = resources.length - publicResources.length;
+    console.log(`📊 Resource counts: ${publicResources.length} unlocked, ${lockedCount} locked (total: ${resources.length})`);
 
     // Ensure dist and resources directories exist
     ensureDir(DIST_DIR);
