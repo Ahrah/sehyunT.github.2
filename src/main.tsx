@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { initHomeEnhancements } from './homeEnhancements';
+import { initHomeHeadlineFixes } from './homeHeadlineFixes';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -11,3 +12,4 @@ createRoot(document.getElementById('root')!).render(
 );
 
 initHomeEnhancements();
+initHomeHeadlineFixes();
