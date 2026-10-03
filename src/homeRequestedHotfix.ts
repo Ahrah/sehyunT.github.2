@@ -16,11 +16,19 @@ function allTextElements(selector: string) {
 function applyRequestedHotfix() {
   hotfixScheduled = false;
 
-  // 1) Keep "STEP을" together on the same line in the hero.
+  // 1) Keep the whole "학생의 다음 STEP을" phrase together on one line in the hero.
   const heroTitle = allTextElements('main h1').find((el) => el.textContent?.includes('입시에 더해'));
-  if (heroTitle && heroTitle.dataset.stepParticleFix !== '1') {
-    heroTitle.dataset.stepParticleFix = '1';
-    heroTitle.innerHTML = '입시에 더해,<br /><span class="hero-emphasis">학생의 다음 STEP을</span><br />설계합니다.';
+  if (heroTitle) {
+    if (heroTitle.dataset.stepParticleFix !== '2') {
+      heroTitle.dataset.stepParticleFix = '2';
+      heroTitle.innerHTML = '입시에 더해,<br /><span class="hero-emphasis hero-step-line">학생의 다음 STEP을</span><br />설계합니다.';
+    }
+
+    const stepLine = heroTitle.querySelector<HTMLElement>('.hero-step-line');
+    if (stepLine) {
+      stepLine.style.whiteSpace = 'nowrap';
+      stepLine.style.display = 'inline-block';
+    }
   }
 
   // 2) Remove only the first sentence from the Programs intro.
@@ -48,14 +56,23 @@ function applyRequestedHotfix() {
     }
   });
 
-  // 5) Belief paragraph: change typeface and reduce weight.
-  const beliefCopy = allTextElements('#about p').find((el) => el.textContent?.startsWith('학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라'));
+  // 5) Belief paragraph: change typeface, reduce weight, and wrap the full sentence in quotation marks.
+  const beliefCopy = allTextElements('#about p').find((el) => {
+    const text = el.textContent?.trim() || '';
+    return text.startsWith('학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라') ||
+      text.startsWith('"학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라');
+  });
   if (beliefCopy) {
     ensureSerifFont();
     beliefCopy.style.fontFamily = '"Noto Serif KR", serif';
     beliefCopy.style.fontWeight = '400';
     beliefCopy.style.letterSpacing = '-0.025em';
     beliefCopy.style.lineHeight = '1.78';
+
+    const text = beliefCopy.textContent?.trim() || '';
+    if (!text.startsWith('"') || !text.endsWith('"')) {
+      beliefCopy.textContent = `"${text.replace(/^"|"$/g, '')}"`;
+    }
   }
 
   // 6) Remove the icons above these two belief items only.
