@@ -23,15 +23,14 @@ const homePageContent = `
     <section class="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
         <div class="mb-10 inline-flex items-center gap-2 rounded-sm border-l-2 border-brand-accent bg-brand-secondary px-4 py-2 text-xs font-bold uppercase tracking-widest text-brand-text">
-          Premium Admissions Strategy
+          학생마다 다른 길을 설계합니다
         </div>
         <h1 class="text-6xl md:text-8xl font-extrabold leading-[1] tracking-tighter mb-8 italic">
-          DESIGN YOUR <br />
-          <span class="text-brand-accent not-italic">SUCCESS.</span>
+          입시가 아니라,<br />
+          <span class="text-brand-accent not-italic">학생의 다음</span>을 설계합니다.
         </h1>
         <p class="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-light">
-          합격을 넘어, 학생의 고유한 서사와 
-          지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
+          진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
           <a href="/saenggibu-consulting/">생기부 컨설팅</a>
@@ -57,21 +56,19 @@ const homePageContent = `
       <div class="max-w-7xl mx-auto">
         <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Philosophy</p>
         <h2 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-brand-text mb-12">
-          성적을 넘어, <br />방식의 <br />혁신.
+          좋은 전략은<br />학생을 닮아야 합니다.
         </h2>
         <div class="space-y-12">
           <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">나만의 고유한 서사 구축</h3>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">연결된 성장</h3>
             <p class="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
-              단순한 스펙 나열이 아닌, 학생의 고유한 관심사와 문제의식을 
-              설득력 있는 성장 이야기로 연결하여 독보적인 경쟁력을 만듭니다.
+              진로, 수업, 탐구와 기록이 하나의 맥락 안에서 이어지도록 설계합니다.
             </p>
           </div>
           <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">스스로 움직이는 학습 시스템</h3>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">학생의 주도권</h3>
             <p class="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
-              입시는 성장의 과정입니다. 스스로 목표를 설정하고 
-              끝까지 완주할 수 있는 단단한 기초와 학습 구조를 함께 설계합니다.
+              결과물을 대신 만들기보다 학생이 이해하고 선택하고 말하는 힘을 키웁니다.
             </p>
           </div>
         </div>
@@ -81,8 +78,8 @@ const homePageContent = `
     <!-- Programs Section -->
     <section class="py-48 px-6 lg:px-12 max-w-7xl mx-auto">
       <div class="mb-32">
-        <p class="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Professional Curriculum</p>
-        <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] uppercase leading-none">Programs</h2>
+        <p class="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Programs</p>
+        <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] leading-none">지금 필요한 한 가지부터</h2>
         <p class="text-brand-gray max-w-sm font-light text-base md:text-lg leading-[1.6] mt-8 italic">
           단순한 입시 관리가 아닌, 체계적인 분석을 기반으로 한 맞춤형 솔루션.
         </p>
@@ -91,27 +88,42 @@ const homePageContent = `
       <div class="space-y-16">
         <!-- Career & Middle -->
         <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">진로 및 고입 전략</h3>
+          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">진로·고입 전략</h3>
           <p class="text-brand-gray">중학생 시기는 성적 향상을 넘어, 자신의 흥미와 학습 방식을 발견하는 골든타임입니다.</p>
         </div>
 
         <!-- Learning Coaching -->
         <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자기주도학습 솔루션</h3>
+          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자기주도학습</h3>
           <p class="text-brand-gray">모두에게 맞는 공부법은 없습니다. 학생의 패턴에 최적화된 공부 엔진을 설계합니다.</p>
         </div>
 
         <!-- Specialized Prep -->
         <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">특목·자사고 입시</h3>
+          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자소서·면접</h3>
           <p class="text-brand-gray">자기소개서 집중 컨설팅, 면접 대비, 공통문항 특강을 통한 완벽한 입시 준비.</p>
         </div>
 
         <!-- Student Record -->
         <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">고등학교 생기부·대입</h3>
+          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">생기부·수시 전략</h3>
           <p class="text-brand-gray">학생부종합전형 통합 컨설팅 및 수시 지원 전략으로 합격을 설계합니다.</p>
         </div>
+      </div>
+    </section>
+
+    <!-- Strategy Map Section -->
+    <section class="bg-brand-text py-40 px-6 lg:px-8 text-brand-bg">
+      <div class="max-w-7xl mx-auto">
+        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Sehyun T Strategy Map</p>
+        <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-12">합격보다 오래 남는 성장의 설계도</h2>
+        <ol class="space-y-8">
+          <li><strong>01 학생을 읽습니다</strong> — 관심사, 학습 습관과 경험을 입체적으로 봅니다.</li>
+          <li><strong>02 핵심 질문을 찾습니다</strong> — 선택과 보완 지점을 선명하게 정리합니다.</li>
+          <li><strong>03 성장의 흐름을 설계합니다</strong> — 진로, 교과, 탐구와 기록을 연결합니다.</li>
+          <li><strong>04 학생의 언어로 실행합니다</strong> — 이해하고 말할 수 있는 활동과 학습 루틴으로 옮깁니다.</li>
+          <li><strong>05 끝까지 점검하고 다듬습니다</strong> — 실행 결과와 다음 선택까지 정교화합니다.</li>
+        </ol>
       </div>
     </section>
 
@@ -120,8 +132,8 @@ const homePageContent = `
       <div class="max-w-5xl mx-auto">
         <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
         <h2 class="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
-          Master your <br />
-          <span class="text-brand-accent not-italic">Future.</span>
+          학생의 다음 장면을<br />
+          <span class="text-brand-accent not-italic">함께 설계해볼까요?</span>
         </h2>
         <div class="flex flex-col sm:flex-row justify-center gap-8 mb-32">
           <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">

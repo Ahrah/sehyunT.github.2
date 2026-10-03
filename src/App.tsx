@@ -3,26 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ArrowRight, CheckCircle2, GraduationCap, MessageCircle, 
-  NotebookPen, Sparkles, Target, Users, BookOpen, 
-  Layers, Quote, Mail, Instagram, Menu, X, ArrowUpRight,
-  ChevronDown, Award, BookCheck, ExternalLink, Plus, LogOut, User as UserIcon,
-  ChevronRight
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  ChevronDown,
+  Compass,
+  FileText,
+  Instagram,
+  LogOut,
+  Mail,
+  Menu,
+  MessageCircle,
+  Plus,
+  ShieldAlert,
+  Sparkles,
+  Target,
+  User as UserIcon,
+  Users,
+  X,
 } from 'lucide-react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { auth } from './lib/firebase';
 import { AuthModal } from './components/AuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MyPage } from './components/MyPage';
-import { ShieldAlert } from 'lucide-react';
-import { GallerySection } from './components/GallerySection';
 import { ResourcesSection } from './components/ResourcesSection';
 import { LegalModal } from './components/LegalModals';
 
-// --- Types ---
 interface Program {
   title: string;
   subtitle: string;
@@ -33,370 +44,245 @@ interface Program {
   landing?: { href: string; label: string };
 }
 
-const ADMIN_EMAIL = "ahrah0365@gmail.com";
+interface ProgramCategory {
+  id: string;
+  number: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: typeof Compass;
+  programs: Program[];
+}
 
-// --- Data ---
+const ADMIN_EMAIL = 'ahrah0365@gmail.com';
+const CONSULT_URL = 'https://tally.so/r/KYrWDz';
 
-const programCategories = [
+const programCategories: ProgramCategory[] = [
   {
-    id: "career",
-    title: "Career & Middle",
-    subtitle: "진로 및 고입 전략",
+    id: 'career',
+    number: '01',
+    eyebrow: '중학생 · 예비고',
+    title: '진로·고입 전략',
+    description: '관심사와 학습 성향을 발견하고, 학교 선택부터 고교 생활의 첫 방향까지 연결합니다.',
+    icon: Compass,
     programs: [
       {
-        title: "Career Direction Consulting",
-        subtitle: "진로 컨설팅",
-        desc: "중학생 시기는 성적 향상을 넘어, 자신의 흥미와 학습 방식을 발견하는 골든타임입니다.",
-        content: "단순한 직업 추천이나 적성검사 해석을 넘어 학생의 관심사, 독서 성향, 탐구 방식, 학습 태도를 입체적으로 분석합니다. 장기적으로 지속 가능한 학업 방향을 제안하며, 이는 고등학교 선택과 학생부 로드맵의 기초가 됩니다.",
-        features: ["진로 관심사 및 학업 성향 분석", "탐구 분야 확장 방향 제안", "독서 및 활동 로드맵 설계", "고등학교 진학 방향 연결"],
-        target: ["진로 방향이 자주 바뀌는 학생", "좋아하는 분야를 찾고 싶은 학생", "학업과 진로의 연결고리가 필요한 학생"]
+        title: 'Career Direction Consulting',
+        subtitle: '진로 컨설팅',
+        desc: '좋아하는 것과 잘하는 것을 입시의 방향으로 바꿉니다.',
+        content: '단순한 직업 추천이나 적성검사 해석을 넘어 학생의 관심사, 독서 성향, 탐구 방식, 학습 태도를 입체적으로 분석합니다. 장기적으로 지속 가능한 학업 방향을 제안하며, 이는 고등학교 선택과 학생부 로드맵의 기초가 됩니다.',
+        features: ['진로 관심사 및 학업 성향 분석', '탐구 분야 확장 방향 제안', '독서 및 활동 로드맵 설계', '고등학교 진학 방향 연결'],
+        target: ['진로 방향이 자주 바뀌는 학생', '좋아하는 분야를 찾고 싶은 학생', '학업과 진로의 연결고리가 필요한 학생'],
       },
       {
-        title: "Pre-High School Strategy",
-        subtitle: "고등학교 입학 전 컨설팅",
-        desc: "중3 겨울방학, 고등학교 3년의 성패를 결정짓는 가장 중요한 설계의 시간입니다.",
-        content: "진학 예정 학교의 특징과 학업 환경을 분석하여 입학 후의 학생부 운영과 자기주도학습 루틴을 미리 구축합니다. 불필요한 스펙 경쟁 대신 학생의 성향에 맞는 활동 구조를 정립하여 고교 생활의 시행착오를 최소화합니다.",
-        features: ["진학 예정 고교별 생활 전략", "학생부 운영 및 세특 구조 이해", "진로 기반 활동 흐름 설계", "과목 선택 및 학업 방향 조언"],
-        target: ["상위권 고교 진학 예정 학생", "입학 전 학생부 전략이 필요한 학생", "고등학교 생활에 대한 불안이 있는 학생"]
-      }
-    ]
+        title: 'Pre-High School Strategy',
+        subtitle: '고등학교 입학 전 컨설팅',
+        desc: '중3 겨울, 고등학교 3년의 시행착오를 줄입니다.',
+        content: '진학 예정 학교의 특징과 학업 환경을 분석하여 입학 후의 학생부 운영과 자기주도학습 루틴을 미리 구축합니다. 불필요한 스펙 경쟁 대신 학생의 성향에 맞는 활동 구조를 정립합니다.',
+        features: ['진학 예정 고교별 생활 전략', '학생부 운영 및 세특 구조 이해', '진로 기반 활동 흐름 설계', '과목 선택 및 학업 방향 조언'],
+        target: ['상위권 고교 진학 예정 학생', '입학 전 학생부 전략이 필요한 학생', '고등학교 생활에 대한 불안이 있는 학생'],
+      },
+    ],
   },
   {
-    id: "coaching",
-    title: "Learning Coaching",
-    subtitle: "자기주도학습 솔루션",
+    id: 'learning',
+    number: '02',
+    eyebrow: '학습 습관 · 실행력',
+    title: '자기주도학습',
+    description: '계획을 세우는 데서 끝나지 않고, 학생이 스스로 실행하고 회복하는 공부 구조를 만듭니다.',
+    icon: Target,
     programs: [
       {
-        title: "1:1 Self-Directed Coaching",
-        subtitle: "1:1 자기주도학습 컨설팅",
-        desc: "모두에게 맞는 공부법은 없습니다. 학생의 패턴에 최적화된 공부 엔진을 설계합니다.",
-        content: "단순 관리를 넘어 학생이 공부를 미루는 원인, 집중 유지 환경, 목표 달성 기제를 정밀 분석합니다. 티칭이 아닌 코칭 중심으로 운영되며, 진로 관심사와 학업을 연결하여 장기적인 학습 동기를 부여합니다.",
-        features: ["개인별 학습 습관 및 실행 구조 분석", "과목별 최적화 공부 방식 제안", "스트레스 및 멘탈 관리 프로그램", "맞춤형 학습 루틴 및 교재 설계"],
-        target: ["나만의 공부법을 찾고 싶은 학생", "실행력이 부족해 고민인 학생", "공부 동기와 진로를 연결하고 싶은 학생"]
+        title: '1:1 Self-Directed Coaching',
+        subtitle: '1:1 자기주도학습 컨설팅',
+        desc: '학생마다 다른 공부의 작동 방식을 찾습니다.',
+        content: '단순 관리를 넘어 학생이 공부를 미루는 원인, 집중 유지 환경, 목표 달성 기제를 정밀 분석합니다. 티칭이 아닌 코칭 중심으로 운영되며, 진로 관심사와 학업을 연결하여 장기적인 학습 동기를 만듭니다.',
+        features: ['개인별 학습 습관 및 실행 구조 분석', '과목별 최적화 공부 방식 제안', '스트레스 및 멘탈 관리', '맞춤형 학습 루틴 및 교재 설계'],
+        target: ['나만의 공부법을 찾고 싶은 학생', '실행력이 부족해 고민인 학생', '공부 동기와 진로를 연결하고 싶은 학생'],
       },
       {
-        title: "Group Learning Program",
-        subtitle: "자기주도학습 그룹 프로그램",
-        desc: "함께 성장하는 힘. 사고의 교류와 토론을 통해 학습의 깊이를 더하는 훈련입니다.",
-        content: "학습 플랜 설계부터 비문학 독해, 정보 구조화 훈련을 동료들과 함께 수행합니다. 자신의 사고 과정을 언어화하고 타인의 관점을 수용하며 사고의 폭을 확장하는 실전 학습 훈련 과정입니다.",
-        features: ["실행 가능한 학습 루틴 공동 설계", "비문학 및 원서 기반 논리 독해 훈련", "토론을 통한 활동 기록 및 표현 훈련", "면접 대비 사고 구조화 연습"],
-        target: ["혼자서는 방향 유지가 힘든 학생", "독해력과 사고력을 키우고 싶은 학생", "표현 능력과 활동 기록력을 높이고 싶은 학생"]
-      }
-    ]
+        title: 'Group Learning Program',
+        subtitle: '자기주도학습 그룹 프로그램',
+        desc: '함께 읽고 말하며 사고의 깊이를 키웁니다.',
+        content: '학습 플랜 설계부터 비문학 독해, 정보 구조화 훈련을 동료들과 함께 수행합니다. 자신의 사고 과정을 언어화하고 타인의 관점을 수용하며 사고의 폭을 확장합니다.',
+        features: ['실행 가능한 학습 루틴 공동 설계', '비문학 및 원서 기반 논리 독해', '토론을 통한 표현 훈련', '면접 대비 사고 구조화'],
+        target: ['혼자서는 방향 유지가 힘든 학생', '독해력과 사고력을 키우고 싶은 학생', '표현 능력을 높이고 싶은 학생'],
+      },
+    ],
   },
   {
-    id: "prep",
-    title: "Specialized Prep",
-    subtitle: "특목·자사고 입시",
+    id: 'admissions',
+    number: '03',
+    eyebrow: '특목고 · 자사고',
+    title: '자소서·면접',
+    description: '학생의 경험을 설득력 있는 언어로 정리하고, 어떤 질문에도 자기 생각을 말하도록 훈련합니다.',
+    icon: MessageCircle,
     programs: [
       {
-        title: "Admissions Consulting",
-        landing: { href: "/jasoseo-consulting/", label: "자소서 컨설팅" },
-        subtitle: "자기소개서 집중 컨설팅",
-        desc: "나의 경험이 학교의 인재상과 만나는 지점. 설득력 있는 서사를 설계합니다.",
-        content: "단순 첨삭을 넘어 학생의 모든 활동과 경험을 재해석합니다. 핵심 메시지를 도출하고 문항별 스토리라인을 구성하며, 최종적으로 면접과의 연결성까지 고려한 완성도 높은 서사를 만듭니다.",
-        features: ["자기소개서 핵심 스토리라인 설계", "개별 경험 큐레이션 및 연결", "학교별 강조 포인트 심층 분석", "면접 연계용 질문 리스트 추출"],
-        target: ["특목·자사고 지원 예정 학생", "경험은 많으나 정리가 안 되는 학생", "나만의 차별화된 서사가 필요한 학생"]
+        title: 'Admissions Consulting',
+        subtitle: '자기소개서 집중 컨설팅',
+        desc: '경험의 나열을 학생만의 서사로 바꿉니다.',
+        content: '단순 첨삭을 넘어 학생의 활동과 경험을 재해석합니다. 핵심 메시지를 도출하고 문항별 스토리라인을 구성하며, 면접과의 연결성까지 고려한 서사를 만듭니다.',
+        features: ['자기소개서 핵심 스토리라인 설계', '개별 경험 큐레이션 및 연결', '학교별 강조 포인트 분석', '면접 연계 질문 리스트 추출'],
+        target: ['특목·자사고 지원 예정 학생', '경험은 많으나 정리가 안 되는 학생', '차별화된 서사가 필요한 학생'],
+        landing: { href: '/jasoseo-consulting/', label: '자소서 컨설팅' },
       },
       {
-        title: "Interview Coaching",
-        landing: { href: "/interview-consulting/", label: "면접 컨설팅" },
-        subtitle: "특목·자사고 면접 대비",
-        desc: "암기가 아닌 사고력을 증명하는 시간. 실전보다 더 실전 같은 훈련입니다.",
-        content: "학교별 면접 유형을 분석하고 예상 질문에 대한 구조적 답변 능력을 키웁니다. 특히 면접 태도와 전달력까지 코칭하여 학생이 자신의 경험을 스스로 설명할 수 있도록 훈련합니다.",
-        features: ["3:1 실전 모의면접 시스템 운영", "답변 구조 설계 및 전달력 코칭", "실전 답변 피드백 및 태도 교정", "학생부 기반 압박 면접 시뮬레이션"],
-        target: ["실전 면접 경험이 부족한 학생", "논리적인 말하기가 어려운 학생", "경험의 진정성을 입증하고 싶은 학생"]
+        title: 'Interview Coaching',
+        subtitle: '특목·자사고 면접 대비',
+        desc: '암기보다 사고력과 진정성을 보여주는 답변을 만듭니다.',
+        content: '학교별 면접 유형을 분석하고 예상 질문에 대한 구조적 답변 능력을 키웁니다. 면접 태도와 전달력까지 코칭하여 학생이 자신의 경험을 스스로 설명할 수 있도록 훈련합니다.',
+        features: ['3:1 실전 모의면접', '답변 구조 및 전달력 코칭', '실전 답변 피드백', '학생부 기반 압박 질문 훈련'],
+        target: ['실전 면접 경험이 부족한 학생', '논리적인 말하기가 어려운 학생', '경험의 진정성을 입증하고 싶은 학생'],
+        landing: { href: '/interview-consulting/', label: '면접 컨설팅' },
       },
       {
-        title: "Common Quest Program",
-        subtitle: "특목·자사고 공통문항 특강",
-        desc: "면접의 변별력을 만드는 핵심, 공통문항에 대한 논리적 답변 프레임을 구축합니다.",
-        content: "반복 등장하는 핵심 질문들의 논리를 해부합니다. 답변 자체를 외우는 것이 아니라, 어떤 질문이 나와도 학생의 경험과 사고를 구조화해 전달할 수 있는 사고 프레임을 훈련합니다.",
-        features: ["공통문항 기출 분석 및 유형별 대응", "답변 프레임 설계 및 논리 전개 연습", "실전 답변 훈련 및 즉각 피드백", "발표 및 메시지 전달력 강화"],
-        target: ["공통문항 답변에 두려움이 있는 학생", "사고 과정을 언어화하기 힘든 학생", "실전에서 당황하지 않는 힘을 키울 학생"]
-      }
-    ]
+        title: 'Common Question Program',
+        subtitle: '특목·자사고 공통문항 특강',
+        desc: '낯선 질문에도 흔들리지 않는 사고의 틀을 세웁니다.',
+        content: '반복 등장하는 핵심 질문들의 논리를 해부합니다. 답을 외우는 대신 어떤 질문이 나와도 학생의 경험과 사고를 구조화해 전달할 수 있는 프레임을 훈련합니다.',
+        features: ['공통문항 기출 분석', '유형별 답변 프레임 설계', '즉석 답변 훈련', '발표 및 메시지 전달력 강화'],
+        target: ['공통문항 답변이 어려운 학생', '사고를 말로 정리하기 힘든 학생', '실전 대응력을 키우고 싶은 학생'],
+      },
+    ],
   },
   {
-    id: "high",
-    title: "Student Record",
-    subtitle: "고등학교 생기부·대입",
+    id: 'record',
+    number: '04',
+    eyebrow: '고등학생 · 대입',
+    title: '생기부·수시 전략',
+    description: '세특, 탐구, 수행평가와 지원 전략을 하나의 성장 흐름으로 연결합니다.',
+    icon: FileText,
     programs: [
       {
-        title: "Student Record Strategy",
-        landing: { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
-        subtitle: "학기별 생기부 통합 컨설팅",
-        desc: "학생부는 숫자가 아닌 '연결'입니다. 세특과 탐구활동을 하나의 방향으로 엮습니다.",
-        content: "한 학기 동안의 진로 관심사와 학업 흐름을 기반으로 세특, 탐구활동, 발표, 독서가 유기적으로 이어지도록 설계합니다. 대학이 매력을 느낄 수 있는 장기적인 성장 흐름을 만듭니다.",
-        features: ["학기별 학생부 스토리라인 설계", "심화 세특 및 탐구활동 주제 기획", "교과-진로 연결 실전 활동 설계", "발표 및 보고서 방향성 가이드"],
-        target: ["학생부종합전형을 준비하는 고등학생", "활동 간의 연결성이 부족해 고민인 학생", "심도 있는 세특 기록을 원하는 학생"]
+        title: 'Student Record Strategy',
+        subtitle: '학기별 생기부 통합 컨설팅',
+        desc: '학생부의 여러 기록을 하나의 방향으로 연결합니다.',
+        content: '한 학기 동안의 진로 관심사와 학업 흐름을 기반으로 세특, 탐구활동, 발표, 독서가 유기적으로 이어지도록 설계합니다. 대학이 읽어낼 수 있는 장기적인 성장 흐름을 만듭니다.',
+        features: ['학기별 학생부 스토리라인 설계', '세특 및 탐구활동 주제 기획', '교과-진로 연결 활동 설계', '발표 및 보고서 방향 가이드'],
+        target: ['학생부종합전형을 준비하는 학생', '활동 간 연결성이 부족한 학생', '깊이 있는 세특을 만들고 싶은 학생'],
+        landing: { href: '/saenggibu-consulting/', label: '생기부 컨설팅' },
       },
       {
-        title: "Performance & Statement",
-        landing: { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
-        subtitle: "수행평가·생기부 상시 컨설팅",
-        desc: "단순 결과 요약이 아닌, 학생의 사고 과정이 드러나는 질 높은 기록을 만듭니다.",
-        content: "수행평가와 수시 활동 내용을 단순 정리가 아닌 학생의 탐구 방향과 사고 흐름이 드러나도록 구체화합니다. 발표 및 보고서 작성을 위한 논리 구조와 최종 세특 기재 포인트까지 조력합니다.",
-        features: ["수행평가 주제 구체화 및 방향 설계", "탐구 내용 구조화 및 논리 보완", "보고서 초안 피드백 및 정교화", "생기부 기재용 활동 요약 지원"],
-        target: ["수행평가 주제 선정이 어려운 학생", "탐구 과정을 논리적으로 정리하고 싶은 학생", "실질적인 생기부 기록의 질을 높일 학생"]
+        title: 'Performance & Statement',
+        subtitle: '수행평가·생기부 상시 컨설팅',
+        desc: '결과보다 학생의 사고 과정이 보이는 기록을 만듭니다.',
+        content: '수행평가와 수시 활동 내용을 학생의 탐구 방향과 사고 흐름이 드러나도록 구체화합니다. 발표와 보고서의 논리 구조부터 최종 세특 기재 포인트까지 조력합니다.',
+        features: ['수행평가 주제 구체화', '탐구 내용 구조화', '보고서 초안 피드백', '생기부 기재용 활동 요약'],
+        target: ['수행평가 주제 선정이 어려운 학생', '탐구 과정을 정리하고 싶은 학생', '기록의 질을 높이고 싶은 학생'],
+        landing: { href: '/saenggibu-consulting/', label: '생기부 컨설팅' },
       },
       {
-        title: "Early Admissions Strategy",
-        subtitle: "대학 수시 지원 전략",
-        desc: "가장 유리한 싸움을 위한 필승의 조합. 데이터와 서사를 결합한 최종 전략.",
-        content: "내신 성적과 생기부의 흐름, 면접 가능성을 종합하여 최적의 지원 조합을 제안합니다. 전형별 적합도를 검토하고 합격 가능성과 리스크를 철저히 분석하여 필승의 지원 카드를 설계합니다.",
-        features: ["학생부 정성 평가 기반 대학 라인 제안", "수시 전형별 적합도 및 경쟁력 분석", "최종 지원 학과 및 조합 시뮬레이션", "합격 가능성 및 리스크 정밀 진단"],
-        target: ["수시 지원을 앞둔 고3 및 수험생", "내 생기부로 어느 대학이 가능할지 궁금한 분", "전략적인 상향 지원 조합을 찾는 분"]
-      }
-    ]
-  }
+        title: 'Early Admissions Strategy',
+        subtitle: '대학 수시 지원 전략',
+        desc: '데이터와 학생의 강점을 결합해 지원 조합을 설계합니다.',
+        content: '내신 성적과 생기부의 흐름, 면접 가능성을 종합하여 최적의 지원 조합을 제안합니다. 전형별 적합도를 검토하고 합격 가능성과 리스크를 함께 분석합니다.',
+        features: ['학생부 정성 평가', '전형별 적합도 분석', '지원 학과 및 조합 시뮬레이션', '가능성과 리스크 진단'],
+        target: ['수시 지원을 앞둔 고3', '지원 대학 범위가 궁금한 학생', '전략적인 지원 조합이 필요한 학생'],
+      },
+    ],
+  },
 ];
 
-const processSteps = [
-  { num: "01", title: "심층 진단", desc: "다각도 심층 진단을 통한 학생의 현재 위치와 잠재력을 파악합니다." },
-  { num: "02", title: "약점 분석", desc: "기존 학생부 기록과 학습 패턴의 강약점을 분석하고 보완 지점을 도출합니다." },
-  { num: "03", title: "로드맵 수립", desc: "목표 전형에 최적화된 장기적인 성장 로드맵과 입시 전략을 수립합니다." },
-  { num: "04", title: "결과물 기획", desc: "핵심 탐구 활동과 세특, 면접으로 이어지는 구체적인 결과물을 기획합니다." },
-  { num: "05", title: "정교화", desc: "실행 과정을 밀착 검토하고, 학생만의 고유한 언어로 서사를 고도화합니다." },
-  { num: "06", title: "최종 검증", desc: "기록과 면접의 일관성을 확보하고 경쟁력을 극대화하는 최종 점검을 마칩니다." },
-];
-
-const compareTable = [
-  ["단기 합격 중심", "장기 성장 중심"],
-  ["획일적 전략", "학생 맞춤형 전략"],
-  ["스펙 나열", "스토리·연결성 중심"],
-  ["단순 관리", "자기주도학습·멘탈 관리"],
-  ["결과 중심", "사고력·동기까지 관리"],
+const strategySteps = [
+  { number: '01', title: '학생을 읽습니다', label: 'Discover', text: '성적표보다 먼저 학생의 관심사, 학습 습관, 스트레스 반응과 지금까지의 경험을 입체적으로 봅니다.' },
+  { number: '02', title: '핵심 질문을 찾습니다', label: 'Define', text: '막연한 진로를 구체적인 질문으로 바꾸고, 학생에게 중요한 선택과 보완 지점을 선명하게 정리합니다.' },
+  { number: '03', title: '성장의 흐름을 설계합니다', label: 'Design', text: '진로, 교과, 탐구, 독서와 기록이 따로 놀지 않도록 하나의 로드맵 안에서 연결합니다.' },
+  { number: '04', title: '학생의 언어로 실행합니다', label: 'Do', text: '대신 만들어주는 결과물이 아니라 학생이 이해하고 말할 수 있는 활동과 학습 루틴으로 옮깁니다.' },
+  { number: '05', title: '끝까지 점검하고 다듬습니다', label: 'Refine', text: '실행 결과를 함께 돌아보고 기록과 면접의 일관성을 높이며 다음 선택까지 이어지도록 정교화합니다.' },
 ];
 
 const studentCases = [
-  {
-    title: "방향이 없던 중학생",
-    text: "관심사와 학습 습관을 재정리해 지원 학교와 자기소개서의 중심축을 설정했습니다.",
-    tag: "고입 전략",
-  },
-  {
-    title: "활동은 많지만 연결성이 약한 고등학생",
-    text: "세특과 탐구활동을 진로 질문 중심으로 재배치해 학생부의 일관성을 강화했습니다.",
-    tag: "학생부 설계",
-  },
-  {
-    title: "계획을 세워도 유지가 어려운 학생",
-    text: "스트레스 반응과 동기 유형을 분석해 실행 가능한 학습 루틴으로 조정했습니다.",
-    tag: "자기주도학습",
-  },
-];
-
-const analysisAxes = [
-  {
-    id: "01",
-    title: "Learning Pattern Analysis",
-    subtitle: "학습 패턴 분석",
-    desc: "단순한 노력을 넘어, 계획 위반의 원인과 집중력 저하 지점을 정밀 분석하여 학생에게 최적화된 학습 루틴을 제안합니다."
-  },
-  {
-    id: "02",
-    title: "Growth Narrative Design",
-    subtitle: "성장 서사 설계",
-    desc: "파편화된 활동들을 하나의 일관된 맥락으로 연결하여, 깊이 있는 학업 역량과 학생만의 성장 잠재력을 증명합니다."
-  },
-  {
-    id: "03",
-    title: "Student Identity Mapping",
-    subtitle: "학생 정체성 매핑",
-    desc: "강요된 진로가 아닌, 학생 본연의 호기심과 몰입의 대상을 발견하여 흔들리지 않는 진정성 있는 정체성을 구축합니다."
-  },
-  {
-    id: "04",
-    title: "Integrated Strategy Planning",
-    subtitle: "통합 전략 설계",
-    desc: "생기부의 모든 항목과 면접 답변이 유기적으로 결합되어, 대학과 고교가 원하는 인재상에 완벽히 부합하도록 가이드합니다."
-  }
-];
-
-const freeOfferings = [
-  {
-    title: "학부모 설명회",
-    desc: "변화하는 입시 트렌드와 성공적인 학생부 전략, 자기주도학습의 핵심 원리를 명쾌하게 짚어드리는 학부모 전용 세션입니다.",
-    tags: ["입시 인사이트", "전략 가이드"],
-    message: "현재 예정된 학부모 설명회가 없습니다."
-  },
-  {
-    title: "자기주도학습 진단",
-    desc: "단순 성적표 너머의 학습 태도와 회복 탄력성을 진단하여, 학생에게 가장 최적화된 공부 엔진을 찾아드립니다.",
-    tags: ["심리-학습 매칭", "엔진 진단"],
-    message: "현재 해당 이벤트는 마감되었습니다."
-  },
-  {
-    title: "학생부 전략 리포트",
-    desc: "현재 학생부의 경쟁력을 객관적으로 진단하고, 목표 대학 합격을 위해 반드시 보완해야 할 전략적 포인트를 체크합니다.",
-    tags: ["생기부 진단", "합격 가능성"],
-    message: "현재 해당 이벤트는 마감되었습니다."
-  }
+  { tag: '진로·고입', before: '관심 분야가 자주 바뀌어 무엇을 준비해야 할지 막막했던 중학생', after: '좋아하는 주제와 학습 경험을 연결해 지원 학교와 자기소개서의 중심 질문을 세웠습니다.' },
+  { tag: '생기부', before: '활동은 많지만 세특과 탐구의 연결이 보이지 않았던 고등학생', after: '진로 질문을 기준으로 활동의 우선순위를 다시 잡아 학생부 전체의 일관성을 높였습니다.' },
+  { tag: '자기주도학습', before: '계획은 잘 세우지만 며칠 뒤면 지쳐 포기하던 학생', after: '집중 시간과 회복 패턴을 반영한 작은 루틴으로 바꾸며 스스로 다시 시작하는 힘을 길렀습니다.' },
 ];
 
 const blogs = [
-  { name: "입시 전략 인사이트", url: "https://blog.naver.com/ahrahsehyun", icon: "N" },
-  { name: "논리·시사 탐구 기록", url: "https://sehyunt-logic.tistory.com/", icon: "T" },
-  { name: "실전 면접 아카이브", url: "https://sehyunt-study.tistory.com/", icon: "S" }
+  { name: '입시 전략 인사이트', url: 'https://blog.naver.com/ahrahsehyun' },
+  { name: '논리·시사 탐구 기록', url: 'https://sehyunt-logic.tistory.com/' },
+  { name: '실전 면접 아카이브', url: 'https://sehyunt-study.tistory.com/' },
 ];
 
-// --- Inlined UI Components ---
-
-const Card = ({ children, className = "", ...props }: { children: ReactNode; className?: string; [key: string]: any }) => (
-  <div {...props} className={`border border-brand-light-gray bg-white transition-all duration-500 ${className}`}>
-    {children}
-  </div>
-);
-
-const Button = ({ children, className = "", variant = "primary" }: { children: ReactNode; className?: string; variant?: "primary" | "outline" | "ghost" }) => {
-  const base = "inline-flex items-center justify-center font-bold transition-all duration-500 px-8 py-4 text-xs tracking-[0.2em] uppercase";
+const Button = ({ children, className = '', variant = 'dark' }: { children: ReactNode; className?: string; variant?: 'dark' | 'light' | 'line' }) => {
   const variants = {
-    primary: "bg-brand-text text-brand-bg hover:bg-brand-accent",
-    outline: "border border-brand-text text-brand-text hover:bg-brand-text hover:text-brand-bg",
-    ghost: "text-brand-text hover:bg-brand-secondary"
+    dark: 'bg-brand-ink text-white hover:bg-brand-accent',
+    light: 'bg-white text-brand-ink hover:bg-brand-mist',
+    line: 'border border-brand-ink/20 text-brand-ink hover:border-brand-ink',
   };
-  return (
-    <button className={`${base} ${variants[variant]} ${className}`}>
-      {children}
-    </button>
-  );
+  return <span className={`inline-flex min-h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-bold transition-colors ${variants[variant]} ${className}`}>{children}</span>;
 };
 
-// --- Animations ---
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.1 } }
-};
-
-// --- Views ---
-
-const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: () => void, user: FirebaseUser | null, onOpenAdmin: () => void, onOpenMyPage: () => void }) => {
+const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: FirebaseUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Logout failed', error);
-    }
-  };
-
   const isAdmin = user?.email === ADMIN_EMAIL;
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const logout = async () => {
+    try { await signOut(auth); } catch (error) { console.error('Logout failed', error); }
+  };
+
+  const closeAnd = (action?: () => void) => {
+    setIsMenuOpen(false);
+    action?.();
+  };
+
+  const links = [
+    ['소개', '#about'],
+    ['프로그램', '#programs'],
+    ['전략 지도', '#strategy'],
+    ['자료실', '#resources'],
+  ];
+
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-brand-bg/95 backdrop-blur-xl border-b border-brand-light-gray py-4' : 'bg-transparent py-8'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <a href="#" className="group flex items-center gap-4">
-          <div className="flex h-12 w-auto items-center justify-center font-black text-xl tracking-tighter">
-            <img 
-              src="/logo-pic.png" 
-              alt="SEHYUNT" 
-              className="h-full w-auto object-contain" 
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const parent = target.parentElement!;
-                parent.classList.add('bg-brand-text', 'text-brand-bg', 'w-12');
-                parent.innerHTML = 'ST';
-              }} 
-            />
-          </div>
-          <div>
-            <div className="font-extrabold text-2xl tracking-tighter text-brand-text">SEHYUN T</div>
-            <div className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-accent">Admissions Lab</div>
+    <nav className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-brand-ink/10 bg-brand-paper/95 py-3 backdrop-blur-xl' : 'bg-transparent py-5'}`}>
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <a href="#top" className="flex items-center gap-3" aria-label="입시는세연쌤 홈">
+          <img src="/logo-pic.png" alt="" className="h-10 w-10 rounded-full object-cover" />
+          <div className="leading-none">
+            <strong className="block text-lg tracking-[-0.04em]">입시는세연쌤</strong>
+            <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.24em] text-brand-accent">Sehyun T Admissions</span>
           </div>
         </a>
 
-        <div className="hidden md:flex items-center gap-12">
-          {['About', 'Programs', 'Resources', 'Contact'].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="text-[13px] font-black uppercase tracking-[0.3em] text-[#52525B] hover:text-brand-accent transition-colors">
-              {item}
-            </a>
-          ))}
-          
-          <div className="flex items-center gap-6 pl-6 border-l border-brand-light-gray">
-            {user && (
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={onOpenMyPage}
-                  className="flex items-center gap-2 hover:text-brand-accent transition-colors"
-                >
-                  {isAdmin ? <ShieldAlert size={14} className="text-brand-accent animate-pulse" /> : <UserIcon size={14} className="text-brand-accent" />}
-                  <span className="text-[13px] font-black uppercase tracking-widest text-brand-text">{user.displayName || user.email?.split('@')[0]}님</span>
-                </button>
-                {isAdmin && (
-                  <button 
-                    onClick={onOpenAdmin}
-                    className="text-[13px] font-black uppercase tracking-widest text-brand-accent hover:underline"
-                  >
-                    Dashboard
-                  </button>
-                )}
-                <button onClick={handleLogout} className="text-brand-gray hover:text-brand-accent transition-colors">
-                  <LogOut size={16} />
-                </button>
-              </div>
-            )}
-            
-            <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
-              <Button className="rounded-none bg-brand-text text-brand-bg px-8 py-3 text-[13px] uppercase font-black tracking-widest hover:bg-brand-accent transition-colors">Get Strategy</Button>
-            </a>
-          </div>
+        <div className="hidden items-center gap-8 lg:flex">
+          {links.map(([label, href]) => <a key={href} href={href} className="text-sm font-semibold text-brand-ink/70 hover:text-brand-ink">{label}</a>)}
+          {user ? (
+            <div className="flex items-center gap-4 border-l border-brand-ink/10 pl-6">
+              <button onClick={onOpenMyPage} className="flex items-center gap-2 text-sm font-bold hover:text-brand-accent">
+                {isAdmin ? <ShieldAlert size={16} /> : <UserIcon size={16} />} {user.displayName || user.email?.split('@')[0]}님
+              </button>
+              {isAdmin && <button onClick={onOpenAdmin} className="text-xs font-black text-brand-accent">관리자</button>}
+              <button onClick={logout} aria-label="로그아웃" className="text-brand-ink/50 hover:text-brand-accent"><LogOut size={17} /></button>
+            </div>
+          ) : <button onClick={onOpenAuth} className="text-sm font-bold text-brand-ink/65 hover:text-brand-ink">로그인</button>}
+          <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="min-h-12 px-6">상담 신청 <ArrowUpRight size={16} /></Button></a>
         </div>
 
-        <button className="md:hidden text-brand-text" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <button onClick={() => setIsMenuOpen(true)} aria-label="메뉴 열기" className="grid h-11 w-11 place-items-center rounded-full border border-brand-ink/15 lg:hidden"><Menu size={21} /></button>
       </div>
 
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="md:hidden fixed inset-0 bg-brand-bg z-50 p-10 flex flex-col justify-center"
-          >
-            <button className="absolute top-10 right-10 text-brand-text" onClick={() => setIsMenuOpen(false)}>
-              <X size={32} />
-            </button>
-            <div className="flex flex-col gap-12">
-              {['About', 'Programs', 'Resources', 'Contact'].map((item) => (
-                <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setIsMenuOpen(false)} className="text-6xl font-black uppercase tracking-tighter text-brand-text hover:text-brand-accent transition-colors">
-                  {item}
-                </a>
-              ))}
-              <div className="pt-8 border-t border-brand-light-gray flex flex-col gap-8">
-                {user ? (
-                   <div className="flex flex-col gap-4">
-                      <button onClick={() => { setIsMenuOpen(false); onOpenMyPage(); }} className="text-xl font-black uppercase tracking-widest text-brand-text text-left">
-                        {user.displayName || user.email}님 안녕하세요.
-                      </button>
-                      {isAdmin && (
-                        <button onClick={() => { setIsMenuOpen(false); onOpenAdmin(); }} className="text-brand-accent font-black uppercase tracking-widest text-left">Dashboard</button>
-                      )}
-                      <button onClick={handleLogout} className="text-brand-accent font-black uppercase tracking-widest text-left">Logout</button>
-                   </div>
-                ) : (
-                  <button onClick={() => { setIsMenuOpen(false); onOpenAuth(); }} className="text-4xl font-black uppercase tracking-tighter text-left">Login</button>
-                )}
-                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full rounded-none py-8 text-xl font-black uppercase">상담 신청</Button>
-                </a>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-brand-ink px-6 py-7 text-white lg:hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-white/60">입시는세연쌤</span>
+              <button onClick={() => setIsMenuOpen(false)} aria-label="메뉴 닫기" className="grid h-12 w-12 place-items-center rounded-full border border-white/20"><X /></button>
+            </div>
+            <div className="flex min-h-[80vh] flex-col justify-center gap-7">
+              {links.map(([label, href], index) => <a key={href} href={href} onClick={() => closeAnd()} className="flex items-center gap-4 text-4xl font-black tracking-[-0.05em]"><span className="text-xs text-brand-coral">0{index + 1}</span>{label}</a>)}
+              <div className="mt-5 border-t border-white/15 pt-7">
+                {user ? <button onClick={() => closeAnd(onOpenMyPage)} className="mr-6 text-base font-bold">마이페이지</button> : <button onClick={() => closeAnd(onOpenAuth)} className="mr-6 text-base font-bold">로그인</button>}
+                {isAdmin && <button onClick={() => closeAnd(onOpenAdmin)} className="text-base font-bold text-brand-coral">관리자</button>}
               </div>
+              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full">상담 신청하기 <ArrowRight size={17} /></Button></a>
             </div>
           </motion.div>
         )}
@@ -405,562 +291,250 @@ const Navbar = ({ onOpenAuth, user, onOpenAdmin, onOpenMyPage }: { onOpenAuth: (
   );
 };
 
+const StrategyMap = () => {
+  const [activeStep, setActiveStep] = useState(0);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveStep(Number((visible.target as HTMLElement).dataset.step));
+    }, { rootMargin: '-30% 0px -45% 0px', threshold: [0.1, 0.35, 0.7] });
+    stepRefs.current.forEach((node) => node && observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section id="strategy" className="bg-brand-ink py-28 text-white sm:py-36 lg:py-44">
+      <div className="mx-auto grid max-w-7xl gap-16 px-6 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-24 lg:px-12">
+        <div className="h-fit lg:sticky lg:top-32">
+          <p className="section-label text-brand-coral">Sehyun T Strategy Map</p>
+          <h2 className="mt-7 text-5xl font-black leading-[0.98] tracking-[-0.06em] sm:text-6xl">합격보다 오래 남는<br />성장의 설계도</h2>
+          <p className="mt-8 max-w-md text-base leading-7 text-white/55">상담은 정답을 대신 주는 일이 아닙니다. 학생이 자기 방향을 이해하고 다음 선택을 해낼 수 있도록 다섯 단계를 함께 걷습니다.</p>
+          <div className="mt-12 hidden lg:block">
+            <div className="relative h-1 overflow-hidden rounded-full bg-white/10">
+              <motion.div className="absolute inset-y-0 left-0 bg-brand-coral" animate={{ width: `${((activeStep + 1) / strategySteps.length) * 100}%` }} transition={reduceMotion ? { duration: 0 } : { duration: 0.45 }} />
+            </div>
+            <div className="mt-4 flex justify-between text-[10px] font-bold tracking-[0.2em] text-white/35"><span>START</span><span>GROWTH</span></div>
+          </div>
+        </div>
+
+        <div>
+          {strategySteps.map((step, index) => (
+            <div key={step.number} ref={(node) => { stepRefs.current[index] = node; }} data-step={index} className="flex min-h-[42vh] border-t border-white/15 py-12 first:border-t-0 lg:min-h-[58vh] lg:py-20">
+              <motion.div animate={{ opacity: activeStep === index ? 1 : 0.38, x: activeStep === index || reduceMotion ? 0 : 14 }} transition={{ duration: reduceMotion ? 0 : 0.4 }} className="grid w-full grid-cols-[auto_1fr] gap-6 sm:gap-10">
+                <span className="pt-2 font-mono text-xs text-brand-coral">{step.number}</span>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white/40">{step.label}</p>
+                  <h3 className="mt-5 text-3xl font-black tracking-[-0.04em] sm:text-5xl">{step.title}</h3>
+                  <p className="mt-7 max-w-xl text-base leading-8 text-white/62 sm:text-lg">{step.text}</p>
+                </div>
+              </motion.div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export default function App() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => onAuthStateChanged(auth, (currentUser) => {
+    setUser(currentUser);
+    setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
+  }), []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, [isAdminOpen]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser?.email === ADMIN_EMAIL) {
-        setIsAdminOpen(true);
-      } else {
-        setIsAdminOpen(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [isAdminOpen]);
-
-  useEffect(() => {
-    if (isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
+    const locked = isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType;
+    document.body.style.overflow = locked ? 'hidden' : 'auto';
+    return () => { document.body.style.overflow = 'auto'; };
   }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen, user, legalModalType]);
 
+  const reveal = reduceMotion ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.2 }, transition: { duration: 0.65 } };
+
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text font-sans antialiased selection:bg-brand-accent/10 selection:text-brand-accent">
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <AuthModal onClose={() => setIsAuthModalOpen(false)} />
-        )}
-      </AnimatePresence>
+    <div id="top" className="min-h-screen bg-brand-paper text-brand-ink selection:bg-brand-coral/35">
+      <AnimatePresence>{isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>{isMyPageOpen && <MyPage onClose={() => setIsMyPageOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>{isAdminOpen && user?.email === ADMIN_EMAIL && <AdminDashboard onBack={() => setIsAdminOpen(false)} />}</AnimatePresence>
+      <LegalModal isOpen={!!legalModalType} type={legalModalType} onClose={() => setLegalModalType(null)} />
 
-      <AnimatePresence>
-        {isMyPageOpen && (
-          <MyPage onClose={() => setIsMyPageOpen(false)} />
-        )}
-      </AnimatePresence>
+      <Navbar user={user} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenAdmin={() => setIsAdminOpen(true)} onOpenMyPage={() => setIsMyPageOpen(true)} />
 
-      <AnimatePresence>
-        {isAdminOpen && user?.email === ADMIN_EMAIL && (
-          <AdminDashboard onBack={() => setIsAdminOpen(false)} />
-        )}
-      </AnimatePresence>
-
-      <LegalModal 
-        isOpen={!!legalModalType} 
-        type={legalModalType} 
-        onClose={() => setLegalModalType(null)} 
-      />
-
-      <Navbar 
-        onOpenAuth={() => setIsAuthModalOpen(true)} 
-        user={user} 
-        onOpenAdmin={() => setIsAdminOpen(true)}
-        onOpenMyPage={() => setIsMyPageOpen(true)}
-      />
-      
       <main>
-              {/* Hero Section */}
-              <section className="relative overflow-hidden pt-48 pb-32 px-6 lg:px-8">
-          <div className="absolute right-0 top-0 h-[500px] w-[500px] bg-brand-accent/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4" />
-          
-          <div className="mx-auto max-w-7xl grid lg:grid-cols-[1.2fr_0.8fr] gap-16 items-center">
-            <motion.div initial="hidden" animate="visible" variants={stagger}>
-              <motion.div variants={fadeUp} className="mb-10 inline-flex items-center gap-2 rounded-sm border-l-2 border-brand-accent bg-brand-secondary px-4 py-2 text-xs font-bold uppercase tracking-widest text-brand-text">
-                Premium Admissions Strategy
-              </motion.div>
-              <motion.h1 variants={fadeUp} className="text-6xl md:text-8xl font-extrabold leading-[1] tracking-tighter mb-8 italic">
-                DESIGN YOUR <br />
-                <span className="text-brand-accent not-italic">SUCCESS.</span>
-              </motion.h1>
-              <motion.p variants={fadeUp} className="text-lg md:text-xl text-[#3F3F46] leading-relaxed max-w-xl mb-12 font-normal">
-                합격을 넘어, 학생의 고유한 서사와 
-                지속 가능한 학습 시스템을 설계하는 프리미엄 전략 컨설팅
-              </motion.p>
-              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4">
-                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
-                  <Button className="px-12 py-8 text-base bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors duration-500 rounded-none uppercase tracking-widest font-bold">
-                    상담 신청하기 <ArrowRight className="ml-3" size={18} />
-                  </Button>
-                </a>
-                <a href="#programs">
-                  <Button variant="outline" className="px-12 py-8 text-base border-brand-text hover:bg-brand-text hover:text-brand-bg transition-all duration-500 rounded-none uppercase tracking-widest font-bold">
-                    프로그램 보기
-                  </Button>
-                </a>
-              </motion.div>
-              <motion.div variants={fadeUp} className="mt-6 flex flex-wrap gap-3" aria-label="컨설팅 바로가기">
-                {[
-                  { href: "/saenggibu-consulting/", label: "생기부 컨설팅" },
-                  { href: "/jasoseo-consulting/", label: "자소서 컨설팅" },
-                  { href: "/interview-consulting/", label: "면접 컨설팅" },
-                ].map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="inline-flex items-center gap-2 border border-brand-light-gray bg-brand-bg px-5 py-3 text-sm font-black text-brand-text hover:border-brand-accent hover:text-brand-accent transition-colors"
-                  >
-                    {link.label} <ArrowRight size={14} />
-                  </a>
-                ))}
-              </motion.div>
-              
-              <motion.div variants={fadeUp} className="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
-                {[
-                  { val: "07+", label: "Years Exp" },
-                  { val: "1:1", label: "Customized" }
-                ].map((stat) => (
-                  <div key={stat.label}>
-                    <div className="text-3xl font-black tracking-tighter text-brand-text">{stat.val}</div>
-                    <div className="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">{stat.label}</div>
-                  </div>
-                ))}
-              </motion.div>
+        <section className="relative overflow-hidden px-6 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40 lg:min-h-[92vh] lg:px-12 lg:pb-20">
+          <div className="hero-orbit hero-orbit-one" />
+          <div className="hero-orbit hero-orbit-two" />
+          <div className="relative mx-auto grid max-w-[1440px] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
+            <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.7 }}>
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-ink/12 bg-white/70 px-4 py-2 text-xs font-bold backdrop-blur"><Sparkles size={14} className="text-brand-accent" /> 학생마다 다른 길을 설계합니다</div>
+              <h1 className="mt-8 max-w-4xl text-[clamp(3.45rem,7vw,7.5rem)] font-black leading-[0.92] tracking-[-0.075em]">
+                입시가 아니라,<br /><span className="hero-emphasis">학생의 다음</span>을<br />설계합니다.
+              </h1>
+              <p className="mt-8 max-w-xl text-lg font-medium leading-8 text-brand-ink/62 sm:text-xl">진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.</p>
+              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
+                <a href="#programs"><Button variant="line" className="w-full bg-white/35 sm:w-auto">프로그램 살펴보기 <ChevronDown size={17} /></Button></a>
+              </div>
+              <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/55">
+                <span>진로에서 입시까지</span><span>학생 중심 1:1 설계</span><span>실행과 기록의 연결</span>
+              </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }} className="relative">
-              <div className="relative aspect-[4/5] bg-brand-secondary overflow-hidden group border border-brand-light-gray shadow-2xl">
-                <img 
-                  src="https://raw.githubusercontent.com/Ahrah/sehyunT.github.io/main/images/profile2.webp" 
-                  alt="조세연" 
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-all duration-1000"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/IMG_1441.JPG";
-                    target.className = "w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000";
-                  }}
-                />
-                <div className="absolute bottom-10 left-10 right-10 bg-brand-text/90 backdrop-blur p-8 text-brand-bg translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
-                  <div className="text-[10px] uppercase tracking-[0.4em] text-brand-accent font-bold mb-2">Founder / CEO</div>
-                  <div className="text-2xl font-black mb-4">조세연</div>
-                  <p className="text-xs text-brand-bg/60 leading-relaxed font-light">
-                    학생마다 맞는 전략은 달라야 합니다. <br />
-                    우리는 숫자 너머의 가능성을 봅니다.
-                  </p>
+            <motion.div initial={reduceMotion ? undefined : { opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reduceMotion ? 0 : 0.9, delay: 0.1 }} className="relative mx-auto w-full max-w-[610px] lg:mr-0">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
+                <img src="/IMG_1441.JPG" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" loading="eager" decoding="async" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-ink/85 via-brand-ink/20 to-transparent px-7 pb-7 pt-32 text-white sm:px-9 sm:pb-9">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-coral">Founder · Admissions Consultant</p>
+                  <p className="mt-2 text-2xl font-black">조세연</p>
                 </div>
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-brand-accent p-6 text-brand-bg font-black italic tracking-tighter text-xl">
-                SEHYUN T
+              <div className="absolute -bottom-7 -left-3 max-w-[260px] rounded-3xl bg-white p-5 shadow-xl sm:-left-10 sm:p-6">
+                <p className="text-sm font-bold leading-6">“학생의 언어와 속도를 지키는 전략이어야 오래 갑니다.”</p>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Philosophy Section */}
-        <section id="about" className="py-40 px-6 lg:px-8 bg-brand-secondary">
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.5fr] gap-24 items-start">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-              <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Philosophy</p>
-              <h2 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-brand-text">
-                성적을 넘어, <br />방식의 <br />혁신.
-              </h2>
+        <section id="programs" className="scroll-mt-20 bg-white py-28 sm:py-36">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+            <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+              <div><p className="section-label text-brand-accent">Programs</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">지금 필요한<br />한 가지부터</h2></div>
+              <p className="max-w-2xl text-lg leading-8 text-brand-ink/60 lg:ml-auto">복잡한 프로그램 목록 대신 학생의 현재 고민에 맞는 네 개의 시작점으로 정리했습니다. 카드를 열면 세부 프로그램과 진행 방향을 확인할 수 있습니다.</p>
             </motion.div>
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="space-y-12">
-              <motion.div variants={fadeUp} className="flex gap-8 group">
-                <div className="text-brand-accent font-black text-6xl opacity-10 group-hover:opacity-100 transition-opacity">01</div>
-                <div>
-                   <h3 className="text-2xl font-black mb-6 uppercase">나만의 고유한 서사 구축</h3>
-                   <p className="text-[17px] text-[#52525B] leading-relaxed font-normal max-w-2xl">
-                     단순한 스펙 나열이 아닌, 학생의 고유한 관심사와 문제의식을 
-                     설득력 있는 성장 이야기로 연결하여 독보적인 경쟁력을 만듭니다.
-                   </p>
-                </div>
-              </motion.div>
-              <motion.div variants={fadeUp} className="flex gap-8 group">
-                <div className="text-brand-accent font-black text-6xl opacity-10 group-hover:opacity-100 transition-opacity">02</div>
-                <div>
-                   <h3 className="text-2xl font-black mb-6 uppercase">스스로 움직이는 학습 시스템</h3>
-                   <p className="text-[17px] text-[#52525B] leading-relaxed font-normal max-w-2xl">
-                     입시는 성장의 과정입니다. 스스로 목표를 설정하고 
-                     끝까지 완주할 수 있는 단단한 기초와 학습 구조를 함께 설계합니다.
-                   </p>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
 
-        {/* Methodology Section */}
-        <section id="method" className="py-40 px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="mb-24">
-            <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Methodology</p>
-            <h2 className="text-5xl font-black tracking-tighter">THE CORE ANALYSIS.</h2>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-1 border-t border-brand-light-gray bg-brand-light-gray overflow-hidden">
-            {analysisAxes.map((axis) => (
-              <div key={axis.id} className="bg-brand-bg p-12 hover:bg-brand-text group transition-all duration-700">
-                <div className="text-brand-accent font-bold text-xs tracking-widest mb-12">AXIS {axis.id}</div>
-                <h3 className="text-2xl font-black mb-6 group-hover:text-brand-bg transition-colors leading-tight">{axis.subtitle}</h3>
-                <p className="text-[#52525B] group-hover:text-brand-bg/60 transition-colors text-[15px] font-normal leading-relaxed mb-12 min-h-[80px]">
-                  {axis.desc}
-                </p>
-                <div className="overflow-hidden h-[1px] w-0 group-hover:w-full bg-brand-accent transition-all duration-700" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Difference Section */}
-        <section className="bg-brand-text py-40 px-6 lg:px-8 text-brand-bg">
-          <div className="max-w-7xl mx-auto">
-             <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-24 items-center">
-               <div>
-                  <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Standard</p>
-                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-8">THE <br />DIFFERENCE.</h2>
-                  <p className="text-brand-bg/40 font-light text-lg">결과가 증명하는 압도적 차이.</p>
-               </div>
-               <div className="border border-white/10 overflow-hidden">
-                  <div className="grid grid-cols-[1fr_1.2fr] text-[10px] uppercase tracking-[0.3em] font-black text-brand-accent bg-brand-secondary/5">
-                    <div className="p-8 border-r border-white/10">General Consulting</div>
-                    <div className="p-8">SehyunT Strategy Lab</div>
-                  </div>
-                  {compareTable.map(([a, b], i) => (
-                    <div key={i} className="grid grid-cols-[1fr_1.2fr] border-t border-white/10 hover:bg-white/5 transition-colors">
-                      <div className="p-8 border-r border-white/10 text-brand-bg/60 text-[15px] font-normal italic">{a}</div>
-                      <div className="p-8 text-brand-bg text-[15px] font-bold">{b}</div>
-                    </div>
-                  ))}
-               </div>
-             </div>
-          </div>
-        </section>
-
-        {/* Programs Section */}
-        <section id="programs" className="py-48 px-6 lg:px-12 max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-32 border-b-2 border-brand-text/10 pb-16">
-            <div className="space-y-4">
-              <p className="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Professional Curriculum</p>
-              <h2 className="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] uppercase leading-none">Programs</h2>
-            </div>
-            <p className="text-[#52525B] text-left md:text-right max-w-sm font-normal text-base md:text-lg leading-[1.6] mt-8 md:mt-0 italic">
-              단순한 입시 관리가 아닌, <br className="hidden md:block" />체계적인 분석을 기반으로 한 맞춤형 솔루션.
-            </p>
-          </div>
-          
-          <div className="space-y-32">
-            {programCategories.map((category) => (
-              <div key={category.id} className="grid lg:grid-cols-[1fr_2fr] gap-16">
-                <div className="sticky top-32 h-fit">
-                   <div className="text-[10px] uppercase tracking-[0.5em] text-brand-accent font-black mb-6">{category.title}</div>
-                   <h3 className="text-4xl font-extrabold tracking-tighter mb-8">{category.subtitle}</h3>
-                   <div className="w-16 h-1 bg-brand-text" />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                  {category.programs.map((prog, idx) => (
-                    <motion.div 
-                      key={prog.title}
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true }}
-                      variants={fadeUp}
-                      className="group bg-white border border-brand-light-gray p-10 hover:border-brand-text transition-all duration-500 flex flex-col"
-                    >
-                      <div className="text-[11px] uppercase font-black text-brand-gray mb-6 group-hover:text-brand-accent transition-colors">
-                        {prog.title}
+            <div className="mt-16 grid gap-4 lg:grid-cols-2">
+              {programCategories.map((category) => {
+                const Icon = category.icon;
+                const expanded = expandedCategory === category.id;
+                return (
+                  <motion.article {...reveal} key={category.id} className={`overflow-hidden rounded-[1.75rem] border transition-colors ${expanded ? 'border-brand-ink bg-brand-mist' : 'border-brand-ink/10 bg-brand-paper hover:border-brand-ink/30'}`}>
+                    <button onClick={() => setExpandedCategory(expanded ? null : category.id)} aria-expanded={expanded} className="w-full p-7 text-left sm:p-9">
+                      <div className="flex items-start justify-between gap-5">
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-brand-accent shadow-sm"><Icon size={23} /></div>
+                        <span className="font-mono text-xs text-brand-ink/35">{category.number}</span>
                       </div>
-                      <h3 className="text-2xl font-black mb-8 leading-tight">{prog.subtitle}</h3>
-                      <p className="text-[#52525B] font-normal text-[15px] leading-relaxed mb-10 flex-grow italic">
-                        "{prog.desc}"
-                      </p>
-                      
-                      <div className="space-y-3 pt-8 border-t border-brand-light-gray group-hover:border-brand-accent transition-colors">
-                        {prog.features.slice(0, 3).map((feat) => (
-                          <div key={feat} className="flex items-center gap-4 text-[12px] font-bold uppercase text-[#52525B]">
-                             <div className="w-1 h-1 bg-brand-light-gray group-hover:bg-brand-accent" />
-                             {feat}
+                      <p className="mt-9 text-xs font-black tracking-[0.18em] text-brand-accent">{category.eyebrow}</p>
+                      <h3 className="mt-3 text-3xl font-black tracking-[-0.045em] sm:text-4xl">{category.title}</h3>
+                      <p className="mt-5 max-w-xl leading-7 text-brand-ink/58">{category.description}</p>
+                      <div className="mt-8 flex items-center justify-between border-t border-brand-ink/10 pt-5 text-sm font-bold"><span>세부 프로그램 {category.programs.length}개</span><Plus size={19} className={`transition-transform ${expanded ? 'rotate-45' : ''}`} /></div>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {expanded && (
+                        <motion.div initial={reduceMotion ? undefined : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.35 }} className="overflow-hidden">
+                          <div className="space-y-3 border-t border-brand-ink/10 p-5 sm:p-7">
+                            {category.programs.map((program) => (
+                              <div key={program.title} className="rounded-2xl bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
+                                <div><h4 className="font-black">{program.subtitle}</h4><p className="mt-1 text-sm leading-6 text-brand-ink/55">{program.desc}</p></div>
+                                <button onClick={() => setSelectedProgram(program)} className="mt-4 inline-flex shrink-0 items-center gap-2 text-sm font-black text-brand-accent sm:mt-0">자세히 <ArrowRight size={15} /></button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-
-                      <button 
-                        onClick={() => setSelectedProgram(prog)}
-                        className="mt-12 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-brand-text group-hover:text-brand-accent transition-all"
-                      >
-                        Learn More <Plus size={14} className="group-hover:rotate-90 transition-transform duration-500" />
-                      </button>
-                      {prog.landing && (
-                        <a
-                          href={prog.landing.href}
-                          className="mt-4 inline-flex items-center gap-2 text-[13px] font-black text-brand-accent hover:underline underline-offset-4"
-                        >
-                          {prog.landing.label} 비용·진행 방식 보기 <ArrowRight size={14} />
-                        </a>
+                        </motion.div>
                       )}
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                    </AnimatePresence>
+                  </motion.article>
+                );
+              })}
+            </div>
           </div>
         </section>
 
-        {/* Detailed Program Modal */}
-        <AnimatePresence>
-          {selectedProgram && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedProgram(null)}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
-            >
-              <motion.div 
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 50, opacity: 0 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-brand-bg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-12 lg:p-20 relative rounded-none"
-              >
-                <button 
-                  onClick={() => setSelectedProgram(null)}
-                  className="absolute top-10 right-10 p-2 hover:bg-brand-secondary transition-colors"
-                >
-                  <X size={32} />
-                </button>
-
-                <div className="max-w-2xl">
-                  <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-6">{selectedProgram.title}</p>
-                  <h2 className="text-5xl font-black mb-12 tracking-tighter leading-tight italic">{selectedProgram.subtitle}</h2>
-                  
-                  <div className="prose prose-lg text-brand-text font-light mb-16 leading-[1.8]">
-                    <p>{selectedProgram.content}</p>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-12">
-                    <div>
-                      <h4 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent mb-8">Curriculum</h4>
-                      <ul className="space-y-4">
-                        {selectedProgram.features.map(feat => (
-                          <li key={feat} className="flex items-start gap-4 text-sm font-bold leading-tight">
-                            <span className="text-brand-accent">/</span> {feat}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent mb-8">Candidates</h4>
-                      <ul className="space-y-4">
-                        {selectedProgram.target.map(t => (
-                          <li key={t} className="flex items-start gap-4 text-sm text-brand-gray">
-                            <Plus size={14} className="mt-1 text-brand-accent shrink-0" /> {t}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="mt-20 pt-12 border-t border-brand-light-gray flex flex-wrap items-center justify-between gap-6">
-                    <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer">
-                      <Button className="px-12 py-8 bg-brand-text text-brand-bg hover:bg-brand-accent transition-colors">프로그램 신청하기</Button>
-                    </a>
-                    {selectedProgram.landing && (
-                      <a
-                        href={selectedProgram.landing.href}
-                        className="inline-flex items-center gap-2 text-sm font-black text-brand-accent hover:underline underline-offset-4"
-                      >
-                        비용·진행 방식 보기 <ArrowRight size={16} />
-                      </a>
-                    )}
-                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-gray flex items-center gap-3">
-                      SEHYUN T Strategy Lab <Sparkles size={14} className="text-brand-accent" />
-                    </div>
-                  </div>
+        <section id="about" className="scroll-mt-20 bg-brand-sand py-28 sm:py-36 lg:py-44">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+            <motion.div {...reveal} className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
+              <div><p className="section-label text-brand-accent">Our Belief</p><h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.06em] sm:text-7xl">좋은 전략은<br />학생을 닮아야<br />합니다.</h2></div>
+              <div className="lg:pt-16">
+                <p className="text-2xl font-bold leading-[1.55] tracking-[-0.025em] sm:text-3xl">입시는 누군가의 정답을 복사하는 과정이 아니라, 나만의 질문을 발견하고 끝까지 설명할 수 있게 되는 과정이라고 믿습니다.</p>
+                <div className="mt-12 grid gap-8 border-t border-brand-ink/15 pt-10 sm:grid-cols-2">
+                  <div><BookOpen className="text-brand-accent" /><h3 className="mt-5 text-xl font-black">연결된 성장</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">진로, 수업, 탐구와 기록이 하나의 맥락 안에서 이어지도록 설계합니다.</p></div>
+                  <div><Users className="text-brand-accent" /><h3 className="mt-5 text-xl font-black">학생의 주도권</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">결과물을 대신 만들기보다 학생이 이해하고 선택하고 말하는 힘을 키웁니다.</p></div>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        </section>
 
-        {/* Parent Insights Section */}
-        <section className="py-40 px-6 lg:px-8 bg-brand-secondary">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-24 flex flex-col md:flex-row justify-between gap-12">
-              <div className="max-w-2xl">
-                <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Parent View</p>
-                <h2 className="text-5xl font-black tracking-tighter">COMMON CHALLENGES.</h2>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-px bg-brand-light-gray border border-brand-light-gray">
-               {[
-                 { q: "의미 없는 활동의 나열", a: "방향성 없는 스펙 쌓기는 경쟁력이 없습니다. 학생만의 고유한 서사로 엮어, 이미 존재하는 경험에 숨을 불어넣는 전략을 제안합니다." },
-                 { q: "작심삼일의 반복", a: "의지의 문제가 아닌 시스템의 부재입니다. 심리 상태와 개인별 성향을 고려해 무너지지 않는 맞춤형 학습 구조를 재설계합니다." },
-                 { q: "막연한 스펙 경쟁", a: "불필요한 군더더기는 덜어내고, 합격의 당락을 결정짓는 핵심 탐구 주제와 경험만을 선별하여 정교화합니다." },
-                 { q: "진로와 기록의 불일치", a: "단순 희망 사항이 아닌 구체적 증거로 채워지는 생기부. 면접에서 막힘 없는 답변으로 이어지는 실전형 기록 전략입니다." }
-               ].map((item, i) => (
-                 <div key={i} className="bg-brand-bg p-16 group hover:bg-brand-text transition-all duration-500">
-                    <h3 className="text-xl font-black mb-6 uppercase flex items-center gap-4 group-hover:text-brand-bg transition-colors">
-                      <span className="w-8 h-px bg-brand-accent" />
-                      {item.q}
-                    </h3>
-                    <p className="text-[#52525B] leading-relaxed font-normal text-[15px] group-hover:text-brand-bg/60 transition-colors">
-                      {item.a}
-                    </p>
-                 </div>
-               ))}
+        <section className="bg-brand-paper py-28 sm:py-36">
+          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+            <motion.div {...reveal} className="max-w-3xl"><p className="section-label text-brand-accent">Student Changes</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">숫자보다 먼저 보이는 변화</h2><p className="mt-6 text-lg leading-8 text-brand-ink/58">검증되지 않은 합격 실적 대신, 상담을 통해 학생의 생각과 행동이 어떻게 달라졌는지를 보여드립니다.</p></motion.div>
+            <div className="mt-14 grid gap-4 lg:grid-cols-3">
+              {studentCases.map((item, index) => (
+                <motion.article {...reveal} key={item.tag} className="flex min-h-[360px] flex-col rounded-[1.75rem] border border-brand-ink/10 bg-white p-7 sm:p-9">
+                  <div className="flex items-center justify-between"><span className="rounded-full bg-brand-coral/30 px-3 py-1.5 text-xs font-black">{item.tag}</span><span className="font-mono text-xs text-brand-ink/30">0{index + 1}</span></div>
+                  <p className="mt-9 text-base font-bold leading-7 text-brand-ink/45">{item.before}</p>
+                  <div className="my-7 h-px bg-brand-ink/10" />
+                  <p className="mt-auto text-xl font-black leading-8 tracking-[-0.025em]">{item.after}</p>
+                </motion.article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Free Experience Section */}
-        <section className="py-40 px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="mb-24 text-center">
-            <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Start Now</p>
-            <h2 className="text-5xl font-black tracking-tighter uppercase relative inline-block">
-              Experience Lab.
-              <div className="absolute -bottom-4 left-0 w-full h-1 bg-brand-accent" />
-            </h2>
-          </div>
+        <StrategyMap />
 
-          <div className="space-y-4">
-            {freeOfferings.map((offering) => (
-              <div 
-                key={offering.title} 
-                onClick={() => alert(offering.message)}
-                className="group relative bg-brand-bg p-12 border border-brand-light-gray flex flex-col md:flex-row justify-between items-center gap-12 hover:border-brand-text transition-all duration-500 cursor-pointer overflow-hidden"
-              >
-                <div className="absolute left-0 top-0 w-2 h-full bg-brand-accent -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-                <div className="flex-1">
-                  <div className="flex gap-4 mb-6">
-                    {offering.tags.map(tag => (
-                      <span key={tag} className="text-[10px] font-black uppercase tracking-widest text-brand-accent">#{tag}</span>
-                    ))}
-                  </div>
-                  <h3 className="text-3xl font-black uppercase">{offering.title}</h3>
-                </div>
-                <p className="flex-1 text-[#52525B] font-normal text-[15px] leading-relaxed">
-                  {offering.desc}
-                </p>
-                <div className="flex items-center gap-4 font-black text-xs uppercase tracking-[0.3em] group-hover:text-brand-accent transition-colors">
-                  Apply <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Gallery Section - Hidden until photos are added */}
-        {/* <GallerySection isAdmin={user?.email === ADMIN_EMAIL} /> */}
-
-        {/* Resources Section */}
         <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} />
 
-        {/* Call to Action Section */}
-        <section id="contact" className="bg-brand-text py-48 px-6 lg:px-8 text-center text-brand-bg overflow-hidden relative">
-           <div className="absolute inset-x-0 bottom-0 opacity-5 pointer-events-none select-none text-[30vw] font-black leading-none whitespace-nowrap overflow-hidden">
-             LEVEL UP
-           </div>
-           
-           <div className="max-w-5xl mx-auto relative z-10">
-             <p className="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
-             <h2 className="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
-               Master your <br />
-               <span className="text-brand-accent not-italic">Future.</span>
-             </h2>
-             
-             <div className="flex flex-col sm:flex-row justify-center gap-8 mb-32">
-                <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
-                  <button className="w-full py-10 text-xl font-black uppercase rounded-none bg-white text-black hover:bg-brand-accent hover:text-white transition-all duration-700 border border-white">
-                    Get Consult
-                  </button>
-                </a>
-                <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" className="flex-1 max-w-xs">
-                  <button className="w-full py-10 text-xl font-black uppercase rounded-none bg-transparent text-white border-2 border-white hover:bg-white hover:text-brand-text transition-all duration-700">
-                    Official Blog
-                  </button>
-                </a>
-             </div>
-
-             <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
-                <a href="mailto:consultantsyssam@gmail.com" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
-                  <Mail size={16} className="shrink-0" /> consultantsyssam@gmail.com
-                </a>
-                <a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:gap-4 transition-colors hover:text-brand-accent cursor-pointer whitespace-nowrap">
-                  <Instagram size={16} className="shrink-0" /> @consultant.sy
-                </a>
-             </div>
-           </div>
+        <section id="contact" className="relative overflow-hidden bg-brand-coral px-6 py-28 sm:px-8 sm:py-36 lg:px-12 lg:py-44">
+          <div className="contact-ring" />
+          <motion.div {...reveal} className="relative mx-auto max-w-5xl text-center">
+            <p className="section-label">Start a Conversation</p>
+            <h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.065em] sm:text-7xl lg:text-8xl">학생의 다음 장면을<br />함께 설계해볼까요?</h2>
+            <p className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-brand-ink/65">현재 상황과 고민을 남겨주시면, 어떤 프로그램이 필요한지부터 차근차근 안내드립니다.</p>
+            <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowUpRight size={18} /></Button></a>
+              <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full sm:w-auto">블로그에서 더 알아보기</Button></a>
+            </div>
+          </motion.div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="py-24 sm:py-32 px-6 lg:px-8 border-t border-brand-light-gray bg-brand-bg">
-        <div className="max-w-7xl mx-auto">
-           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-16 lg:gap-24">
-              <div className="lg:col-span-2">
-                <div className="flex items-center gap-4 mb-6 sm:mb-8">
-                  <img src="/logo-pic.png" alt="SEHYUN T" className="h-12 w-auto" />
-                  <div className="text-3xl sm:text-4xl font-black tracking-tighter">SEHYUN T</div>
-                </div>
-                <p className="text-[#52525B] max-w-sm leading-relaxed font-normal text-sm sm:text-base">
-                  Premium Admissions Strategy & Self-Directed Learning Lab. <br />
-                  성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
-                </p>
-              </div>
-              <div>
-                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Official Channels</h4>
-                 <ul className="space-y-4 text-[13px] font-black uppercase tracking-[0.2em]">
-                    {blogs.map((blog) => (
-                      <li key={blog.name}>
-                        <a href={blog.url} target="_blank" rel="noopener noreferrer" className="text-[#52525B] hover:text-brand-accent transition-colors">
-                          {blog.name}
-                        </a>
-                      </li>
-                    ))}
-                 </ul>
-              </div>
-              <div>
-                 <h4 className="font-black text-xs uppercase tracking-[0.4em] mb-6 sm:mb-10 text-brand-accent">Inquiry</h4>
-                 <a href="mailto:consultantsyssam@gmail.com" className="text-sm font-black tracking-widest text-[#52525B] hover:text-brand-accent transition-colors">
-                   consultantsyssam@gmail.com
-                 </a>
-              </div>
-           </div>
-           
-           {/* Consulting landing pages */}
-           <nav aria-label="컨설팅 안내" className="mt-16 sm:mt-20 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-black">
-             <span className="text-xs uppercase tracking-[0.4em] text-brand-accent">Consulting</span>
-             <a href="/saenggibu-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">생기부 컨설팅</a>
-             <a href="/jasoseo-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">자소서 컨설팅</a>
-             <a href="/interview-consulting/" className="text-[#52525B] hover:text-brand-accent transition-colors">면접 컨설팅</a>
-           </nav>
-
-           {/* Business Information */}
-           <div className="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
-             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-               <span><strong className="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>
-               <span><strong className="font-bold text-brand-text">사업자등록번호:</strong> 612-69-00756</span>
-               <span><strong className="font-bold text-brand-text">대표:</strong> 조세연</span>
-               <span><strong className="font-bold text-brand-text">이메일:</strong> consultantsyssam@gmail.com</span>
-             </div>
-             <p className="text-[14px] sm:text-[14px] text-[#71717A] font-normal">
-               입시 전략 컨설팅 · 고입/대입 학종 로드맵 · 1:1 자기주도학습 코칭
-             </p>
-           </div>
-
-           {/* Copyright */}
-           <div className="mt-8 pt-8 border-t border-brand-light-gray flex flex-col md:flex-row justify-between items-center gap-6">
-              <p className="text-[#71717A] text-[13px] sm:text-[13px] tracking-[0.3em] font-black uppercase">
-                © {new Date().getFullYear()} SEHYUN T. ALL RIGHTS RESERVED.
-              </p>
-           </div>
+      <footer className="bg-brand-ink px-6 py-16 text-white sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
+            <div><div className="flex items-center gap-3"><img src="/logo-pic.png" alt="" className="h-11 w-11 rounded-full object-cover" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">학생의 진로와 학습, 기록을 하나의 성장 흐름으로 연결하는 입시 전략 컨설팅.</p></div>
+            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
+            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
+          </div>
+          <div className="grid gap-7 pt-9 text-xs leading-6 text-white/45 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div><p>상호명 입시는세연쌤 · 대표 조세연 · 사업자등록번호 612-69-00756</p><a href="mailto:consultantsyssam@gmail.com" className="mt-1 inline-flex items-center gap-2 hover:text-white"><Mail size={13} /> consultantsyssam@gmail.com</a><a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Instagram size={13} /> @consultant.sy</a></div>
+            <div className="flex flex-wrap gap-5"><button onClick={() => setLegalModalType('terms')} className="hover:text-white">이용약관</button><button onClick={() => setLegalModalType('privacy')} className="hover:text-white">개인정보처리방침</button><span>© {new Date().getFullYear()} SEHYUN T</span></div>
+          </div>
         </div>
       </footer>
+
+      <AnimatePresence>
+        {selectedProgram && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedProgram(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-ink/80 p-4 backdrop-blur-sm sm:p-7">
+            <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="program-title" className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-brand-paper p-7 sm:p-12">
+              <button onClick={() => setSelectedProgram(null)} aria-label="닫기" className="absolute right-6 top-6 grid h-11 w-11 place-items-center rounded-full border border-brand-ink/10 bg-white"><X size={20} /></button>
+              <p className="section-label pr-16 text-brand-accent">{selectedProgram.title}</p>
+              <h2 id="program-title" className="mt-5 pr-12 text-4xl font-black tracking-[-0.055em] sm:text-5xl">{selectedProgram.subtitle}</h2>
+              <p className="mt-7 text-base leading-8 text-brand-ink/62">{selectedProgram.content}</p>
+              <div className="mt-10 grid gap-8 border-t border-brand-ink/10 pt-9 sm:grid-cols-2">
+                <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-accent">함께 하는 일</h3><ul className="mt-5 space-y-3">{selectedProgram.features.map((feature) => <li key={feature} className="flex gap-3 text-sm font-semibold leading-6"><Check size={16} className="mt-1 shrink-0 text-brand-accent" />{feature}</li>)}</ul></div>
+                <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-accent">이런 학생에게</h3><ul className="mt-5 space-y-3">{selectedProgram.target.map((target) => <li key={target} className="flex gap-3 text-sm leading-6 text-brand-ink/62"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-coral" />{target}</li>)}</ul></div>
+              </div>
+              <div className="mt-10 flex flex-col gap-3 border-t border-brand-ink/10 pt-8 sm:flex-row">
+                <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청 <ArrowRight size={16} /></Button></a>
+                {selectedProgram.landing && <a href={selectedProgram.landing.href}><Button variant="line" className="w-full sm:w-auto">{selectedProgram.landing.label} 안내</Button></a>}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

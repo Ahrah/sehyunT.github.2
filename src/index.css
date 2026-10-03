@@ -1,22 +1,105 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-brand-bg: #FFFFFF;
-  --color-brand-secondary: #F4F4F4;
-  --color-brand-text: #000000;
-  --color-brand-accent: #E11D48;
-  --color-brand-gray: #71717A;
-  --color-brand-light-gray: #E4E4E7;
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-paper: #f7f5ef;
+  --color-brand-mist: #eef0eb;
+  --color-brand-sand: #e8dfd1;
+  --color-brand-ink: #1d2529;
+  --color-brand-coral: #ff8f72;
+  --color-brand-accent: #ce4e38;
+
+  /* Compatibility tokens used by preserved member/resource/admin views. */
+  --color-brand-bg: #ffffff;
+  --color-brand-secondary: #f1f2ee;
+  --color-brand-text: #1d2529;
+  --color-brand-gray: #697074;
+  --color-brand-light-gray: #dfe2dc;
 }
 
-/* Global Korean typography improvements */
+:root {
+  color: #1d2529;
+  background: #f7f5ef;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: #f7f5ef; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+
 * {
+  box-sizing: border-box;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  text-wrap: balance;
+h1, h2, h3, h4, h5, h6 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.hero-emphasis {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+}
+
+.hero-emphasis::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -0.02em;
+  right: -0.03em;
+  bottom: 0.02em;
+  height: 0.2em;
+  border-radius: 999px;
+  background: #ff8f72;
+  transform: rotate(-1.5deg);
+  opacity: 0.72;
+}
+
+.hero-orbit {
+  position: absolute;
+  border: 1px solid rgba(29, 37, 41, 0.08);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.hero-orbit-one { width: 48rem; height: 48rem; right: -20rem; top: 4rem; }
+.hero-orbit-two { width: 31rem; height: 31rem; left: -18rem; bottom: -12rem; }
+
+.contact-ring {
+  position: absolute;
+  width: 56rem;
+  height: 56rem;
+  left: 50%;
+  top: 50%;
+  border: 1px solid rgba(29, 37, 41, 0.18);
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 9rem rgba(255,255,255,0.07), 0 0 0 18rem rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .hero-orbit-one { width: 30rem; height: 30rem; right: -20rem; top: 5rem; }
+  .contact-ring { width: 27rem; height: 27rem; box-shadow: 0 0 0 5rem rgba(255,255,255,0.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
