@@ -17,6 +17,7 @@ interface ResourceItem {
   createdAt: any;
   storagePath?: string;
   content?: string;
+  images?: string[];
   locked?: boolean;
   lockSalt?: string;
   lockIv?: string;
@@ -79,6 +80,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [passwordPromptItem, setPasswordPromptItem] = useState<ResourceItem | null>(null);
   const [attemptPassword, setAttemptPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (propIsAdmin !== undefined) {
@@ -176,6 +179,29 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     }
   };
 
+  const handleImageFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      const oversizedFiles = selectedFiles.filter(f => f.size > 18 * 1024 * 1024);
+      
+      if (oversizedFiles.length > 0) {
+        setErrorMsg(`일부 이미지 파일이 너무 큽니다 (최대 18MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
+        return;
+      }
+      
+      setImageFiles(prev => [...prev, ...selectedFiles]);
+      setErrorMsg('');
+    }
+  };
+
+  const removeImageFile = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (url: string) => {
+    setExistingImages(prev => prev.filter(img => img !== url));
+  };
+
   const handleUploadSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
@@ -253,6 +279,22 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         pinned: pinned,
       };
 
+      // Upload images for Article type
+      let uploadedImageUrls: string[] = [...existingImages];
+      if (fileType === 'article' && imageFiles.length > 0) {
+        for (const imgFile of imageFiles) {
+          try {
+            const imgPath = `resources/images/${Date.now()}_${imgFile.name}`;
+            const imgRef = ref(storage, imgPath);
+            const uploadResult = await uploadBytes(imgRef, imgFile);
+            const imgUrl = await getDownloadURL(uploadResult.ref);
+            uploadedImageUrls.push(imgUrl);
+          } catch (imgErr) {
+            console.warn("Image upload failed, skipping:", imgErr);
+          }
+        }
+      }
+
       const shouldEncrypt = resourcePassword.trim() && !unlockExisting;
       const wasLocked = editingItem?.locked;
 
@@ -260,7 +302,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         const payload = {
           content: finalContent,
           fileUrl: finalFileUrl,
-          fileName: finalFileName
+          fileName: finalFileName,
+          images: uploadedImageUrls
         };
         const encrypted = await encryptPayload(payload, resourcePassword.trim());
         resourceData.locked = true;
@@ -271,6 +314,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         resourceData.content = null;
         resourceData.fileUrl = '';
         resourceData.fileName = '';
+        resourceData.images = null;
       } else if (unlockExisting && wasLocked) {
         resourceData.locked = false;
         resourceData.lockSalt = null;
@@ -280,6 +324,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         resourceData.content = finalContent;
         resourceData.fileUrl = finalFileUrl;
         resourceData.fileName = finalFileName;
+        resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
       } else if (wasLocked && !resourcePassword.trim() && !unlockExisting) {
         if (editingItem.lockCipher) {
           resourceData.locked = true;
@@ -290,12 +335,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
           resourceData.content = null;
           resourceData.fileUrl = '';
           resourceData.fileName = '';
+          resourceData.images = null;
         }
       } else {
         resourceData.locked = false;
         resourceData.content = finalContent;
         resourceData.fileUrl = finalFileUrl;
         resourceData.fileName = finalFileName;
+        resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
       }
 
       const finalDate = publishDate ? (() => {
@@ -332,6 +379,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setPublishDate('');
       setPinned(false);
       setEditingItem(null);
+      setImageFiles([]);
+      setExistingImages([]);
       setIsUploadOpen(false);
       fetchItems();
     } catch (err: any) {
@@ -363,6 +412,13 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setHtmlContent('');
     }
     
+    // Populate existing images
+    if (item.images && item.images.length > 0) {
+      setExistingImages(item.images);
+    } else {
+      setExistingImages([]);
+    }
+    
     if (item.fileUrl.startsWith('http://') || item.fileUrl.startsWith('https://')) {
       if (!item.storagePath || item.storagePath === 'null') {
         setUploadMode('link');
@@ -388,6 +444,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     }
     
     setFile(null);
+    setImageFiles([]);
     setErrorMsg('');
     setResourcePassword('');
     setUnlockExisting(false);
@@ -472,6 +529,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         content: decrypted.content,
         fileUrl: decrypted.fileUrl,
         fileName: decrypted.fileName,
+        images: decrypted.images || [],
         locked: false
       };
 
@@ -754,6 +812,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 setUnlockExisting(false);
                 setPublishDate('');
                 setPinned(false);
+                setImageFiles([]);
+                setExistingImages([]);
               }
             }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
@@ -778,6 +838,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   setUnlockExisting(false);
                   setPublishDate('');
                   setPinned(false);
+                  setImageFiles([]);
+                  setExistingImages([]);
                 }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
@@ -899,17 +961,90 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 </div>
 
                 {fileType === 'article' && (
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">기사 본문 내용</label>
-                    <textarea 
-                      value={articleContent} 
-                      onChange={e => setArticleContent(e.target.value)}
-                      placeholder="기사 본문을 입력하세요. [H]제목[/H]으로 소제목, [HIGHLIGHT]강조 텍스트[/HIGHLIGHT]로 강조 표시"
-                      rows={12}
-                      className="w-full bg-brand-secondary border border-brand-light-gray p-4 text-xs font-bold focus:border-brand-text outline-none transition-colors resize-none font-mono"
-                    />
-                    <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">[H]...[/H]는 부제목으로, [HIGHLIGHT]...[/HIGHLIGHT]는 강조 텍스트로 표시됩니다.</p>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">기사 본문 내용</label>
+                      <textarea 
+                        value={articleContent} 
+                        onChange={e => setArticleContent(e.target.value)}
+                        placeholder="기사 본문을 입력하세요. [H]제목[/H]으로 소제목, [HIGHLIGHT]강조 텍스트[/HIGHLIGHT]로 강조 표시"
+                        rows={12}
+                        className="w-full bg-brand-secondary border border-brand-light-gray p-4 text-xs font-bold focus:border-brand-text outline-none transition-colors resize-none font-mono"
+                      />
+                      <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">[H]...[/H]는 부제목으로, [HIGHLIGHT]...[/HIGHLIGHT]는 강조 텍스트로 표시됩니다.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">
+                        첨부 이미지 (합격 인증, 인포그래픽 등)
+                      </label>
+                      
+                      {/* Existing Images */}
+                      {existingImages.length > 0 && (
+                        <div className="mb-4 space-y-2">
+                          <p className="text-[10px] font-bold text-brand-gray">기존 첨부 이미지:</p>
+                          {existingImages.map((imgUrl, idx) => (
+                            <div key={idx} className="flex items-center gap-3 p-2 bg-brand-bg border border-brand-light-gray">
+                              <img src={imgUrl} alt={`첨부 이미지 ${idx + 1}`} className="w-16 h-16 object-cover" />
+                              <span className="text-[10px] flex-1 truncate">{imgUrl.split('/').pop()}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeExistingImage(imgUrl)}
+                                className="text-red-600 text-xs font-bold hover:underline"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* New Image Upload */}
+                      <div className="border border-dashed border-brand-light-gray hover:border-brand-text transition-colors p-6 text-center bg-brand-secondary">
+                        <input 
+                          type="file" 
+                          id="imageUpload"
+                          multiple
+                          accept="image/*"
+                          onChange={handleImageFilesChange}
+                          className="hidden"
+                        />
+                        <label htmlFor="imageUpload" className="cursor-pointer flex flex-col items-center">
+                          <UploadCloud className="text-brand-gray mb-2" size={32} />
+                          <p className="text-xs font-black uppercase text-brand-text tracking-wider mb-1">
+                            이미지 파일 선택 (복수 선택 가능)
+                          </p>
+                          <p className="text-[10px] text-brand-gray/50 font-bold">
+                            PNG, JPG, WebP 등 · 최대 18MB/파일
+                          </p>
+                        </label>
+                      </div>
+
+                      {/* Selected New Images Preview */}
+                      {imageFiles.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-[10px] font-bold text-brand-gray">업로드 예정 이미지:</p>
+                          {imageFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center gap-3 p-2 bg-brand-bg border border-blue-200">
+                              <FileText className="text-blue-600" size={16} />
+                              <span className="text-[10px] flex-1">{file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)</span>
+                              <button
+                                type="button"
+                                onClick={() => removeImageFile(idx)}
+                                className="text-red-600 text-xs font-bold hover:underline"
+                              >
+                                제거
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-brand-gray/50 mt-3 font-bold">
+                        기사 본문 하단에 첨부 이미지가 표시됩니다. 18MB 이상 PNG는 압축 후 업로드를 권장합니다.
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {fileType === 'html' && (
@@ -1052,9 +1187,32 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   />
                 </div>
               ) : (
-                <div className="prose prose-lg max-w-none">
-                  {parseArticleContent(selectedArticle.content || '')}
-                </div>
+                <>
+                  <div className="prose prose-lg max-w-none">
+                    {parseArticleContent(selectedArticle.content || '')}
+                  </div>
+
+                  {/* Display attached images */}
+                  {selectedArticle.images && selectedArticle.images.length > 0 && (
+                    <div className="mt-12 pt-8 border-t border-brand-light-gray">
+                      <h3 className="text-lg font-black uppercase tracking-tight mb-6 text-brand-accent">
+                        첨부 이미지
+                      </h3>
+                      <div className="space-y-6">
+                        {selectedArticle.images.map((imgUrl, idx) => (
+                          <div key={idx} className="border border-brand-light-gray p-4 bg-brand-secondary">
+                            <img 
+                              src={imgUrl} 
+                              alt={`${selectedArticle.title} 첨부 이미지 ${idx + 1}`}
+                              className="w-full h-auto object-contain max-h-[600px]"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="mt-12 pt-8 border-t border-brand-light-gray flex justify-center">
