@@ -23,11 +23,11 @@ interface ResourceItem {
   lockIv?: string;
   lockIter?: number;
   lockCipher?: string;
-  category?: '대입' | '고입';
+  category?: '대입' | '고입' | '학습자료';
   pinned?: boolean;
 }
 
-const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' => {
+const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' | '학습자료' => {
   if (item.category) return item.category;
   
   const title = item.title.toLowerCase();
@@ -53,7 +53,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTab, setSelectedTab] = useState<'대입' | '고입'>('대입');
+  const [selectedTab, setSelectedTab] = useState<'대입' | '고입' | '학습자료'>('대입');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isAdminState, setIsAdminState] = useState<boolean>(
     propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === "ahrah0365@gmail.com")
@@ -64,7 +64,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [editingItem, setEditingItem] = useState<ResourceItem | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'대입' | '고입'>('대입');
+  const [category, setCategory] = useState<'대입' | '고입' | '학습자료'>('대입');
   const [fileType, setFileType] = useState('pdf');
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
   const [externalUrl, setExternalUrl] = useState('');
@@ -130,12 +130,13 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     fetchItems();
   }, []);
 
-  // Deep link: /?cat=goip#resources (고입) or /?cat=daeip#resources (대입)
+  // Deep link: /?cat=goip#resources (고입) or /?cat=daeip#resources (대입) or /?cat=study#resources (학습자료)
   // The section renders after the page loads, so the browser's own #hash jump misses it.
   useEffect(() => {
     const cat = new URLSearchParams(window.location.search).get('cat');
     if (cat === 'goip') setSelectedTab('고입');
     else if (cat === 'daeip') setSelectedTab('대입');
+    else if (cat === 'study') setSelectedTab('학습자료');
 
     const scrollToResources = () => {
       if (window.location.hash === '#resources') {
@@ -695,6 +696,16 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
           >
             고입
           </button>
+          <button
+            onClick={() => setSelectedTab('학습자료')}
+            className={`flex-1 sm:flex-initial px-6 sm:px-12 py-4 text-base sm:text-lg font-black uppercase tracking-tight transition-all ${
+              selectedTab === '학습자료'
+                ? 'bg-brand-text text-brand-bg'
+                : 'bg-brand-bg text-brand-text border border-brand-light-gray hover:border-brand-text'
+            }`}
+          >
+            학습자료
+          </button>
         </div>
 
         {loading ? (
@@ -903,11 +914,12 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">카테고리</label>
                   <select
                     value={category}
-                    onChange={e => setCategory(e.target.value as '대입' | '고입')}
+                    onChange={e => setCategory(e.target.value as '대입' | '고입' | '학습자료')}
                     className="w-full bg-brand-secondary border border-brand-light-gray h-12 px-4 text-xs font-bold focus:border-brand-text outline-none transition-colors"
                   >
                     <option value="대입">대입</option>
                     <option value="고입">고입</option>
+                    <option value="학습자료">학습자료</option>
                   </select>
                   <p className="text-[10px] text-brand-gray/50 mt-2 font-bold">자료가 표시될 탭을 선택하세요.</p>
                 </div>

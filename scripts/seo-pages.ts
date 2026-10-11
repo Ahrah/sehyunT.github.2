@@ -142,9 +142,9 @@ ${o.body}
 </html>`;
 }
 
-/** Link to the home 자료실 section with the matching 고입/대입 tab opened. */
-export const resourcesHref = (category?: '대입' | '고입') =>
-  category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : '/#resources';
+/** Link to the home 자료실 section with the matching 고입/대입/학습자료 tab opened. */
+export const resourcesHref = (category?: '대입' | '고입' | '학습자료') =>
+  category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : category === '학습자료' ? '/?cat=study#resources' : '/#resources';
 
 const ctaBlock = (category?: '대입' | '고입') => `
     <div class="cta">
@@ -360,7 +360,7 @@ export interface ResourceLike {
   fileType: string;
   content?: string | null;
   locked?: boolean;
-  category?: '대입' | '고입';
+  category?: '대입' | '고입' | '학습자료';
   createdAt?: any;
 }
 
