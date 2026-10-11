@@ -1,11 +1,12 @@
 import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent, ReactElement } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen, Edit2, Lock } from 'lucide-react';
+import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen, Edit2, Lock, Eye, EyeOff, Copy } from 'lucide-react';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
 import { encryptPayload, decryptPayload } from '../lib/protect';
+import { saveResourcePassword, getResourcePassword, deleteResourcePassword } from '../lib/adminPasswordStore';
 
 interface ResourceItem {
   id: string;
@@ -82,6 +83,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   const [passwordError, setPasswordError] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [resourcePasswords, setResourcePasswords] = useState<Record<string, string | null>>({});
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [currentEditPassword, setCurrentEditPassword] = useState<string | null>(null);
 
   useEffect(() => {
     if (propIsAdmin !== undefined) {
@@ -95,6 +99,21 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
   }, [propIsAdmin]);
 
   const isAdmin = propIsAdmin !== undefined ? propIsAdmin : isAdminState;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      // Optional: Show a temporary notification
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  };
+
+  const togglePasswordVisibility = (resourceId: string) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [resourceId]: !prev[resourceId]
+    }));
+  };
 
   const fetchItems = async () => {
     setLoading(true);
@@ -119,6 +138,20 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         });
       }
       setItems(fetched);
+
+      // Load passwords for admin
+      if (isAdmin) {
+        const passwords: Record<string, string | null> = {};
+        await Promise.all(
+          fetched.map(async (item) => {
+            if (item.locked) {
+              const password = await getResourcePassword(item.id);
+              passwords[item.id] = password;
+            }
+          })
+        );
+        setResourcePasswords(passwords);
+      }
     } catch (err) {
       console.error("Error fetching resource items:", err);
     } finally {
@@ -355,17 +388,29 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         return new Date(koreaDate.getTime() + diff * 60 * 1000);
       })() : new Date();
 
+      let resourceId: string;
       if (editingItem) {
         await updateDoc(doc(db, 'resources', editingItem.id), {
           ...resourceData,
           createdAt: finalDate
         });
+        resourceId = editingItem.id;
       } else {
-        await addDoc(collection(db, 'resources'), {
+        const docRef = await addDoc(collection(db, 'resources'), {
           ...resourceData,
           createdAt: finalDate
         });
+        resourceId = docRef.id;
       }
+
+      // Save password to admin store if one was entered
+      if (shouldEncrypt && resourcePassword.trim()) {
+        await saveResourcePassword(resourceId, resourcePassword.trim());
+      } else if (unlockExisting && wasLocked) {
+        // If unlocking, remove the stored password
+        await deleteResourcePassword(resourceId);
+      }
+      // Note: If editing with blank password and not unlocking, we keep the existing stored password
 
       setTitle('');
       setDescription('');
@@ -382,6 +427,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setEditingItem(null);
       setImageFiles([]);
       setExistingImages([]);
+      setCurrentEditPassword(null);
       setIsUploadOpen(false);
       fetchItems();
     } catch (err: any) {
@@ -392,7 +438,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     }
   };
 
-  const handleEdit = (item: ResourceItem, e: MouseEvent) => {
+  const handleEdit = async (item: ResourceItem, e: MouseEvent) => {
     e.stopPropagation();
     setEditingItem(item);
     setTitle(item.title);
@@ -444,6 +490,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
       setPublishDate('');
     }
     
+    // Load stored password for admin
+    if (isAdmin && item.locked) {
+      const storedPassword = await getResourcePassword(item.id);
+      setCurrentEditPassword(storedPassword);
+    } else {
+      setCurrentEditPassword(null);
+    }
+    
     setFile(null);
     setImageFiles([]);
     setErrorMsg('');
@@ -473,6 +527,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         } catch (err) {
           console.warn("Could not delete file from Storage bucket:", err);
         }
+      }
+
+      // Delete stored password if exists
+      if (item.locked) {
+        await deleteResourcePassword(item.id);
       }
       
       setItems(items.filter(i => i.id !== item.id));
@@ -760,6 +819,44 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                     <p className="text-[14px] text-[#52525B] font-normal max-w-2xl leading-relaxed">
                       {item.description || ""}
                     </p>
+                    {isAdmin && item.locked && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                        {resourcePasswords[item.id] ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-900">
+                              저장된 비밀번호:
+                            </span>
+                            <code className="text-xs font-mono text-blue-700 bg-white px-2 py-1 border border-blue-200">
+                              {showPasswords[item.id] ? resourcePasswords[item.id] : '••••••••'}
+                            </code>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePasswordVisibility(item.id);
+                              }}
+                              className="p-1 hover:bg-blue-100 transition-colors"
+                              title={showPasswords[item.id] ? "비밀번호 숨기기" : "비밀번호 보기"}
+                            >
+                              {showPasswords[item.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(resourcePasswords[item.id]!);
+                              }}
+                              className="p-1 hover:bg-blue-100 transition-colors"
+                              title="비밀번호 복사"
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-blue-700 font-bold">
+                            저장된 비밀번호 없음 (자료 수정에서 다시 입력하면 저장됩니다)
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -825,6 +922,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                 setPinned(false);
                 setImageFiles([]);
                 setExistingImages([]);
+                setCurrentEditPassword(null);
               }
             }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
@@ -851,6 +949,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                   setPinned(false);
                   setImageFiles([]);
                   setExistingImages([]);
+                  setCurrentEditPassword(null);
                 }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
@@ -1110,6 +1209,39 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
 
                 <div className="pt-4 border-t border-brand-light-gray">
                   <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">열람 비밀번호 (선택)</label>
+                  
+                  {editingItem?.locked && currentEditPassword && (
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-900">
+                          현재 저장된 비밀번호:
+                        </span>
+                        <code className="text-xs font-mono text-blue-700 bg-white px-2 py-1 border border-blue-200">
+                          {currentEditPassword}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(currentEditPassword)}
+                          className="p-1 hover:bg-blue-100 transition-colors"
+                          title="비밀번호 복사"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-blue-600 font-bold">
+                        새 비밀번호를 입력하면 이 비밀번호가 변경됩니다.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {editingItem?.locked && !currentEditPassword && (
+                    <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200">
+                      <p className="text-[10px] text-yellow-700 font-bold">
+                        저장된 비밀번호 없음 (새 비밀번호를 입력하면 저장됩니다)
+                      </p>
+                    </div>
+                  )}
+                  
                   <input 
                     type="password" 
                     value={resourcePassword} 
