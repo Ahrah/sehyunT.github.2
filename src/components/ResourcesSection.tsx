@@ -1204,7 +1204,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
                             <img 
                               src={imgUrl} 
                               alt={`${selectedArticle.title} 첨부 이미지 ${idx + 1}`}
-                              className="w-full h-auto object-contain max-h-[600px]"
+                              className="w-full h-auto"
                               loading="lazy"
                             />
                           </div>
