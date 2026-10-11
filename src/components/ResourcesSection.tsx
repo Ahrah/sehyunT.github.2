@@ -138,20 +138,6 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
         });
       }
       setItems(fetched);
-
-      // Load passwords for admin
-      if (isAdmin) {
-        const passwords: Record<string, string | null> = {};
-        await Promise.all(
-          fetched.map(async (item) => {
-            if (item.locked) {
-              const password = await getResourcePassword(item.id);
-              passwords[item.id] = password;
-            }
-          })
-        );
-        setResourcePasswords(passwords);
-      }
     } catch (err) {
       console.error("Error fetching resource items:", err);
     } finally {
@@ -159,9 +145,32 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
     }
   };
 
+  const loadPasswordsForAdmin = async (itemsToLoad: ResourceItem[]) => {
+    const passwords: Record<string, string | null> = {};
+    await Promise.all(
+      itemsToLoad.map(async (item) => {
+        if (item.locked) {
+          const password = await getResourcePassword(item.id);
+          passwords[item.id] = password;
+        }
+      })
+    );
+    setResourcePasswords(passwords);
+  };
+
   useEffect(() => {
     fetchItems();
   }, []);
+
+  // Load passwords when admin state resolves and items are available
+  useEffect(() => {
+    if (isAdmin && items.length > 0) {
+      loadPasswordsForAdmin(items);
+    } else if (!isAdmin) {
+      // Clear passwords when not admin
+      setResourcePasswords({});
+    }
+  }, [isAdmin, items.length]);
 
   // Deep link: /?cat=goip#resources (고입) or /?cat=daeip#resources (대입) or /?cat=study#resources (학습자료)
   // The section renders after the page loads, so the browser's own #hash jump misses it.
