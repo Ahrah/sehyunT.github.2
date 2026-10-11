@@ -192,6 +192,24 @@ Resources 섹션의 Article 게시글에 이미지를 첨부하고 표시할 수
 - 이미지가 많아지면 용량 모니터링 필요
 - Firebase Console에서 Storage 사용량 확인 가능
 
+### Storage 보안 규칙 (필수!)
+
+**⚠️ 중요**: Article 이미지 업로드 기능을 사용하려면 Firebase Storage Rules를 먼저 배포해야 합니다.
+
+**상세 설정 가이드**: [`FIREBASE_STORAGE_RULES_SETUP.md`](./FIREBASE_STORAGE_RULES_SETUP.md) 파일 참조
+
+**규칙 요약**:
+- **읽기**: 공개 (누구나 이미지 조회 가능)
+- **쓰기**: 관리자 전용 (`ahrah0365@gmail.com`만 업로드 가능)
+
+**배포 방법**:
+```bash
+# Firebase CLI 사용
+firebase deploy --only storage
+```
+
+또는 Firebase Console → Storage → Rules에서 [`storage.rules`](./storage.rules) 파일 내용 복사-붙여넣기
+
 ## 문제 해결
 
 ### 이미지 업로드 실패
@@ -203,10 +221,14 @@ Resources 섹션의 Article 게시글에 이미지를 첨부하고 표시할 수
 3. 파일 형식 미지원 (드물음)
 
 **해결**:
-1. 브라우저 새로고침 후 재시도
-2. 다른 네트워크로 변경 (와이파이 → 모바일 데이터)
-3. 파일 형식 확인 (PNG, JPG 권장)
-4. Firebase Console에서 Storage 규칙 확인
+1. **Storage Rules 배포 확인** (가장 흔한 원인)
+   - [`FIREBASE_STORAGE_RULES_SETUP.md`](./FIREBASE_STORAGE_RULES_SETUP.md) 참조
+   - Firebase Console → Storage → Rules 확인
+   - `resources/images` 경로에 write 권한 설정 확인
+2. 브라우저 새로고침 후 재시도
+3. 다른 네트워크로 변경 (와이파이 → 모바일 데이터)
+4. 파일 형식 확인 (PNG, JPG 권장)
+5. 로그인한 이메일 확인 (ahrah0365@gmail.com)
 
 ### 이미지가 표시되지 않음
 **증상**: Article 모달에서 이미지 영역이 보이지 않음
