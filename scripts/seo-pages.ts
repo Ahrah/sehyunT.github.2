@@ -439,6 +439,9 @@ export function linksPageHtml(): string {
   <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -475,13 +478,14 @@ export function linksPageHtml(): string {
     }
     .tagline {
       font-size: 20px;
-      font-weight: 800;
+      font-weight: 700;
       font-style: italic;
       color: #C8202F;
       letter-spacing: -0.03em;
-      font-family: "Impact", "Arial Black", sans-serif;
+      font-family: "Oswald", "Impact", "Arial Black", sans-serif;
       text-transform: uppercase;
       margin-bottom: 24px;
+      transform: skewX(-5deg);
     }
     .divider {
       width: 100%;
@@ -612,8 +616,8 @@ export function linksPageHtml(): string {
     <div class="header">
       <div class="logo">
         <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="50,10 10,90 90,90" fill="#111" stroke="#F8F6F2" stroke-width="1.5"/>
-          <polygon points="72,26 52,90 90,90" fill="#C8202F"/>
+          <polygon points="50,90 10,10 90,10" fill="#F8F6F2"/>
+          <polygon points="65,10 90,10 50,90" fill="#C8202F"/>
         </svg>
       </div>
       <div class="brand-name">SEHYUN T ADMISSIONS LAB</div>
