@@ -12,7 +12,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { KEYWORD_PAGES, keywordPageHtml, resourcePageHtml } from './seo-pages';
+import { KEYWORD_PAGES, keywordPageHtml, resourcePageHtml, linksPageHtml } from './seo-pages';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -246,6 +246,13 @@ async function main() {
     });
     console.log(`✅ Generated ${KEYWORD_PAGES.length} keyword pages`);
 
+    // Generate /links page
+    console.log('🔗 Generating /links page...');
+    const linksDir = path.join(DIST_DIR, 'links');
+    ensureDir(linksDir);
+    fs.writeFileSync(path.join(linksDir, 'index.html'), linksPageHtml());
+    console.log('✅ Generated /links page');
+
     // Generate sitemap.xml (always, even if no resources)
     console.log('🗺️  Generating sitemap.xml...');
     const sitemap = generateSitemap(publicResources);
@@ -260,6 +267,8 @@ async function main() {
 
     console.log('\n✨ Static site generation complete!');
     console.log(`   - ${publicResources.length} resource pages`);
+    console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
+    console.log(`   - /links page`);
     console.log(`   - sitemap.xml with ${publicResources.length + 1 + KEYWORD_PAGES.length} URLs`);
     console.log(`   - robots.txt`);
     
