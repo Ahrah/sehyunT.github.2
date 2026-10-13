@@ -515,6 +515,7 @@ export function linksPageHtml(): string {
       color: #000;
       border-color: #FEE500;
       font-weight: 800;
+      white-space: nowrap;
     }
     .link-btn.highlight:hover {
       background: #ffed33;
@@ -539,6 +540,7 @@ export function linksPageHtml(): string {
     @media (max-width: 480px) {
       .profile h1 { font-size: 22px; }
       .link-btn { font-size: 14px; padding: 16px 20px; }
+      .link-btn.highlight { font-size: 13px; }
     }
   </style>
 </head>
@@ -552,7 +554,7 @@ export function linksPageHtml(): string {
     
     <div class="links">
       <a href="http://pf.kakao.com/_xbijSX" class="link-btn highlight" target="_blank" rel="noopener">
-        💬 카카오톡 채널 추가하고 15분 무료 전화상담 받기
+        💬 카톡 채널 추가시 15분 무료 전화상담
       </a>
       <a href="https://pf.kakao.com/_xbijSX/114866113" class="link-btn" target="_blank" rel="noopener">
         📢 12월 특목고 3:1 모의면접 안내
