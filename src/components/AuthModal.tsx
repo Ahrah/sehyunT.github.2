@@ -4,9 +4,12 @@ import { X, Mail, Lock, User, Phone, Sparkles, ChevronRight } from 'lucide-react
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+
+const ADMIN_EMAIL = 'ahrah0365@gmail.com';
+const VERIFY_ACTION = { url: 'https://sehyunt.re.kr/?verified=1' };
 
 const authSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다.").trim(),
@@ -45,6 +48,37 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
   const [forgotError, setForgotError] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // 이메일 인증 대기 상태
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
+  const [verifyCreds, setVerifyCreds] = useState<{ email: string; password: string } | null>(null);
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+
+  const handleResendVerification = async () => {
+    if (!verifyCreds) return;
+    setVerifyLoading(true);
+    setVerifyMsg(null);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, verifyCreds.email, verifyCreds.password);
+      await cred.user.reload();
+      if (cred.user.emailVerified) {
+        setVerifyMsg('이미 인증이 완료되었습니다. 로그인해 주세요.');
+        onClose();
+        return;
+      }
+      await sendEmailVerification(cred.user, VERIFY_ACTION);
+      await signOut(auth);
+      setVerifyMsg('인증 메일을 다시 보냈습니다. 받은편지함과 스팸함을 확인해 주세요.');
+    } catch (err: any) {
+      console.error(err);
+      setVerifyMsg(err?.code === 'auth/too-many-requests'
+        ? '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+        : '메일 재발송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   const handleForgotSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -103,8 +137,23 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
           emailWeeklyOptInAt: data.emailWeeklyOptIn ? serverTimestamp() : null,
           createdAt: serverTimestamp()
         });
+        await sendEmailVerification(userCredential.user, VERIFY_ACTION);
+        await signOut(auth);
+        setVerifyCreds({ email: data.email, password: data.password });
+        setVerifyEmail(data.email);
+        setVerifyMsg(null);
+        reset();
+        return;
       } else {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
+        const cred = await signInWithEmailAndPassword(auth, data.email, data.password);
+        await cred.user.reload();
+        if (!cred.user.emailVerified && cred.user.email !== ADMIN_EMAIL) {
+          await signOut(auth);
+          setVerifyCreds({ email: data.email, password: data.password });
+          setVerifyEmail(data.email);
+          setVerifyMsg('아직 이메일 인증이 완료되지 않았습니다. 메일의 인증 링크를 눌러 주세요.');
+          return;
+        }
       }
       onClose();
       reset();
@@ -184,14 +233,40 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
               <div className="mb-8">
                 <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-6">ST</div>
                 <h2 className="text-3xl md:text-4xl font-black tracking-tighter uppercase mb-2">
-                  {isForgotPassword ? 'Reset PW' : (isSignUp ? 'Member Join' : 'Log In')}
+                  {verifyEmail ? 'Verify Email' : isForgotPassword ? 'Reset PW' : (isSignUp ? 'Member Join' : 'Log In')}
                 </h2>
                 <p className="text-brand-gray text-[10px] uppercase tracking-widest font-black">
-                  {isForgotPassword ? '비밀번호를 분실하셨나요?' : (isSignUp ? '맞춤형 입시 전략의 시작' : '다시 오신 것을 환영합니다')}
+                  {verifyEmail ? '이메일 인증이 필요합니다' : isForgotPassword ? '비밀번호를 분실하셨나요?' : (isSignUp ? '맞춤형 입시 전략의 시작' : '다시 오신 것을 환영합니다')}
                 </p>
               </div>
 
-              {isForgotPassword ? (
+              {verifyEmail ? (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-brand-accent bg-brand-secondary p-5">
+                    <p className="text-sm font-black mb-2">인증 메일을 보냈습니다</p>
+                    <p className="text-xs text-brand-gray leading-relaxed">
+                      <span className="font-bold text-brand-text break-all">{verifyEmail}</span> 로 보낸 메일의 인증 링크를 누르면 가입이 완료됩니다. 인증 후 다시 로그인해 주세요. 메일이 보이지 않으면 스팸함도 확인해 주세요.
+                    </p>
+                  </div>
+                  {verifyMsg && <p className="text-xs text-brand-accent font-bold text-center leading-relaxed">{verifyMsg}</p>}
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={verifyLoading || !verifyCreds}
+                    className="w-full border border-brand-text h-14 font-black uppercase tracking-[0.2em] text-xs hover:bg-brand-secondary transition-colors disabled:opacity-50"
+                  >
+                    {verifyLoading ? 'Sending...' : '인증 메일 다시 보내기'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setVerifyEmail(null); setVerifyMsg(null); setIsSignUp(false); setValue('isSignUp', false); setError(null); }}
+                    className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors"
+                  >
+                    인증 완료, 로그인하기
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              ) : isForgotPassword ? (
                 <form onSubmit={handleForgotSubmit} className="space-y-6">
                   <p className="text-xs text-brand-gray leading-relaxed font-light">
                     가입하신 이메일 주소를 입력하시면, 안전하게 비밀번호를 재설정할 수 있는 링크를 전송해 드립니다.
