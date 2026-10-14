@@ -92,6 +92,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [currentEditPassword, setCurrentEditPassword] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingMembersOnlyItem, setPendingMembersOnlyItem] = useState<ResourceItem | null>(null);
 
   useEffect(() => {
     if (propIsAdmin !== undefined) {
@@ -168,6 +169,20 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   useEffect(() => {
     fetchItems();
   }, []);
+
+  // Auto-open members-only item after login
+  useEffect(() => {
+    if (currentUser && pendingMembersOnlyItem) {
+      console.log(`[Members-Only] User logged in, auto-opening: ${pendingMembersOnlyItem.title}`);
+      // Close the auth modal and prompt
+      setShowAuthModal(false);
+      setMembersOnlyPromptItem(null);
+      // Trigger the download which will now fetch the body
+      handleDownload(pendingMembersOnlyItem);
+      // Clear pending item
+      setPendingMembersOnlyItem(null);
+    }
+  }, [currentUser, pendingMembersOnlyItem]);
 
   // Load passwords when admin state resolves and items are available
   useEffect(() => {
@@ -626,17 +641,22 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     }
     
     // Check if members-only and user is not logged in
-    if (item.membersOnly && !currentUser) {
+    // Use auth.currentUser for real-time auth state
+    const user = auth.currentUser || currentUser;
+    if (item.membersOnly && !user) {
       setMembersOnlyPromptItem(item);
+      setPendingMembersOnlyItem(item);
       return;
     }
     
     // If members-only and logged in, fetch the body
-    if (item.membersOnly && currentUser) {
+    if (item.membersOnly && user) {
       try {
+        console.log(`[Members-Only] Fetching body for: ${item.title}`);
         const bodyDoc = await getDoc(doc(db, 'resourceBodies', item.id));
         if (bodyDoc.exists()) {
           const bodyData = bodyDoc.data();
+          console.log(`[Members-Only] Body fetched successfully`);
           const fullItem: ResourceItem = {
             ...item,
             content: bodyData.content,
@@ -661,10 +681,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
             window.open(fullItem.fileUrl, '_blank');
           }
         } else {
-          alert('자료 내용을 불러올 수 없습니다.');
+          console.error(`[Members-Only] Body document not found for resource: ${item.id}`);
+          alert('자료 내용을 불러올 수 없습니다. 관리자에게 문의해주세요.');
         }
       } catch (err) {
-        console.error('Error fetching resource body:', err);
+        console.error('[Members-Only] Error fetching resource body:', err);
         alert('자료를 불러오는 중 오류가 발생했습니다.');
       }
       return;
