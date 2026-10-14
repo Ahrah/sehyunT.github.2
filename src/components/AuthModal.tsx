@@ -18,6 +18,7 @@ const authSchema = z.object({
   childName: z.string().optional(),
   interestService: z.string().optional(),
   phone: z.string().optional(),
+  emailWeeklyOptIn: z.boolean().optional(),
 }).refine((data) => {
   if (data.isSignUp) {
     return !!data.childName && !!data.interestService && !!data.phone;
@@ -98,6 +99,8 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
           childName: data.childName,
           phone: data.phone,
           interestService: data.interestService,
+          emailWeeklyOptIn: data.emailWeeklyOptIn || false,
+          emailWeeklyOptInAt: data.emailWeeklyOptIn ? serverTimestamp() : null,
           createdAt: serverTimestamp()
         });
       } else {
@@ -139,7 +142,8 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
       isSignUp: newMode,
       childName: '',
       interestService: '',
-      phone: ''
+      phone: '',
+      emailWeeklyOptIn: false
     });
   };
 
@@ -304,6 +308,19 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                               <option value="">관심 서비스 선택</option>
                               {services.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
+                          </div>
+
+                          <div className="pt-2">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                              <input 
+                                type="checkbox" 
+                                {...register("emailWeeklyOptIn")}
+                                className="w-4 h-4 mt-0.5 accent-brand-text cursor-pointer shrink-0"
+                              />
+                              <span className="text-xs text-brand-gray group-hover:text-brand-text transition-colors leading-relaxed">
+                                이메일로 매주 새 글 알림을 받을게요 (선택)
+                              </span>
+                            </label>
                           </div>
                         </motion.div>
                       )}

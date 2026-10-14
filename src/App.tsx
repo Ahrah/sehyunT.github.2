@@ -485,7 +485,7 @@ export default function App() {
 
         <StrategyMap />
 
-        <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} />
+        <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} onOpenAuth={() => setIsAuthModalOpen(true)} />
 
         <section id="contact" className="relative overflow-hidden bg-brand-coral px-6 py-28 sm:px-8 sm:py-36 lg:px-12 lg:py-44">
           <div className="contact-ring" />
