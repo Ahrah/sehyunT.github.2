@@ -30,6 +30,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /resourceBodies/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     match /resourcePasswords/{resourceId} {
       allow read, write: if isAdmin();
     }

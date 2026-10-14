@@ -1,12 +1,13 @@
 import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent, ReactElement } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Trash2, FileText, Search, Download, X, Link2, UploadCloud, BookOpen, Edit2, Lock, Eye, EyeOff, Copy } from 'lucide-react';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
 import { encryptPayload, decryptPayload } from '../lib/protect';
 import { saveResourcePassword, getResourcePassword, deleteResourcePassword } from '../lib/adminPasswordStore';
+import { AuthModal } from './AuthModal';
 
 interface ResourceItem {
   id: string;
@@ -26,6 +27,7 @@ interface ResourceItem {
   lockCipher?: string;
   category?: '대입' | '고입' | '학습자료';
   pinned?: boolean;
+  membersOnly?: boolean;
 }
 
 const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' | '학습자료' => {
@@ -78,7 +80,10 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   const [unlockExisting, setUnlockExisting] = useState(false);
   const [publishDate, setPublishDate] = useState('');
   const [pinned, setPinned] = useState(false);
+  const [membersOnly, setMembersOnly] = useState(false);
   const [passwordPromptItem, setPasswordPromptItem] = useState<ResourceItem | null>(null);
+  const [membersOnlyPromptItem, setMembersOnlyPromptItem] = useState<ResourceItem | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [attemptPassword, setAttemptPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -86,6 +91,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   const [resourcePasswords, setResourcePasswords] = useState<Record<string, string | null>>({});
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [currentEditPassword, setCurrentEditPassword] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     if (propIsAdmin !== undefined) {
@@ -94,6 +100,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     }
     const unsub = onAuthStateChanged(auth, (u) => {
       setIsAdminState(u?.email === "ahrah0365@gmail.com");
+      setCurrentUser(u);
     });
     return () => unsub();
   }, [propIsAdmin]);
@@ -320,6 +327,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
         storagePath: storagePath || null,
         category: category,
         pinned: pinned,
+        membersOnly: membersOnly,
       };
 
       // Upload images for Article type
@@ -364,10 +372,19 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
         resourceData.lockIv = null;
         resourceData.lockIter = null;
         resourceData.lockCipher = null;
-        resourceData.content = finalContent;
-        resourceData.fileUrl = finalFileUrl;
-        resourceData.fileName = finalFileName;
-        resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
+        
+        // Store body separately if members-only
+        if (membersOnly) {
+          resourceData.content = null;
+          resourceData.fileUrl = '';
+          resourceData.fileName = '';
+          resourceData.images = null;
+        } else {
+          resourceData.content = finalContent;
+          resourceData.fileUrl = finalFileUrl;
+          resourceData.fileName = finalFileName;
+          resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
+        }
       } else if (wasLocked && !resourcePassword.trim() && !unlockExisting) {
         if (editingItem.lockCipher) {
           resourceData.locked = true;
@@ -382,10 +399,19 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
         }
       } else {
         resourceData.locked = false;
-        resourceData.content = finalContent;
-        resourceData.fileUrl = finalFileUrl;
-        resourceData.fileName = finalFileName;
-        resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
+        
+        // Store body separately if members-only
+        if (membersOnly) {
+          resourceData.content = null;
+          resourceData.fileUrl = '';
+          resourceData.fileName = '';
+          resourceData.images = null;
+        } else {
+          resourceData.content = finalContent;
+          resourceData.fileUrl = finalFileUrl;
+          resourceData.fileName = finalFileName;
+          resourceData.images = uploadedImageUrls.length > 0 ? uploadedImageUrls : null;
+        }
       }
 
       const finalDate = publishDate ? (() => {
@@ -412,6 +438,23 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
         resourceId = docRef.id;
       }
 
+      // Save body to separate collection if members-only
+      if (membersOnly && !shouldEncrypt) {
+        await setDoc(doc(db, 'resourceBodies', resourceId), {
+          content: finalContent || null,
+          fileUrl: finalFileUrl || '',
+          fileName: finalFileName || '',
+          images: uploadedImageUrls.length > 0 ? uploadedImageUrls : null
+        });
+      } else if (!membersOnly && !shouldEncrypt) {
+        // Delete from resourceBodies if switching from members-only to public
+        try {
+          await deleteDoc(doc(db, 'resourceBodies', resourceId));
+        } catch (err) {
+          // Document might not exist, ignore error
+        }
+      }
+
       // Save password to admin store if one was entered
       if (shouldEncrypt && resourcePassword.trim()) {
         await saveResourcePassword(resourceId, resourcePassword.trim());
@@ -433,6 +476,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
       setUnlockExisting(false);
       setPublishDate('');
       setPinned(false);
+      setMembersOnly(false);
       setEditingItem(null);
       setImageFiles([]);
       setExistingImages([]);
@@ -455,24 +499,48 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     setCategory(item.category || '대입');
     setFileType(item.fileType);
     setPinned(item.pinned || false);
+    setMembersOnly(item.membersOnly || false);
     
-    if (item.fileType === 'article' && item.content) {
-      setArticleContent(item.content);
+    // If members-only and admin, fetch the body
+    if (item.membersOnly && isAdmin) {
+      try {
+        const bodyDoc = await getDoc(doc(db, 'resourceBodies', item.id));
+        if (bodyDoc.exists()) {
+          const bodyData = bodyDoc.data();
+          if (item.fileType === 'article') {
+            setArticleContent(bodyData.content || '');
+          } else if (item.fileType === 'html') {
+            setHtmlContent(bodyData.content || '');
+          }
+          
+          if (bodyData.images && bodyData.images.length > 0) {
+            setExistingImages(bodyData.images);
+          } else {
+            setExistingImages([]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching resource body:', err);
+      }
     } else {
-      setArticleContent('');
-    }
+      if (item.fileType === 'article' && item.content) {
+        setArticleContent(item.content);
+      } else {
+        setArticleContent('');
+      }
 
-    if (item.fileType === 'html' && item.content) {
-      setHtmlContent(item.content);
-    } else {
-      setHtmlContent('');
-    }
-    
-    // Populate existing images
-    if (item.images && item.images.length > 0) {
-      setExistingImages(item.images);
-    } else {
-      setExistingImages([]);
+      if (item.fileType === 'html' && item.content) {
+        setHtmlContent(item.content);
+      } else {
+        setHtmlContent('');
+      }
+      
+      // Populate existing images
+      if (item.images && item.images.length > 0) {
+        setExistingImages(item.images);
+      } else {
+        setExistingImages([]);
+      }
     }
     
     if (item.fileUrl.startsWith('http://') || item.fileUrl.startsWith('https://')) {
@@ -549,11 +617,56 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     }
   };
 
-  const handleDownload = (item: ResourceItem) => {
+  const handleDownload = async (item: ResourceItem) => {
     if (item.locked) {
       setPasswordPromptItem(item);
       setAttemptPassword('');
       setPasswordError('');
+      return;
+    }
+    
+    // Check if members-only and user is not logged in
+    if (item.membersOnly && !currentUser) {
+      setMembersOnlyPromptItem(item);
+      return;
+    }
+    
+    // If members-only and logged in, fetch the body
+    if (item.membersOnly && currentUser) {
+      try {
+        const bodyDoc = await getDoc(doc(db, 'resourceBodies', item.id));
+        if (bodyDoc.exists()) {
+          const bodyData = bodyDoc.data();
+          const fullItem: ResourceItem = {
+            ...item,
+            content: bodyData.content,
+            fileUrl: bodyData.fileUrl,
+            fileName: bodyData.fileName,
+            images: bodyData.images
+          };
+          
+          if (fullItem.fileType === 'article' || fullItem.fileType === 'html') {
+            setSelectedArticle(fullItem);
+            return;
+          }
+          
+          if (fullItem.fileUrl.startsWith('data:')) {
+            const link = document.createElement("a");
+            link.href = fullItem.fileUrl;
+            link.download = fullItem.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            window.open(fullItem.fileUrl, '_blank');
+          }
+        } else {
+          alert('자료 내용을 불러올 수 없습니다.');
+        }
+      } catch (err) {
+        console.error('Error fetching resource body:', err);
+        alert('자료를 불러오는 중 오류가 발생했습니다.');
+      }
       return;
     }
     
@@ -849,6 +962,12 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                           <span className="text-[9px] font-black uppercase">LOCKED</span>
                         </div>
                       )}
+                      {item.membersOnly && !currentUser && (
+                        <div className="flex items-center gap-1 text-[#1a4f8b]" title="회원 전용">
+                          <Lock size={14} />
+                          <span className="text-[9px] font-black uppercase">회원 전용</span>
+                        </div>
+                      )}
                     </div>
                     <h3 className="text-xl font-extrabold tracking-tight mb-2 group-hover:text-brand-accent transition-colors flex items-center gap-2">
                       {item.locked && <Lock size={16} className="text-brand-accent shrink-0" />}
@@ -905,6 +1024,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   >
                     {item.locked ? (
                       <><Lock size={14} /> 비밀번호 입력</>
+                    ) : item.membersOnly && !currentUser ? (
+                      <><Lock size={14} /> 회원 전용</>
                     ) : item.fileType === 'article' ? (
                       <><BookOpen size={14} /> Read Article</>
                     ) : item.fileType === 'html' ? (
@@ -1074,6 +1195,23 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                         공지로 고정 (상단 고정)
                       </span>
                       <p className="text-[10px] text-brand-gray/50 mt-1 font-bold">체크하면 이 자료가 목록 최상단에 고정되어 표시됩니다.</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={membersOnly} 
+                      onChange={e => setMembersOnly(e.target.checked)}
+                      className="w-5 h-5 accent-brand-text cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-brand-text group-hover:text-brand-accent transition-colors">
+                        회원 전용 (로그인 필수)
+                      </span>
+                      <p className="text-[10px] text-brand-gray/50 mt-1 font-bold">체크하면 로그인한 회원만 자료 내용을 볼 수 있습니다. 제목과 설명은 모두에게 표시됩니다.</p>
                     </div>
                   </label>
                 </div>
@@ -1483,6 +1621,79 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Members-Only Prompt Modal */}
+      <AnimatePresence>
+        {membersOnlyPromptItem && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              setMembersOnlyPromptItem(null);
+            }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-brand-bg w-full max-w-md p-10 relative border border-brand-light-gray"
+            >
+              <button 
+                onClick={() => {
+                  setMembersOnlyPromptItem(null);
+                }}
+                className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+              >
+                <X size={24} />
+              </button>
+
+              <div className="mb-8">
+                <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-4">
+                  <Lock size={20} />
+                </div>
+                <h2 className="text-2xl font-black uppercase tracking-tight mb-2">
+                  회원 전용 자료
+                </h2>
+                <p className="text-brand-gray text-sm leading-relaxed">
+                  홈페이지 회원이라면 로그인 후 바로 볼 수 있어요.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setMembersOnlyPromptItem(null);
+                    setShowAuthModal(true);
+                  }}
+                  className="w-full h-12 bg-brand-text text-brand-bg font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center justify-center gap-3"
+                >
+                  로그인
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setMembersOnlyPromptItem(null);
+                    setShowAuthModal(true);
+                  }}
+                  className="w-full h-12 bg-white text-brand-text border-2 border-brand-text font-black uppercase tracking-widest hover:bg-brand-secondary transition-colors flex items-center justify-center gap-3"
+                >
+                  회원가입
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <AuthModal onClose={() => setShowAuthModal(false)} />
         )}
       </AnimatePresence>
     </section>
