@@ -245,7 +245,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
     <nav className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-brand-ink/10 bg-brand-paper/95 py-3 backdrop-blur-xl' : 'bg-transparent py-5'}`}>
       <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
         <a href="#top" className="flex items-center gap-3" aria-label="입시는세연쌤 홈">
-          <img src="/logo-pic.png" alt="" className="h-10 w-10 rounded-full object-cover" />
+          <img src="/logo-mark.svg" alt="" className="h-10 w-10 object-contain" />
           <div className="leading-none">
             <strong className="block text-lg tracking-[-0.04em]">입시는세연쌤</strong>
             <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.24em] text-brand-accent">Sehyun T Admissions</span>
@@ -504,7 +504,7 @@ export default function App() {
       <footer className="bg-brand-ink px-6 py-16 text-white sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
-            <div><div className="flex items-center gap-3"><img src="/logo-pic.png" alt="" className="h-11 w-11 rounded-full object-cover" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">학생의 진로와 학습, 기록을 하나의 성장 흐름으로 연결하는 입시 전략 컨설팅.</p></div>
+            <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">학생의 진로와 학습, 기록을 하나의 성장 흐름으로 연결하는 입시 전략 컨설팅.</p></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>
