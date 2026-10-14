@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && npm run inject-content && npm run generate-static",
+    "build": "vite build && npm run inject-content && npm run generate-static && npm run inject-analytics",
+    "inject-analytics": "tsx scripts/inject-analytics.ts",
     "inject-content": "tsx scripts/inject-prerendered-content.ts",
     "generate-static": "tsx scripts/generate-static-pages.ts",
     "preview": "vite preview",
