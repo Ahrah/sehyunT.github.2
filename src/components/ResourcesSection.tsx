@@ -50,7 +50,7 @@ const classifyResourceCategory = (item: ResourceItem): '대입' | '고입' | '�
   return '대입';
 };
 
-export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) => {
+export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin?: boolean; onOpenAuth?: () => void }) => {
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -774,6 +774,35 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }
           >
             학습자료
           </button>
+        </div>
+
+        {/* Kakao Channel Banner */}
+        <div className="mb-6 bg-[#FDF9F3] border border-[#1a4f8b]/20 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-sm sm:text-base font-bold text-[#1a4f8b] leading-relaxed">
+                카카오톡 채널 입시는세연쌤에서도 새 글 소식을 볼 수 있어요.
+              </p>
+              {!auth.currentUser && (
+                <p className="text-xs sm:text-sm text-[#1a4f8b]/80 mt-2 leading-relaxed">
+                  <button 
+                    onClick={onOpenAuth}
+                    className="underline hover:text-[#1a4f8b] transition-colors font-semibold"
+                  >
+                    회원가입하고 이메일 수신에 동의하면 매주 새 글 알림을 받을 수 있어요.
+                  </button>
+                </p>
+              )}
+            </div>
+            <a 
+              href="https://pf.kakao.com/_xbijSX"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 px-4 sm:px-6 py-2.5 bg-[#1a4f8b] text-white text-xs sm:text-sm font-bold hover:bg-[#15406f] transition-colors whitespace-nowrap"
+            >
+              채널 추가하기
+            </a>
+          </div>
         </div>
 
         {loading ? (
