@@ -116,7 +116,8 @@ const homePageContent = `
     <section class="bg-brand-text py-40 px-6 lg:px-8 text-brand-bg">
       <div class="max-w-7xl mx-auto">
         <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Sehyun T Strategy Map</p>
-        <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-12">합격보다 오래 남는 성장의 설계도</h2>
+        <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-12">합격만이 아닌 오래 남는 성장의 설계도</h2>
+        <p class="mb-12">질문을 만들고, 범위를 좁히고, 자료를 비교하고, 직접 설명할 수 있을 때까지 탐구의 깊이를 만듭니다.</p>
         <ol class="space-y-8">
           <li><strong>01 학생을 읽습니다</strong> — 관심사, 학습 습관과 경험을 입체적으로 봅니다.</li>
           <li><strong>02 핵심 질문을 찾습니다</strong> — 선택과 보완 지점을 선명하게 정리합니다.</li>

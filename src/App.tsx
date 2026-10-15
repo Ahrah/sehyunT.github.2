@@ -310,7 +310,7 @@ const StrategyMap = () => {
       <div className="mx-auto grid max-w-7xl gap-16 px-6 sm:px-8 lg:grid-cols-[0.82fr_1.18fr] lg:gap-24 lg:px-12">
         <div className="h-fit lg:sticky lg:top-32">
           <p className="section-label text-brand-coral">Sehyun T Strategy Map</p>
-          <h2 className="mt-7 text-5xl font-black leading-[0.98] tracking-[-0.06em] sm:text-6xl">합격보다 오래 남는<br />성장의 설계도</h2>
+          <h2 className="mt-7 whitespace-nowrap text-[clamp(1.6rem,7.6vw,2.1rem)] font-black leading-[1.1] tracking-[-0.06em] lg:text-[2.15rem]">합격만이 아닌<br />오래 남는 성장의 설계도</h2>
           <p className="mt-8 max-w-md text-base leading-7 text-white/55">상담은 정답을 대신 주는 일이 아닙니다. 학생이 자기 방향을 이해하고 다음 선택을 해낼 수 있도록 다섯 단계를 함께 걷습니다.</p>
           <div className="mt-12 hidden lg:block">
             <div className="relative h-1 overflow-hidden rounded-full bg-white/10">

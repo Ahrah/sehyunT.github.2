@@ -14,8 +14,8 @@ function rewriteHeadlines() {
       heading.innerHTML = '지금의 고민에서<br />다음 질문을 찾아볼까요?';
     }
 
-    if (text === '합격보다 오래 남는 성장의 설계도') {
-      heading.innerHTML = '입시가 끝난 뒤에도 남는<br />생각하는 힘';
+    if (text === '합격보다 오래 남는 성장의 설계도' || text === '입시가 끝난 뒤에도 남는생각하는 힘' || text === '입시가 끝난 뒤에도 남는 생각하는 힘') {
+      heading.innerHTML = '합격만이 아닌<br />오래 남는 성장의 설계도';
     }
   });
 
