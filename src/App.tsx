@@ -476,7 +476,7 @@ export default function App() {
                   <div className="flex items-center justify-between"><span className="rounded-full bg-brand-coral/30 px-3 py-1.5 text-xs font-black">{item.tag}</span><span className="font-mono text-xs text-brand-ink/30">0{index + 1}</span></div>
                   <p className="mt-9 text-base font-bold leading-7 text-brand-ink/45">{item.before}</p>
                   <div className="my-7 h-px bg-brand-ink/10" />
-                  <p className="mt-auto text-xl font-black leading-8 tracking-[-0.025em]">{item.after}</p>
+                  <p className="mt-auto text-xl font-black leading-8 tracking-[-0.025em]">“{item.after}”</p>
                 </motion.article>
               ))}
             </div>
