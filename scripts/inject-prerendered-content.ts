@@ -45,7 +45,7 @@ const homePageContent = `
           </div>
           <div>
             <div class="text-3xl font-black tracking-tighter text-brand-text">1:1</div>
-            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Customized</div>
+            <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">맞춤 컨설팅</div>
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ const homePageContent = `
         <div class="flex flex-col sm:flex-row justify-center gap-8 mb-32">
           <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
             <button class="w-full py-10 text-xl font-black uppercase rounded-none bg-white text-black hover:bg-brand-accent hover:text-white transition-all duration-700 border border-white">
-              Get Consult
+              상담 신청
             </button>
           </a>
           <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">

@@ -402,7 +402,7 @@ export default function App() {
                 </div>
               </div>
               <div className="absolute -bottom-7 -left-3 max-w-[260px] rounded-3xl bg-white p-5 shadow-xl sm:-left-10 sm:p-6">
-                <p className="text-sm font-bold leading-6">“학생의 언어와 속도를 지키는 전략이어야 오래 갑니다.”</p>
+                <p className="text-sm font-bold leading-6">“학생이 직접 말할 수 있는 내용으로, 학생이 감당할 수 있는 속도에 맞춰 전략을 세웁니다.”</p>
               </div>
             </motion.div>
           </div>
