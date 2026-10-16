@@ -1,6 +1,3 @@
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
-
 export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
 export const CAREER_COUNSELING_PATH = `/${CAREER_COUNSELING_SLUG}/`;
 export const CAREER_COUNSELING_COLLECTION = 'careerCounselingApplications';
@@ -207,11 +204,11 @@ export function validateCareerCounselingForm(input: CareerCounselingApplicationI
   return null;
 }
 
-export async function submitCareerCounselingApplication(input: CareerCounselingApplicationInput) {
+export function toCareerCounselingRecord(input: CareerCounselingApplicationInput) {
   const error = validateCareerCounselingForm(input);
   if (error) throw new Error(error);
 
-  return addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
+  return {
     userId: input.userId,
     email: input.email,
     childName: input.childName,
@@ -226,7 +223,6 @@ export async function submitCareerCounselingApplication(input: CareerCounselingA
     privacyAgreed: true,
     productName: CAREER_COUNSELING_PRODUCT,
     price: CAREER_COUNSELING_PRICE,
-    status: 'submitted',
-    createdAt: serverTimestamp(),
-  });
+    status: 'submitted' as const,
+  };
 }

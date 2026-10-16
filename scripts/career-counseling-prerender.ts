@@ -186,12 +186,11 @@ export function applyCareerCounselingSpaShell(html: string): string {
   const start = out.indexOf(startTag);
   if (start === -1) throw new Error('Could not find #root in SPA shell');
   const afterStart = start + startTag.length;
-  const scriptPos = out.indexOf('<script', afterStart);
-  if (scriptPos === -1) throw new Error('Could not find bundle script after #root');
-  const beforeScript = out.slice(afterStart, scriptPos);
-  const closeIdx = beforeScript.lastIndexOf('</div>');
-  if (closeIdx === -1) throw new Error('Could not find #root closing tag');
-  return `${out.slice(0, afterStart)}\n${careerCounselingPrerenderHtml}\n    ${out.slice(afterStart + closeIdx)}`;
+  const bodyClose = out.lastIndexOf('</body>');
+  if (bodyClose === -1) throw new Error('Could not find </body> in SPA shell');
+  const rootClose = out.lastIndexOf('</div>', bodyClose);
+  if (rootClose === -1 || rootClose < afterStart) throw new Error('Could not find #root closing tag');
+  return `${out.slice(0, afterStart)}\n${careerCounselingPrerenderHtml}\n    ${out.slice(rootClose)}`;
 }
 
 export function assertNoSensitiveCopy(html: string) {

@@ -1,7 +1,8 @@
 import { FormEvent, Fragment, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { AuthModal } from '../components/AuthModal';
 import {
@@ -17,8 +18,9 @@ import {
   REFUND_ITEMS,
   SCHEDULE_CARDS,
   SCHOOL_REGIONS,
+  CAREER_COUNSELING_COLLECTION,
   formatPhone,
-  submitCareerCounselingApplication,
+  toCareerCounselingRecord,
   validateCareerCounselingForm,
 } from '../lib/careerCounseling';
 import './career-counseling.css';
@@ -131,7 +133,10 @@ export const CareerCounselingPage = () => {
     setSubmitting(true);
     setError(null);
     try {
-      await submitCareerCounselingApplication(payload);
+      await addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
+        ...toCareerCounselingRecord(payload),
+        createdAt: serverTimestamp(),
+      });
       setSubmitted(true);
       document.getElementById('자격')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err: any) {
@@ -144,7 +149,16 @@ export const CareerCounselingPage = () => {
 
   return (
     <div className="cc-page">
-      <AnimatePresence>{authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}</AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {authOpen && (
+            <div style={{ position: 'relative', zIndex: 1000 }}>
+              <AuthModal onClose={() => setAuthOpen(false)} />
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       <div className="elig-bar" role="note">
         <b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)

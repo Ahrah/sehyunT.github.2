@@ -290,9 +290,15 @@ async function main() {
     fs.writeFileSync(path.join(DIST_DIR, 'robots.txt'), robotsTxt);
     console.log('✅ Generated robots.txt');
 
+    const counselingPage = path.join(DIST_DIR, CAREER_COUNSELING_SLUG, 'index.html');
+    if (!fs.existsSync(counselingPage)) {
+      throw new Error('Failed to write /jinro-counseling/index.html');
+    }
+
     console.log('\n✨ Static site generation complete!');
     console.log(`   - ${publicResources.length} resource pages`);
     console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
+    console.log(`   - /jinro-counseling/ prerendered SPA page`);
     console.log(`   - /links page`);
     console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} URLs`);
     console.log(`   - robots.txt`);
@@ -320,6 +326,11 @@ async function main() {
     }
   }
   
+  if (!fs.existsSync(path.join(DIST_DIR, CAREER_COUNSELING_SLUG, 'index.html'))) {
+    console.error('❌ Missing /jinro-counseling/index.html');
+    process.exit(1);
+  }
+
   // Explicitly exit to ensure Node process terminates
   process.exit(0);
 }

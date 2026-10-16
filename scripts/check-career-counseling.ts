@@ -29,9 +29,9 @@ const shell = `<!doctype html><html><head>
 <meta name="description" content="old" />
 <link rel="canonical" href="https://sehyunt.re.kr/" />
 <script type="application/ld+json">{"@type":"WebSite"}</script>
+<script type="module" src="/assets/index.js"></script>
 </head><body>
 <div id="root"><div>home</div></div>
-<script type="module" src="/assets/index.js"></script>
 </body></html>`;
 
 const applied = applyCareerCounselingSpaShell(shell);
