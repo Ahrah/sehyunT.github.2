@@ -75,6 +75,15 @@ const programCategories: ProgramCategory[] = [
         target: ['진로 방향이 자주 바뀌는 학생', '좋아하는 분야를 찾고 싶은 학생', '학업과 진로의 연결고리가 필요한 학생'],
       },
       {
+        title: 'Online Career Subject Counseling',
+        subtitle: '온라인 진로·선택과목 상담',
+        desc: '비수도권 고1·고2를 위한 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.',
+        content: '희망 전공을 먼저 듣고, 앞으로 들을 과목의 이수 경로를 함께 설계합니다. 상담 전날까지 생기부와 희망 진로를 받아 미리 읽고, 상담이 끝나면 1장짜리 과목 이수 로드맵을 드립니다. 서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있으며, 일정 확정 시 60,000원을 입금합니다.',
+        features: ['40분 온라인 화상 상담', '과목 이수 로드맵 1장', '공동교육과정·온라인학교 대안 점검', '세특·탐구와 과목 연결'],
+        target: ['서울·경기·인천 외 지역 고등학교 재학생(고1·고2)', '희망 전공에 맞춰 과목을 고르고 싶은 학생', '학교에 없는 과목의 대안이 궁금한 학생'],
+        landing: { href: '/jinro-counseling/', label: '온라인 진로·선택과목 상담' },
+      },
+      {
         title: 'Pre-High School Strategy',
         subtitle: '고등학교 입학 전 컨설팅',
         desc: '중3 겨울, 고등학교 3년의 시행착오를 줄입니다.',
@@ -237,6 +246,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
   const links = [
     ['소개', '#about'],
     ['프로그램', '#programs'],
+    ['진로 상담', '/jinro-counseling/'],
     ['전략 지도', '#strategy'],
     ['자료실', '#resources'],
   ];
@@ -505,7 +515,7 @@ export default function App() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
             <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">학생의 진로와 학습, 기록을 하나의 성장 흐름으로 연결하는 입시 전략 컨설팅.</p></div>
-            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
+            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/jinro-counseling/">진로·선택과목 상담</a><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>
           <div className="grid gap-7 pt-9 text-xs leading-6 text-white/45 lg:grid-cols-[1fr_auto] lg:items-end">

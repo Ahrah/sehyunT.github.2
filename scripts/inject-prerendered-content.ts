@@ -33,6 +33,7 @@ const homePageContent = `
           진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
+          <a href="/jinro-counseling/">진로·선택과목 상담</a>
           <a href="/saenggibu-consulting/">생기부 컨설팅</a>
           <a href="/jasoseo-consulting/">자소서 컨설팅</a>
           <a href="/interview-consulting/">면접 컨설팅</a>
@@ -167,6 +168,7 @@ const homePageContent = `
         </p>
       </div>
       <nav aria-label="컨설팅 안내" class="mt-16 flex flex-wrap gap-x-6 gap-y-3 text-sm font-black">
+        <a href="/jinro-counseling/">진로·선택과목 상담</a>
         <a href="/saenggibu-consulting/">생기부 컨설팅</a>
         <a href="/jasoseo-consulting/">자소서 컨설팅</a>
         <a href="/interview-consulting/">면접 컨설팅</a>

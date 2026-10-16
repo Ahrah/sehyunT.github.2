@@ -11,7 +11,8 @@
     "generate-static": "tsx scripts/generate-static-pages.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx scripts/check-career-counseling.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
