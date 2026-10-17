@@ -13,6 +13,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { KEYWORD_PAGES, keywordPageHtml, resourcePageHtml, linksPageHtml } from './seo-pages';
+import {
+  CAREER_COUNSELING_CANONICAL,
+  CAREER_COUNSELING_SLUG,
+  applyCareerCounselingSpaShell,
+  assertNoSensitiveCopy,
+  careerCounselingPrerenderHtml,
+} from './career-counseling-prerender';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -169,6 +176,11 @@ function generateSitemap(resources: ResourceItem[]): string {
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>`),
+    `  <url>
+    <loc>${CAREER_COUNSELING_CANONICAL}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>`,
   ];
 
   // Add public (non-locked) resources
@@ -246,6 +258,19 @@ async function main() {
     });
     console.log(`✅ Generated ${KEYWORD_PAGES.length} keyword pages`);
 
+    // SPA route + prerender for 온라인 진로·선택과목 상담
+    console.log('🧭 Generating /jinro-counseling/ SPA shell with prerender...');
+    assertNoSensitiveCopy(careerCounselingPrerenderHtml);
+    const spaIndex = path.join(DIST_DIR, 'index.html');
+    if (!fs.existsSync(spaIndex)) {
+      throw new Error('dist/index.html is required to prerender /jinro-counseling/');
+    }
+    const counselingDir = path.join(DIST_DIR, CAREER_COUNSELING_SLUG);
+    ensureDir(counselingDir);
+    const counselingHtml = applyCareerCounselingSpaShell(fs.readFileSync(spaIndex, 'utf-8'));
+    fs.writeFileSync(path.join(counselingDir, 'index.html'), counselingHtml);
+    console.log('✅ Generated /jinro-counseling/');
+
     // Generate /links page
     console.log('🔗 Generating /links page...');
     const linksDir = path.join(DIST_DIR, 'links');
@@ -265,11 +290,17 @@ async function main() {
     fs.writeFileSync(path.join(DIST_DIR, 'robots.txt'), robotsTxt);
     console.log('✅ Generated robots.txt');
 
+    const counselingPage = path.join(DIST_DIR, CAREER_COUNSELING_SLUG, 'index.html');
+    if (!fs.existsSync(counselingPage)) {
+      throw new Error('Failed to write /jinro-counseling/index.html');
+    }
+
     console.log('\n✨ Static site generation complete!');
     console.log(`   - ${publicResources.length} resource pages`);
     console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
+    console.log(`   - /jinro-counseling/ prerendered SPA page`);
     console.log(`   - /links page`);
-    console.log(`   - sitemap.xml with ${publicResources.length + 1 + KEYWORD_PAGES.length} URLs`);
+    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} URLs`);
     console.log(`   - robots.txt`);
     
   } catch (error) {
@@ -295,6 +326,11 @@ async function main() {
     }
   }
   
+  if (!fs.existsSync(path.join(DIST_DIR, CAREER_COUNSELING_SLUG, 'index.html'))) {
+    console.error('❌ Missing /jinro-counseling/index.html');
+    process.exit(1);
+  }
+
   // Explicitly exit to ensure Node process terminates
   process.exit(0);
 }

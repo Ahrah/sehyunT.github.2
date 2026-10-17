@@ -1,17 +1,23 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import { CareerCounselingPage } from './pages/CareerCounselingPage';
+import { isCareerCounselingPath } from './lib/careerCounseling';
 import './index.css';
 import { initHomeEnhancements } from './homeEnhancements';
 import { initHomeHeadlineFixes } from './homeHeadlineFixes';
 import { initHomeRequestedHotfix } from './homeRequestedHotfix';
 
+const isCounseling = isCareerCounselingPath();
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {isCounseling ? <CareerCounselingPage /> : <App />}
   </StrictMode>,
 );
 
-initHomeEnhancements();
-initHomeHeadlineFixes();
-initHomeRequestedHotfix();
+if (!isCounseling) {
+  initHomeEnhancements();
+  initHomeHeadlineFixes();
+  initHomeRequestedHotfix();
+}
