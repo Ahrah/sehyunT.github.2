@@ -360,6 +360,12 @@ export default function App() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => onAuthStateChanged(auth, (currentUser) => {
+    // 이메일 인증을 마치지 않은 계정은 로그인 상태로 두지 않음 (관리자 제외)
+    if (currentUser && !currentUser.emailVerified && currentUser.email !== ADMIN_EMAIL) {
+      setUser(null);
+      setIsAdminOpen(false);
+      return;
+    }
     setUser(currentUser);
     setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
   }), []);
