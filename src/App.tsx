@@ -63,7 +63,7 @@ const programCategories: ProgramCategory[] = [
     number: '01',
     eyebrow: '중학생 · 예비고',
     title: '진로·고입 전략',
-    description: '관심사와 학습 성향을 발견하고, 학교 선택부터 고교 생활의 첫 방향까지 연결합니다.',
+    description: '중학교 시기는 진로 방향과 학습 방식을 정하는 시기이며, 이 시기의 탐구 경험이 고입 자기소개서의 근거가 됩니다.',
     icon: Compass,
     programs: [
       {
@@ -98,7 +98,7 @@ const programCategories: ProgramCategory[] = [
     number: '02',
     eyebrow: '학습 습관 · 실행력',
     title: '자기주도학습',
-    description: '계획을 세우는 데서 끝나지 않고, 학생이 스스로 실행하고 회복하는 공부 구조를 만듭니다.',
+    description: '학생의 학습 패턴을 진단하고, 그에 맞는 학습 전략을 함께 세웁니다.',
     icon: Target,
     programs: [
       {
@@ -124,7 +124,7 @@ const programCategories: ProgramCategory[] = [
     number: '03',
     eyebrow: '특목고 · 자사고',
     title: '자소서·면접',
-    description: '학생의 경험을 설득력 있는 언어로 정리하고, 어떤 질문에도 자기 생각을 말하도록 훈련합니다.',
+    description: '자기소개서 첨삭, 12월 모의면접, 공통문항 특강으로 특목고 입시를 준비합니다.',
     icon: MessageCircle,
     programs: [
       {
@@ -194,11 +194,11 @@ const programCategories: ProgramCategory[] = [
 ];
 
 const strategySteps = [
-  { number: '01', title: '학생을 읽습니다', label: 'Discover', text: '성적표보다 먼저 학생의 관심사, 학습 습관, 스트레스 반응과 지금까지의 경험을 입체적으로 봅니다.' },
-  { number: '02', title: '핵심 질문을 찾습니다', label: 'Define', text: '막연한 진로를 구체적인 질문으로 바꾸고, 학생에게 중요한 선택과 보완 지점을 선명하게 정리합니다.' },
-  { number: '03', title: '성장의 흐름을 설계합니다', label: 'Design', text: '진로, 교과, 탐구, 독서와 기록이 따로 놀지 않도록 하나의 로드맵 안에서 연결합니다.' },
-  { number: '04', title: '학생의 언어로 실행합니다', label: 'Do', text: '대신 만들어주는 결과물이 아니라 학생이 이해하고 말할 수 있는 활동과 학습 루틴으로 옮깁니다.' },
-  { number: '05', title: '끝까지 점검하고 다듬습니다', label: 'Refine', text: '실행 결과를 함께 돌아보고 기록과 면접의 일관성을 높이며 다음 선택까지 이어지도록 정교화합니다.' },
+  { number: '01', title: '학생을 읽습니다', label: 'Discover', text: '다양한 진로 분야를 제시하고, 학생의 관심을 바탕으로 진로 방향을 정합니다.' },
+  { number: '02', title: '핵심 질문을 찾습니다', label: 'Define', text: '진로에 맞는 목표 학교와 전형을 정하고, 탐구 주제를 선정합니다.' },
+  { number: '03', title: '성장의 흐름을 설계합니다', label: 'Design', text: '중3 여름방학부터 자기소개서를 첨삭합니다.' },
+  { number: '04', title: '학생의 언어로 실행합니다', label: 'Do', text: '12월 모의면접으로 실전 면접을 준비합니다.' },
+  { number: '05', title: '끝까지 점검하고 다듬습니다', label: 'Refine', text: '고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.' },
 ];
 
 const studentCases = [
@@ -422,7 +422,7 @@ export default function App() {
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
             <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
               <div><p className="section-label text-brand-accent">Programs</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">지금 필요한<br />한 가지부터</h2></div>
-              <p className="max-w-2xl text-lg leading-8 text-brand-ink/60 lg:ml-auto">복잡한 프로그램 목록 대신 학생의 현재 고민에 맞는 네 개의 시작점으로 정리했습니다. 카드를 열면 세부 프로그램과 진행 방향을 확인할 수 있습니다.</p>
+              <p className="max-w-2xl text-lg leading-8 text-brand-ink/60 lg:ml-auto">학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.</p>
             </motion.div>
 
             <div className="mt-16 grid gap-4 lg:grid-cols-2">
@@ -479,7 +479,7 @@ export default function App() {
 
         <section className="bg-brand-paper py-28 sm:py-36">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-            <motion.div {...reveal} className="max-w-3xl"><p className="section-label text-brand-accent">Student Changes</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">숫자보다 먼저 보이는 변화</h2><p className="mt-6 text-lg leading-8 text-brand-ink/58">검증되지 않은 합격 실적 대신, 상담을 통해 학생의 생각과 행동이 어떻게 달라졌는지를 보여드립니다.</p></motion.div>
+            <motion.div {...reveal} className="max-w-3xl"><p className="section-label text-brand-accent">Student Changes</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">숫자보다 먼저 보이는 변화</h2></motion.div>
             <div className="mt-14 grid gap-4 lg:grid-cols-3">
               {studentCases.map((item, index) => (
                 <motion.article {...reveal} key={item.tag} className="flex min-h-[360px] flex-col rounded-[1.75rem] border border-brand-ink/10 bg-white p-7 sm:p-9">
@@ -501,7 +501,7 @@ export default function App() {
           <div className="contact-ring" />
           <motion.div {...reveal} className="relative mx-auto max-w-5xl text-center">
             <p className="section-label">Start a Conversation</p>
-            <h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.065em] sm:text-7xl lg:text-8xl">학생의 다음 장면을<br />함께 설계해볼까요?</h2>
+            <h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.065em] sm:text-7xl lg:text-8xl">1:1 상담 신청하기</h2>
             <p className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-brand-ink/65">현재 상황과 고민을 남겨주시면, 어떤 프로그램이 필요한지부터 차근차근 안내드립니다.</p>
             <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
               <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowUpRight size={18} /></Button></a>
@@ -514,7 +514,7 @@ export default function App() {
       <footer className="bg-brand-ink px-6 py-16 text-white sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
-            <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">학생의 진로와 학습, 기록을 하나의 성장 흐름으로 연결하는 입시 전략 컨설팅.</p></div>
+            <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤</p></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/jinro-counseling/">진로·선택과목 상담</a><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>

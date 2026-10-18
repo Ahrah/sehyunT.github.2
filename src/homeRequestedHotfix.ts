@@ -31,11 +31,16 @@ function applyRequestedHotfix() {
     }
   }
 
-  // 2) Remove only the first sentence from the Programs intro.
-  allTextElements('main p').forEach((el) => {
+  // 2) Keep the Programs intro as the requested consulting copy.
+  allTextElements('#programs p').forEach((el) => {
     const text = el.textContent?.trim() || '';
-    if (text.startsWith('지금 가장 막혀 있는 지점부터 시작하면 됩니다.')) {
-      el.textContent = text.replace('지금 가장 막혀 있는 지점부터 시작하면 됩니다.', '').trim();
+    if (
+      text.startsWith('지금 가장 막혀 있는 지점부터 시작하면 됩니다.') ||
+      text.startsWith('복잡한 프로그램 목록 대신') ||
+      text === '단순한 입시 관리가 아닌, 체계적인 분석을 기반으로 한 맞춤형 솔루션.' ||
+      text === '진로, 공부, 기록, 자소서·면접 중 필요한 부분을 먼저 확인하고 세부 프로그램을 선택할 수 있습니다.'
+    ) {
+      el.textContent = '학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.';
     }
   });
 
@@ -82,11 +87,16 @@ function applyRequestedHotfix() {
     parent?.querySelector('svg')?.remove();
   });
 
-  // 7) Remove only the opening clause from Student Changes description.
+  // 7) Remove the Student Changes disclaimer copy without leaving an empty gap.
   allTextElements('main p').forEach((el) => {
     const text = el.textContent?.trim() || '';
-    if (text === '합격 숫자만 나열하기보다, 상담 뒤 학생이 질문하고 공부하고 표현하는 방식이 실제로 어떻게 달라졌는지를 보여드립니다.') {
-      el.textContent = '상담 뒤 학생이 질문하고 공부하고 표현하는 방식이 실제로 어떻게 달라졌는지를 보여드립니다.';
+    if (
+      text === '검증되지 않은 합격 실적 대신, 상담을 통해 학생의 생각과 행동이 어떻게 달라졌는지를 보여드립니다.' ||
+      text === '합격 숫자만 나열하기보다, 상담 뒤 학생이 질문하고 공부하고 표현하는 방식이 실제로 어떻게 달라졌는지를 보여드립니다.' ||
+      text === '상담 뒤 학생이 질문하고 공부하고 표현하는 방식이 실제로 어떻게 달라졌는지를 보여드립니다.' ||
+      text.startsWith('합격 숫자만 나열하기보다')
+    ) {
+      el.remove();
     }
   });
 }

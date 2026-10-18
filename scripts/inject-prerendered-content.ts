@@ -41,7 +41,7 @@ const homePageContent = `
         
         <div class="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
           <div>
-            <div class="text-3xl font-black tracking-tighter text-brand-text">07+</div>
+            <div class="text-3xl font-black tracking-tighter text-brand-text">8+</div>
             <div class="text-[14px] text-[#71717A] uppercase tracking-[0.2em] mt-2 font-bold">Years Exp</div>
           </div>
           <div>
@@ -82,7 +82,7 @@ const homePageContent = `
         <p class="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Programs</p>
         <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] leading-none">지금 필요한 한 가지부터</h2>
         <p class="text-brand-gray max-w-sm font-light text-base md:text-lg leading-[1.6] mt-8 italic">
-          단순한 입시 관리가 아닌, 체계적인 분석을 기반으로 한 맞춤형 솔루션.
+          학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.
         </p>
       </div>
 
@@ -90,19 +90,19 @@ const homePageContent = `
         <!-- Career & Middle -->
         <div>
           <h3 class="text-4xl font-extrabold tracking-tighter mb-4">진로·고입 전략</h3>
-          <p class="text-brand-gray">중학생 시기는 성적 향상을 넘어, 자신의 흥미와 학습 방식을 발견하는 골든타임입니다.</p>
+          <p class="text-brand-gray">중학교 시기는 진로 방향과 학습 방식을 정하는 시기이며, 이 시기의 탐구 경험이 고입 자기소개서의 근거가 됩니다.</p>
         </div>
 
         <!-- Learning Coaching -->
         <div>
           <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자기주도학습</h3>
-          <p class="text-brand-gray">모두에게 맞는 공부법은 없습니다. 학생의 패턴에 최적화된 공부 엔진을 설계합니다.</p>
+          <p class="text-brand-gray">학생의 학습 패턴을 진단하고, 그에 맞는 학습 전략을 함께 세웁니다.</p>
         </div>
 
         <!-- Specialized Prep -->
         <div>
           <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자소서·면접</h3>
-          <p class="text-brand-gray">자기소개서 집중 컨설팅, 면접 대비, 공통문항 특강을 통한 완벽한 입시 준비.</p>
+          <p class="text-brand-gray">자기소개서 첨삭, 12월 모의면접, 공통문항 특강으로 특목고 입시를 준비합니다.</p>
         </div>
 
         <!-- Student Record -->
@@ -120,11 +120,11 @@ const homePageContent = `
         <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-12">합격만이 아닌 오래 남는 성장의 설계도</h2>
         <p class="mb-12">질문을 만들고, 범위를 좁히고, 자료를 비교하고, 직접 설명할 수 있을 때까지 탐구의 깊이를 만듭니다.</p>
         <ol class="space-y-8">
-          <li><strong>01 학생을 읽습니다</strong> — 관심사, 학습 습관과 경험을 입체적으로 봅니다.</li>
-          <li><strong>02 핵심 질문을 찾습니다</strong> — 선택과 보완 지점을 선명하게 정리합니다.</li>
-          <li><strong>03 성장의 흐름을 설계합니다</strong> — 진로, 교과, 탐구와 기록을 연결합니다.</li>
-          <li><strong>04 학생의 언어로 실행합니다</strong> — 이해하고 말할 수 있는 활동과 학습 루틴으로 옮깁니다.</li>
-          <li><strong>05 끝까지 점검하고 다듬습니다</strong> — 실행 결과와 다음 선택까지 정교화합니다.</li>
+          <li><strong>01 학생을 읽습니다</strong> — 다양한 진로 분야를 제시하고, 학생의 관심을 바탕으로 진로 방향을 정합니다.</li>
+          <li><strong>02 핵심 질문을 찾습니다</strong> — 진로에 맞는 목표 학교와 전형을 정하고, 탐구 주제를 선정합니다.</li>
+          <li><strong>03 성장의 흐름을 설계합니다</strong> — 중3 여름방학부터 자기소개서를 첨삭합니다.</li>
+          <li><strong>04 학생의 언어로 실행합니다</strong> — 12월 모의면접으로 실전 면접을 준비합니다.</li>
+          <li><strong>05 끝까지 점검하고 다듬습니다</strong> — 고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.</li>
         </ol>
       </div>
     </section>
@@ -134,8 +134,7 @@ const homePageContent = `
       <div class="max-w-5xl mx-auto">
         <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-16 md:mb-12">Contact Us</p>
         <h2 class="text-6xl md:text-9xl font-black leading-[0.9] tracking-tighter mb-20 uppercase italic">
-          학생의 다음 장면을<br />
-          <span class="text-brand-accent not-italic">함께 설계해볼까요?</span>
+          1:1 상담 신청하기
         </h2>
         <div class="flex flex-col sm:flex-row justify-center gap-8 mb-32">
           <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
@@ -164,7 +163,7 @@ const homePageContent = `
         <div class="text-3xl sm:text-4xl font-black tracking-tighter">SEHYUN T</div>
         <p class="text-brand-gray max-w-sm leading-relaxed font-normal text-sm sm:text-base mt-4">
           Premium Admissions Strategy & Self-Directed Learning Lab. 
-          성장을 넘어 성공을 설계하는 가장 정교한 교육 파트너.
+          특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤
         </p>
       </div>
       <nav aria-label="컨설팅 안내" class="mt-16 flex flex-wrap gap-x-6 gap-y-3 text-sm font-black">
