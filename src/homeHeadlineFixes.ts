@@ -10,8 +10,11 @@ function rewriteHeadlines() {
       heading.innerHTML = '좋은 전략은<br />학생의 생각을<br />더 선명하게 합니다.';
     }
 
-    if (text === '학생의 다음 장면을 함께 설계해볼까요?') {
-      heading.innerHTML = '지금의 고민에서<br />다음 질문을 찾아볼까요?';
+    if (
+      text === '학생의 다음 장면을 함께 설계해볼까요?' ||
+      text === '지금의 고민에서 다음 질문을 찾아볼까요?'
+    ) {
+      heading.textContent = '1:1 상담 신청하기';
     }
 
     if (text === '합격보다 오래 남는 성장의 설계도' || text === '입시가 끝난 뒤에도 남는생각하는 힘' || text === '입시가 끝난 뒤에도 남는 생각하는 힘') {

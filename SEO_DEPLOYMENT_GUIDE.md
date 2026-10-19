@@ -128,7 +128,7 @@ GEMINI_API_KEY (기존)
 2. **홈페이지 실제 콘텐츠 확인**:
    ```bash
    curl -s https://sehyunt.re.kr/ | grep "성적을 넘어"
-   curl -s https://sehyunt.re.kr/ | grep "프리미엄 전략 컨설팅"
+   curl -s https://sehyunt.re.kr/ | grep "특목고 진학 컨설팅과 최상위권 학생부종합전형 생기부 관리"
    ```
 
 3. **메타 태그 확인**:
