@@ -5,6 +5,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'fir
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
+import { SITE } from '../config/site';
 
 interface GalleryItem {
   id: string;
@@ -21,7 +22,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
   const [isAdminState, setIsAdminState] = useState<boolean>(
-    propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === "ahrah0365@gmail.com")
+    propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === SITE.adminEmail)
   );
 
   // Upload Form State
@@ -39,7 +40,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
       return;
     }
     const unsub = onAuthStateChanged(auth, (u) => {
-      setIsAdminState(u?.email === "ahrah0365@gmail.com");
+      setIsAdminState(u?.email === SITE.adminEmail);
     });
     return () => unsub();
   }, [propIsAdmin]);
@@ -213,7 +214,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
             <h2 className="text-5xl md:text-6xl font-extrabold tracking-[-0.05em] uppercase leading-none">Gallery</h2>
           </div>
           <div className="flex items-center gap-6 mt-8 md:mt-0">
-            <p className="text-brand-gray text-sm font-light max-w-sm italic hidden md:block">
+            <p className="text-brand-gray text-sm font-normal max-w-sm italic hidden md:block">
               활동 및 포럼, 학회 참여 공식 기록 아카이브.
             </p>
             {isAdmin && (
@@ -301,6 +302,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
                 onClick={() => setIsUploadOpen(false)}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>
@@ -422,6 +424,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
               <button 
                 onClick={() => setSelectedItem(null)}
                 className="absolute top-6 right-6 p-2 bg-brand-bg hover:bg-brand-secondary transition-colors z-10"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>
@@ -439,7 +442,7 @@ export const GallerySection = ({ isAdmin: propIsAdmin }: { isAdmin?: boolean }) 
                 <div>
                   <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-6">PIC</div>
                   <h3 className="text-3xl font-black tracking-tight mb-6">{selectedItem.title}</h3>
-                  <div className="prose prose-sm text-brand-gray font-light leading-relaxed whitespace-pre-wrap">
+                  <div className="prose prose-sm text-brand-gray font-normal leading-relaxed whitespace-pre-wrap">
                     {selectedItem.description || "이 사진에 대한 추가 설명이 없습니다."}
                   </div>
                 </div>

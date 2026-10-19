@@ -8,6 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { SITE } from '../src/config/site';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +30,7 @@ const homePageContent = `
           입시가 아니라,<br />
           <span class="text-brand-accent not-italic">학생의 다음</span>을 설계합니다.
         </h1>
-        <p class="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-light">
+        <p class="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-normal">
           진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
@@ -62,13 +63,13 @@ const homePageContent = `
         <div class="space-y-12">
           <div>
             <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">연결된 성장</h3>
-            <p class="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
+            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
               진로, 수업, 탐구와 기록이 하나의 맥락 안에서 이어지도록 설계합니다.
             </p>
           </div>
           <div>
             <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">학생의 주도권</h3>
-            <p class="text-xl text-brand-gray leading-relaxed font-light max-w-2xl">
+            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
               결과물을 대신 만들기보다 학생이 이해하고 선택하고 말하는 힘을 키웁니다.
             </p>
           </div>
@@ -81,7 +82,7 @@ const homePageContent = `
       <div class="mb-32">
         <p class="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Programs</p>
         <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] leading-none">지금 필요한 한 가지부터</h2>
-        <p class="text-brand-gray max-w-sm font-light text-base md:text-lg leading-[1.6] mt-8 italic">
+        <p class="text-brand-gray max-w-sm font-normal text-base md:text-lg leading-[1.6] mt-8 italic">
           학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.
         </p>
       </div>
@@ -137,20 +138,20 @@ const homePageContent = `
           1:1 상담 신청하기
         </h2>
         <div class="flex flex-col sm:flex-row justify-center gap-8 mb-32">
-          <a href="https://tally.so/r/KYrWDz" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
+          <a href="${SITE.consultUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
             <button class="w-full py-10 text-xl font-black uppercase rounded-none bg-white text-black hover:bg-brand-accent hover:text-white transition-all duration-700 border border-white">
               상담 신청
             </button>
           </a>
-          <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
+          <a href="${SITE.naverBlogUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 max-w-xs">
             <button class="w-full py-10 text-xl font-black uppercase rounded-none bg-transparent text-white border-2 border-white hover:bg-white hover:text-brand-text transition-all duration-700">
               Official Blog
             </button>
           </a>
         </div>
         <div class="flex flex-wrap justify-center gap-8 md:gap-16 text-brand-bg/70 text-[11px] md:text-[14px] font-black uppercase tracking-[0.15em] md:tracking-[0.3em]">
-          <div class="flex items-center gap-2 md:gap-4">이메일: consultantsyssam@gmail.com</div>
-          <div class="flex items-center gap-2 md:gap-4">인스타그램: @consultant.sy</div>
+          <div class="flex items-center gap-2 md:gap-4">이메일: ${SITE.email}</div>
+          <div class="flex items-center gap-2 md:gap-4">인스타그램: ${SITE.instagramHandle}</div>
         </div>
       </div>
     </section>
@@ -174,10 +175,10 @@ const homePageContent = `
       </nav>
       <div class="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <span><strong class="font-bold text-brand-text">상호명:</strong> 입시는세연쌤</span>
-          <span><strong class="font-bold text-brand-text">사업자등록번호:</strong> 612-69-00756</span>
-          <span><strong class="font-bold text-brand-text">대표:</strong> 조세연</span>
-          <span><strong class="font-bold text-brand-text">이메일:</strong> consultantsyssam@gmail.com</span>
+          <span><strong class="font-bold text-brand-text">상호명:</strong> ${SITE.name}</span>
+          <span><strong class="font-bold text-brand-text">사업자등록번호:</strong> ${SITE.businessNumber}</span>
+          <span><strong class="font-bold text-brand-text">대표:</strong> ${SITE.founder}</span>
+          <span><strong class="font-bold text-brand-text">이메일:</strong> ${SITE.email}</span>
         </div>
         <p class="text-[14px] sm:text-[14px] text-[#71717A] font-normal">
           입시 전략 컨설팅 · 고입/대입 학종 로드맵 · 1:1 자기주도학습 코칭

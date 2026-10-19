@@ -175,6 +175,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
               <button 
                 onClick={onClose}
                 className="p-2 bg-brand-bg border border-brand-light-gray hover:bg-brand-secondary transition-colors pointer-events-auto"
+                aria-label="닫기"
               >
                 <X size={20} />
               </button>
@@ -193,7 +194,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
 
               {isForgotPassword ? (
                 <form onSubmit={handleForgotSubmit} className="space-y-6">
-                  <p className="text-xs text-brand-gray leading-relaxed font-light">
+                  <p className="text-xs text-brand-gray leading-relaxed font-normal">
                     가입하신 이메일 주소를 입력하시면, 안전하게 비밀번호를 재설정할 수 있는 링크를 전송해 드립니다.
                   </p>
                   

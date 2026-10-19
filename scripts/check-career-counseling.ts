@@ -124,4 +124,32 @@ assert.equal(rules.includes('match /careerCounselingApplications/{applicationId}
 assert.equal(rules.includes('ahrah0365@gmail.com'), true);
 assert.equal(/match \/resourceBodies\/\{itemId\}[\s\S]*?allow read: if isSignedIn\(\);/.test(rules), true);
 
+const root = path.join(__dirname, '..');
+const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf-8');
+assert.equal(indexCss.includes('fonts.googleapis.com'), false);
+assert.equal(indexCss.includes('Inter'), false);
+assert.equal(indexCss.includes('--color-brand-gray: #555555'), true);
+
+const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf-8');
+assert.equal(indexHtml.includes('rel="preconnect"'), true);
+assert.equal(indexHtml.includes('family=Noto+Sans+KR'), true);
+assert.equal(indexHtml.includes('display=swap'), true);
+
+const appSrc = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf-8');
+const heroSrc = appSrc.slice(appSrc.indexOf('relative overflow-hidden px-6 pb-24'), appSrc.indexOf('id="programs"'));
+assert.equal(heroSrc.includes('whileInView'), false);
+assert.equal(heroSrc.includes('opacity: 0'), false);
+assert.equal(heroSrc.includes('<picture>'), true);
+
+const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');
+assert.equal(resourcesSrc.includes('hover:bg-blue'), false);
+assert.equal(resourcesSrc.includes('SITE.kakaoChannelUrl'), true);
+
+const siteSrc = fs.readFileSync(path.join(root, 'src/config/site.ts'), 'utf-8');
+assert.equal(siteSrc.includes('pf.kakao.com/_xbijSX'), true);
+assert.equal(siteSrc.includes('consultantsyssam@gmail.com'), true);
+
+const ccCss = fs.readFileSync(path.join(root, 'src/pages/career-counseling.css'), 'utf-8');
+assert.equal(ccCss.includes('@import'), false);
+
 console.log('✅ career counseling checks passed');

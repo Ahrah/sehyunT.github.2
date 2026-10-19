@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShieldCheck, FileText } from 'lucide-react';
+import { SITE } from '../config/site';
 
 interface LegalModalProps {
   isOpen: boolean;
@@ -44,14 +45,14 @@ export const LegalModal = ({ isOpen, type, onClose }: LegalModalProps) => {
             <button
               onClick={onClose}
               className="p-2.5 text-brand-text hover:bg-brand-light-gray transition-colors cursor-pointer"
-              aria-label="Close modal"
+              aria-label="닫기"
             >
               <X size={22} />
             </button>
           </div>
 
           {/* Body */}
-          <div className="p-6 sm:p-10 overflow-y-auto space-y-8 text-xs sm:text-sm text-brand-text/80 leading-relaxed font-light">
+          <div className="p-6 sm:p-10 overflow-y-auto space-y-8 text-xs sm:text-sm text-brand-text/80 leading-relaxed font-normal">
             {type === 'privacy' ? (
               <>
                 <div>
@@ -102,10 +103,10 @@ export const LegalModal = ({ isOpen, type, onClose }: LegalModalProps) => {
                 <div>
                   <h4 className="text-sm sm:text-base font-extrabold text-brand-text mb-3">제 6 조 (개인정보 보호책임자 및 문의처)</h4>
                   <div className="bg-brand-secondary p-4 border border-brand-light-gray space-y-1 text-brand-text/80">
-                    <p><strong>상호명:</strong> 입시는세연쌤 (SEH-YUN T.)</p>
-                    <p><strong>사업자등록번호:</strong> 612-69-00756</p>
-                    <p><strong>개인정보 보호책임자:</strong> 조세연</p>
-                    <p><strong>문의 이메일:</strong> consultantsyssam@gmail.com</p>
+                    <p><strong>상호명:</strong> {SITE.name} (SEH-YUN T.)</p>
+                    <p><strong>사업자등록번호:</strong> {SITE.businessNumber}</p>
+                    <p><strong>개인정보 보호책임자:</strong> {SITE.founder}</p>
+                    <p><strong>문의 이메일:</strong> {SITE.email}</p>
                   </div>
                 </div>
               </>
@@ -151,10 +152,10 @@ export const LegalModal = ({ isOpen, type, onClose }: LegalModalProps) => {
                 <div>
                   <h4 className="text-sm sm:text-base font-extrabold text-brand-text mb-3">제 6 조 (사업자 정보 및 분쟁 해결)</h4>
                   <div className="bg-brand-secondary p-4 border border-brand-light-gray space-y-1 text-brand-text/80">
-                    <p><strong>상호명:</strong> 입시는세연쌤</p>
-                    <p><strong>사업자등록번호:</strong> 612-69-00756</p>
-                    <p><strong>대표:</strong> 조세연</p>
-                    <p><strong>고객 문의:</strong> consultantsyssam@gmail.com</p>
+                    <p><strong>상호명:</strong> {SITE.name}</p>
+                    <p><strong>사업자등록번호:</strong> {SITE.businessNumber}</p>
+                    <p><strong>대표:</strong> {SITE.founder}</p>
+                    <p><strong>고객 문의:</strong> {SITE.email}</p>
                   </div>
                 </div>
               </>

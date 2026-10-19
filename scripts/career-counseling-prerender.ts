@@ -3,11 +3,13 @@
  * Copy follows detail_page.html. No account numbers, pass rates, or reviews.
  */
 
+import { PRETENDARD_HEAD, SITE } from '../src/config/site';
+
 export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
 export const CAREER_COUNSELING_TITLE = '온라인 진로·선택과목 상담 | 입시는세연쌤';
 export const CAREER_COUNSELING_DESCRIPTION =
   '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.';
-export const CAREER_COUNSELING_CANONICAL = 'https://sehyunt.re.kr/jinro-counseling/';
+export const CAREER_COUNSELING_CANONICAL = `${SITE.domain}/jinro-counseling/`;
 
 const JSON_LD = {
   '@context': 'https://schema.org',
@@ -22,7 +24,7 @@ const JSON_LD = {
       provider: {
         '@type': 'Organization',
         name: '입시는세연쌤',
-        url: 'https://sehyunt.re.kr/',
+        url: `${SITE.domain}/`,
         founder: { '@type': 'Person', name: '조세연' },
         address: {
           '@type': 'PostalAddress',
@@ -69,11 +71,11 @@ export const careerCounselingPrerenderHtml = `
 <div class="cc-page">
   <div class="elig-bar" role="note"><b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)</div>
   <header class="top"><div class="wrap">
-    <a class="brand" href="/" aria-label="입시는세연쌤 홈">
-      <img src="/logo-mark.svg" alt="SEHYUN T ADMISSIONS LAB 로고">
+    <a class="brand" href="/">
+      <img src="/logo-mark.svg" alt="" width="32" height="32">
       <span class="en"><strong>SEHYUN T</strong><span>ADMISSIONS LAB</span></span>
     </a>
-    <a class="top-call" href="tel:01053086879">010-5308-6879</a>
+    <a class="top-call" href="${SITE.phoneHref}">${SITE.phone}</a>
   </div></header>
   <div class="hero"><div class="wrap">
     <span class="tag">비수도권 학생 전용 · 시즌 한정</span>
@@ -142,14 +144,14 @@ export const careerCounselingPrerenderHtml = `
   </div></section>
   <footer class="site"><div class="wrap">
     <div><strong>SEHYUN T ADMISSIONS LAB</strong><br>입시는세연쌤 · <span class="sl">DESIGN YOUR SUCCESS.</span></div>
-    <div>문의 <a href="tel:01053086879">010-5308-6879</a> · <a href="mailto:consultantsyssam@gmail.com">consultantsyssam@gmail.com</a><br><a href="https://sehyunt.re.kr">sehyunt.re.kr</a> · Instagram @consultant.sy</div>
+    <div>문의 <a href="${SITE.phoneHref}">${SITE.phone}</a> · <a href="mailto:${SITE.email}">${SITE.email}</a><br><a href="${SITE.domain}">sehyunt.re.kr</a> · Instagram ${SITE.instagramHandle}</div>
     <div class="biz">
       <b>사업자 정보</b>
       <ul>
-        <li>상호 입시는세연쌤</li>
-        <li>대표 조세연</li>
-        <li>사업장 주소 경기도 성남시 수정구 창업로 43, 81호</li>
-        <li>전화 010-5308-6879</li>
+        <li>상호 ${SITE.name}</li>
+        <li>대표 ${SITE.founder}</li>
+        <li>사업장 주소 ${SITE.address}</li>
+        <li>전화 ${SITE.phone}</li>
       </ul>
     </div>
   </div></footer>
@@ -176,6 +178,9 @@ export function applyCareerCounselingSpaShell(html: string): string {
     /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
     `<script type="application/ld+json">\n    ${JSON.stringify(JSON_LD).replace(/</g, '\\u003c')}\n    </script>`
   );
+  if (!out.includes('pretendard.min.css')) {
+    out = out.replace('</head>', `${PRETENDARD_HEAD}\n  </head>`);
+  }
 
   const startTag = '<div id="root">';
   const start = out.indexOf(startTag);

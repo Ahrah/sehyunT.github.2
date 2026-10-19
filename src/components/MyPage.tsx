@@ -196,6 +196,7 @@ export const MyPage = ({ onClose }: MyPageProps) => {
         <button 
           onClick={onClose}
           className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+          aria-label="닫기"
         >
           <X size={24} />
         </button>

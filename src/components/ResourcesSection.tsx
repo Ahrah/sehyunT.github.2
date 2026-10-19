@@ -5,6 +5,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc,
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from '../lib/firebase';
+import { SITE } from '../config/site';
 import { encryptPayload, decryptPayload } from '../lib/protect';
 import { saveResourcePassword, getResourcePassword, deleteResourcePassword } from '../lib/adminPasswordStore';
 import { AuthModal } from './AuthModal';
@@ -59,7 +60,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   const [selectedTab, setSelectedTab] = useState<'대입' | '고입' | '학습자료'>('대입');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isAdminState, setIsAdminState] = useState<boolean>(
-    propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === "ahrah0365@gmail.com")
+    propIsAdmin !== undefined ? propIsAdmin : (auth.currentUser?.email === SITE.adminEmail)
   );
   const [selectedArticle, setSelectedArticle] = useState<ResourceItem | null>(null);
 
@@ -100,7 +101,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
       return;
     }
     const unsub = onAuthStateChanged(auth, (u) => {
-      setIsAdminState(u?.email === "ahrah0365@gmail.com");
+      setIsAdminState(u?.email === SITE.adminEmail);
       setCurrentUser(u);
     });
     return () => unsub();
@@ -934,7 +935,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
               )}
             </div>
             <a 
-              href="https://pf.kakao.com/_xbijSX"
+              href={SITE.kakaoChannelUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="shrink-0 px-4 sm:px-6 py-2.5 bg-[#1a4f8b] text-white text-xs sm:text-sm font-bold hover:bg-[#15406f] transition-colors whitespace-nowrap"
@@ -1005,13 +1006,13 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                         : (item.description || '')}
                     </p>
                     {isAdmin && item.locked && (
-                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                      <div className="mt-3 p-3 bg-brand-mist border border-brand-accent/25 rounded">
                         {resourcePasswords[item.id] ? (
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-900">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-brand-ink">
                               저장된 비밀번호:
                             </span>
-                            <code className="text-xs font-mono text-blue-700 bg-white px-2 py-1 border border-blue-200">
+                            <code className="text-xs font-mono text-brand-accent bg-white px-2 py-1 border border-brand-accent/25">
                               {showPasswords[item.id] ? resourcePasswords[item.id] : '••••••••'}
                             </code>
                             <button
@@ -1019,7 +1020,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                                 e.stopPropagation();
                                 togglePasswordVisibility(item.id);
                               }}
-                              className="p-1 hover:bg-blue-100 transition-colors"
+                              className="p-1 hover:bg-brand-accent/10 transition-colors"
                               title={showPasswords[item.id] ? "비밀번호 숨기기" : "비밀번호 보기"}
                             >
                               {showPasswords[item.id] ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -1029,14 +1030,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                                 e.stopPropagation();
                                 copyToClipboard(resourcePasswords[item.id]!);
                               }}
-                              className="p-1 hover:bg-blue-100 transition-colors"
+                              className="p-1 hover:bg-brand-accent/10 transition-colors"
                               title="비밀번호 복사"
                             >
                               <Copy size={14} />
                             </button>
                           </div>
                         ) : (
-                          <p className="text-[10px] text-blue-700 font-bold">
+                          <p className="text-[10px] text-brand-accent font-bold">
                             저장된 비밀번호 없음 (자료 수정에서 다시 입력하면 저장됩니다)
                           </p>
                         )}
@@ -1066,7 +1067,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                     <>
                       <button 
                         onClick={(e) => handleEdit(item, e)}
-                        className="p-3 border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="p-3 border border-brand-accent/30 text-brand-accent hover:bg-brand-accent/10 transition-colors"
                         title="자료 수정"
                       >
                         <Edit2 size={16} />
@@ -1140,6 +1141,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 }}
                 disabled={uploading}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>
@@ -1340,8 +1342,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                         <div className="mt-4 space-y-2">
                           <p className="text-[10px] font-bold text-brand-gray">업로드 예정 이미지:</p>
                           {imageFiles.map((file, idx) => (
-                            <div key={idx} className="flex items-center gap-3 p-2 bg-brand-bg border border-blue-200">
-                              <FileText className="text-blue-600" size={16} />
+                            <div key={idx} className="flex items-center gap-3 p-2 bg-brand-bg border border-brand-accent/25">
+                              <FileText className="text-brand-accent" size={16} />
                               <span className="text-[10px] flex-1">{file.name} ({(file.size / 1024 / 1024).toFixed(2)}MB)</span>
                               <button
                                 type="button"
@@ -1415,24 +1417,24 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">열람 비밀번호 (선택)</label>
                   
                   {editingItem?.locked && currentEditPassword && (
-                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200">
+                    <div className="mb-3 p-3 bg-brand-mist border border-brand-accent/25">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-900">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-brand-ink">
                           현재 저장된 비밀번호:
                         </span>
-                        <code className="text-xs font-mono text-blue-700 bg-white px-2 py-1 border border-blue-200">
+                        <code className="text-xs font-mono text-brand-accent bg-white px-2 py-1 border border-brand-accent/25">
                           {currentEditPassword}
                         </code>
                         <button
                           type="button"
                           onClick={() => copyToClipboard(currentEditPassword)}
-                          className="p-1 hover:bg-blue-100 transition-colors"
+                          className="p-1 hover:bg-brand-accent/10 transition-colors"
                           title="비밀번호 복사"
                         >
                           <Copy size={14} />
                         </button>
                       </div>
-                      <p className="text-[9px] text-blue-600 font-bold">
+                      <p className="text-[9px] text-brand-accent font-bold">
                         새 비밀번호를 입력하면 이 비밀번호가 변경됩니다.
                       </p>
                     </div>
@@ -1504,6 +1506,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
               <button 
                 onClick={() => setSelectedArticle(null)}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>
@@ -1604,6 +1607,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   setPasswordError('');
                 }}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>
@@ -1676,6 +1680,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   setMembersOnlyPromptItem(null);
                 }}
                 className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                aria-label="닫기"
               >
                 <X size={24} />
               </button>

@@ -3,8 +3,10 @@
  * Used by generate-static-pages.ts at build time.
  */
 
-export const DOMAIN = 'https://sehyunt.re.kr';
-export const CONSULT_URL = 'https://tally.so/r/KYrWDz';
+import { SITE } from '../src/config/site';
+
+export const DOMAIN = SITE.domain;
+export const CONSULT_URL = SITE.consultUrl;
 
 export const escapeHtml = (s: string) =>
   String(s ?? '')
@@ -122,7 +124,7 @@ export function pageShell(o: PageShellOpts): string {
 </head>
 <body>
   <header class="site"><div class="in">
-    <a class="brand" href="/"><img src="/logo-pic.png" alt="입시는세연쌤 로고">입시는세연쌤</a>
+    <a class="brand" href="/"><img src="/logo-pic.png" alt="입시는세연쌤 로고" width="37" height="32">입시는세연쌤</a>
     <nav class="top">
       <a href="/jinro-counseling/">진로 상담</a>
       <a href="/saenggibu-consulting/">생기부</a>
@@ -136,8 +138,8 @@ ${o.body}
   </main>
   <footer class="site"><div class="in">
     <nav><a href="/">홈</a><a href="/#resources">자료실</a>${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">${k.label}</a>`).join('')}</nav>
-    <p style="margin-top:14px">상호명: 입시는세연쌤 · 대표: 조세연 · 사업자등록번호: 612-69-00756</p>
-    <p>이메일: consultantsyssam@gmail.com · 문의: 카카오톡 '입시는세연쌤' 채널</p>
+    <p style="margin-top:14px">상호명: ${SITE.name} · 대표: ${SITE.founder} · 사업자등록번호: ${SITE.businessNumber}</p>
+    <p>이메일: ${SITE.email} · 문의: 카카오톡 '입시는세연쌤' 채널</p>
     <p>© ${new Date().getFullYear()} SEHYUN T. ALL RIGHTS RESERVED.</p>
   </div></footer>
 </body>
@@ -466,10 +468,12 @@ export function linksPageHtml(): string {
   <meta property="og:site_name" content="입시는세연쌤">
   <meta property="og:image" content="${ogImage}">
   <meta name="twitter:card" content="summary">
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap">
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -614,7 +618,7 @@ export function linksPageHtml(): string {
       border-top: 1px solid rgba(248, 246, 242, 0.1);
     }
     .social a {
-      color: #666;
+      color: #555;
       font-size: 24px;
       transition: all 0.3s ease;
       text-decoration: none;
@@ -656,16 +660,19 @@ export function linksPageHtml(): string {
     <div class="divider"></div>
     
     <div class="profile">
-      <img src="/profile_640.jpg" alt="입시는세연쌤 프로필 사진">
+      <picture>
+        <source srcset="/profile_640.webp" type="image/webp">
+        <img src="/profile_640.jpg" alt="입시는세연쌤 프로필 사진" width="640" height="640" loading="lazy">
+      </picture>
       <h1>입시는세연쌤 · 조세연</h1>
       <p>특목고 입시 / 최상위권 생기부 컨설팅</p>
     </div>
     
     <div class="links">
-      <a href="http://pf.kakao.com/_xbijSX" class="link-btn primary" target="_blank" rel="noopener">
+      <a href="${SITE.kakaoChannelUrlHttp}" class="link-btn primary" target="_blank" rel="noopener">
         <span>💬 카톡 채널 추가시 15분 무료 전화상담</span>
       </a>
-      <a href="https://pf.kakao.com/_xbijSX/114866113" class="link-btn" target="_blank" rel="noopener">
+      <a href="${SITE.kakaoInterviewNoticeUrl}" class="link-btn" target="_blank" rel="noopener">
         <span>📢 12월 특목고 3:1 모의면접 안내</span>
       </a>
       <a href="https://sehyunt.re.kr/" class="link-btn" target="_blank" rel="noopener">
@@ -680,13 +687,13 @@ export function linksPageHtml(): string {
     </div>
     
     <div class="social">
-      <a href="https://www.youtube.com/@%EC%9E%85%EC%8B%9C%EB%8A%94%EC%84%B8%EC%97%B0%EC%8C%A4" target="_blank" rel="noopener" aria-label="YouTube">
+      <a href="${SITE.youtubeUrl}" target="_blank" rel="noopener" aria-label="YouTube">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
       </a>
-      <a href="https://www.instagram.com/ipsee.sehyunt/" target="_blank" rel="noopener" aria-label="Instagram">
+      <a href="${SITE.instagramBrandUrl}" target="_blank" rel="noopener" aria-label="Instagram">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
       </a>
-      <a href="https://www.threads.net/@ipsee.sehyunt" target="_blank" rel="noopener" aria-label="Threads">
+      <a href="${SITE.threadsUrl}" target="_blank" rel="noopener" aria-label="Threads">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.3 8.8c-.1-.3-.2-.5-.4-.7-.8-1.1-2.3-1.7-4.4-1.7-1.4 0-2.6.3-3.5.9-.8.5-1.4 1.3-1.7 2.2-.1.3 0 .6.2.8.2.2.5.2.8.1.3-.1.5-.4.6-.6.2-.6.6-1.1 1.1-1.4.6-.4 1.4-.6 2.4-.6 1.7 0 2.8.5 3.3 1.3.2.3.3.6.4 1 .1.6.1 1.1.1 1.7 0 .5 0 .9-.1 1.4-2.4-.2-4.8.2-6.4 1.3-1 .7-1.6 1.7-1.6 2.9 0 1 .4 1.9 1.1 2.6.7.7 1.7 1 2.8 1 1.5 0 2.8-.5 3.8-1.4.8-.7 1.3-1.6 1.6-2.6.4-.1.8-.3 1.1-.6.6-.5.9-1.2.9-2 0-.3 0-.7-.1-1-.1-.6-.2-1.1-.4-1.6zm-3.9 5.8c-.2.7-.6 1.3-1.1 1.8-.7.6-1.6.9-2.6.9-.7 0-1.3-.2-1.8-.6-.4-.4-.7-.9-.7-1.5 0-.8.4-1.4 1.1-1.9 1.2-.8 3.1-1.1 5.2-.9-.1.7-.3 1.5-.6 2.2h.5zm6.6-2.6c0 2.3-.7 4.3-2 6.1-1.3 1.7-3.1 3-5.2 3.7-1.4.5-2.9.7-4.4.7-2.3 0-4.5-.5-6.5-1.6-2-1.1-3.6-2.6-4.8-4.6C1.4 14.5.8 12.3.8 10c0-2.3.7-4.5 2-6.2 1.3-1.8 3-3.1 5.1-3.9C9.3-.6 10.8-.8 12.3-.8c2.3 0 4.5.5 6.5 1.6 2 1.1 3.6 2.6 4.8 4.6 1.3 1.9 1.9 4.1 1.9 6.6z"/></svg>
       </a>
     </div>
