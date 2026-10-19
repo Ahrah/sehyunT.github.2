@@ -6,7 +6,7 @@
 export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
 export const CAREER_COUNSELING_TITLE = '온라인 진로·선택과목 상담 | 입시는세연쌤';
 export const CAREER_COUNSELING_DESCRIPTION =
-  '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵. 60,000원.';
+  '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.';
 export const CAREER_COUNSELING_CANONICAL = 'https://sehyunt.re.kr/jinro-counseling/';
 
 const JSON_LD = {
@@ -19,11 +19,6 @@ const JSON_LD = {
       description: CAREER_COUNSELING_DESCRIPTION,
       url: CAREER_COUNSELING_CANONICAL,
       areaServed: 'KR',
-      offers: {
-        '@type': 'Offer',
-        price: '60000',
-        priceCurrency: 'KRW',
-      },
       provider: {
         '@type': 'Organization',
         name: '입시는세연쌤',
@@ -54,7 +49,7 @@ const JSON_LD = {
           name: '결제는 언제 하나요?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: '신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요. 입금 계좌는 일정 확정 문자에서 안내해 드려요.',
+            text: '신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내와 계좌를 문자로 보내 드려요.',
           },
         },
         {
@@ -84,7 +79,7 @@ export const careerCounselingPrerenderHtml = `
     <span class="tag">비수도권 학생 전용 · 시즌 한정</span>
     <h1>희망 전공에서 거꾸로 짜는<br><em>온라인 진로·선택과목 상담</em></h1>
     <p class="lead">고1·고2 학생의 희망 전공을 먼저 듣고, 앞으로 들을 과목의 이수 경로를 함께 설계해요. 상담이 끝나면 1장짜리 과목 이수 로드맵을 드려요.</p>
-    <div class="meta"><span>40분 온라인 화상 상담</span><span>과목 이수 로드맵 1장</span><span>60,000원</span></div>
+    <div class="meta"><span>40분 온라인 화상 상담</span><span>과목 이수 로드맵 1장</span><a href="/#resources">비용은 자료실에서 확인</a></div>
     <p class="slogan">DESIGN YOUR SUCCESS.</p>
   </div></div>
   <section class="alt"><div class="wrap">
@@ -106,21 +101,21 @@ export const careerCounselingPrerenderHtml = `
     </div>
   </div></section>
   <section class="gb" id="일정"><div class="wrap">
-    <p class="eyebrow">SCHEDULE &amp; PRICE</p>
-    <h2>일정과 가격</h2>
+    <p class="eyebrow">SCHEDULE</p>
+    <h2>일정 안내</h2>
     <p>이번 시즌에만 운영하는 상담이에요.</p>
     <div class="info">
       <div class="card"><h3>신청 기간</h3><div class="big">11/10 ~ 12/10</div><p>2026년, 시즌 한정</p></div>
       <div class="card"><h3>상담 진행</h3><div class="big">11/25 ~ 12/25</div><p>온라인 화상 40분</p></div>
       <div class="card"><h3>대상</h3><div class="big">고1 · 고2</div><p>서울·경기·인천 외 지역 고등학교 재학생</p></div>
-      <div class="card"><h3>가격</h3><div class="big red">60,000원</div><p>40분 화상 상담 + 과목 이수 로드맵 1장</p></div>
+      <div class="card"><h3>비용</h3><div class="big red">자료실에서 확인</div><p>회원가입 후 <a href="/#resources">자료실</a>에서 확인하실 수 있어요.</p></div>
     </div>
   </div></section>
   <section class="alt" id="자격"><div class="wrap">
     <p class="eyebrow">APPLY</p>
     <h2>신청하기</h2>
-    <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요.</p>
-    <p class="pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요. 입금 계좌는 일정 확정 문자에서 안내해 드려요.</p>
+    <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
+    <p class="pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내를 문자로 보내 드려요.</p>
     <div class="refund"><b>환불 안내</b>
       <ul>
         <li>상담 2일 전까지 취소하면 전액 환불해 드려요.</li>
@@ -130,14 +125,14 @@ export const careerCounselingPrerenderHtml = `
     </div>
     <div class="elig-box"><strong>신청 자격을 확인해 주세요</strong><p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p></div>
     <a class="btn" href="/jinro-counseling/#신청서">로그인하고 신청하기</a>
-    <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 일정 확정 시 60,000원 입금</p>
+    <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
   </div></section>
   <section id="faq"><div class="wrap">
     <p class="eyebrow">FAQ</p>
     <h2>자주 묻는 질문</h2>
     <div class="faq">
       <details open><summary>집은 지방인데 학교가 서울·경기·인천에 있어요. 신청할 수 있나요?</summary><p>이 상담은 재학 중인 학교의 소재지를 기준으로 해요. 학교가 서울·경기·인천에 있으면 신청할 수 없어요. 반대로 집이 수도권이어도 학교가 그 외 지역에 있으면 신청할 수 있답니다.</p></details>
-      <details><summary>결제는 언제 하나요?</summary><p>신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요. 입금 계좌는 일정 확정 문자에서 안내해 드려요.</p></details>
+      <details><summary>결제는 언제 하나요?</summary><p>신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내와 계좌를 문자로 보내 드려요.</p></details>
       <details><summary>환불은 어떻게 되나요?</summary><p>상담 2일 전까지 취소하시면 전액 환불해 드려요. 상담 1일 전부터 당일까지 취소하시면 환불하지 않아요. 신청 자격이 맞지 않으면 전액 환불해 드려요.</p></details>
       <details><summary>자격이 맞지 않는 걸 나중에 알게 되면 어떻게 되나요?</summary><p>상담 전에 신청서의 학교 정보를 확인해요. 자격 조건과 맞지 않으면 신청을 취소하고, 이미 입금하신 금액은 전액 환불해 드려요.</p></details>
       <details><summary>학교 선택과목표가 없어도 괜찮을까요?</summary><p>선택과목표는 있는 경우에만 보내 주시면 돼요. 없어도 학교생활기록부와 희망 진로를 바탕으로 상담을 진행하니 걱정할 필요 없답니다.</p></details>
@@ -199,6 +194,9 @@ export function assertNoSensitiveCopy(html: string) {
     /합격률/,
     /합격 후기/,
     /수강 후기/,
+    /만원/,
+    /60,?000\s*원/,
+    /"price"\s*:/,
   ];
   for (const pattern of banned) {
     if (pattern.test(html)) {

@@ -148,6 +148,16 @@ ${o.body}
 export const resourcesHref = (category?: '대입' | '고입' | '학습자료') =>
   category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : category === '학습자료' ? '/?cat=study#resources' : '/#resources';
 
+export const COST_GUIDE_PLAIN = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
+
+export function costGuideHtml(category?: '대입' | '고입' | '학습자료') {
+  return `비용은 회원가입 후 <a href="${resourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.`;
+}
+
+function keywordPageCategory(slug: string): '대입' | '고입' {
+  return slug === 'saenggibu-consulting' ? '대입' : '고입';
+}
+
 const ctaBlock = (category?: '대입' | '고입') => `
     <div class="cta">
       <p><strong>상담 문의</strong><br>카카오톡에서 '입시는세연쌤' 채널을 찾아 남겨 주세요. 아래 상담 신청서로도 받습니다.</p>
@@ -179,11 +189,11 @@ export const KEYWORD_PAGES: KeywordPage[] = [
     keyword: '생기부 컨설팅',
     title: '생기부 컨설팅 | 학종 생기부 관리 비용·진행 방식 - 입시는세연쌤',
     h1: '생기부 컨설팅 — 학종 생기부 관리',
-    description: '입시는세연쌤 생기부 컨설팅. 학생부종합전형을 준비하는 고등학생 대상, 한 학기 200만원 이내. 수행평가·과목 선택·학교생활 관리, 1:1 개인톡, 매 학기 생기부 확인.',
+    description: '입시는세연쌤 생기부 컨설팅. 학생부종합전형을 준비하는 고등학생 대상. 수행평가·과목 선택·학교생활 관리, 1:1 개인톡, 매 학기 생기부 확인.',
     lead: '입시는세연쌤의 생기부 컨설팅은 학생부종합전형(학종)을 준비하는 고등학생의 생기부를 한 학기 단위로 관리하는 컨설팅입니다. 수행평가, 과목 선택, 학교생활 관리까지 학기 내내 학생 곁에서 함께 봅니다.',
     summary: [
       ['대상 학생', '학종을 준비하는 고등학생 (특목고·자사고 학생의 생기부 컨설팅을 많이 하고 있습니다)'],
-      ['비용', '한 학기 200만원 이내 — 질문하거나 컨설팅을 받을 때마다 비용이 따로 들지 않습니다'],
+      ['비용', COST_GUIDE_PLAIN],
       ['진행 방식', '세연쌤과 학생의 1:1 개인톡 · 답변은 하루 이내, 컨설팅은 이틀 이내가 원칙 · 매 학기 생기부 확인'],
       ['포함 내용', '수행평가 컨설팅, 과목 선택, 학교생활 관리, 자율탐구보고서·동아리 활동, 선생님 상담 준비'],
     ],
@@ -211,7 +221,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
       },
     ],
     faqs: [
-      { q: '생기부 컨설팅 비용은 얼마인가요?', a: '한 학기 200만원 이내입니다. 수행평가 컨설팅, 과목 선택, 학교생활 관리가 모두 포함되며, 질문하거나 컨설팅을 받을 때마다 비용이 따로 들지 않습니다.' },
+      { q: '생기부 컨설팅 비용은 얼마인가요?', a: COST_GUIDE_PLAIN },
       { q: '진로는 몇 학년까지 정해야 하나요?', a: '고1에는 계열까지만 정해도 충분합니다. 고2가 되면 그 계열 안에서 어떤 분야로 갈지 정해야 합니다. 분야가 정해져야 과목 선택도, 탐구 주제도 거기에 맞출 수 있습니다.' },
       { q: '진로가 늦게 바뀌었거나 학종 준비를 늦게 시작했다면요?', a: '그럴 때는 1회성 컨설팅부터 받아 보시길 권합니다. 긴 관리보다 먼저 필요한 것은 지금까지의 생기부를 같이 펼쳐 보고, 남은 학기에 무엇을 채울지 방향을 정하는 일입니다.' },
     ],
@@ -222,11 +232,11 @@ export const KEYWORD_PAGES: KeywordPage[] = [
     keyword: '자소서 컨설팅',
     title: '자소서 컨설팅 | 외고·국제고·자사고 자기소개서 비용·진행 방식 - 입시는세연쌤',
     h1: '자소서 컨설팅 — 외고·국제고·자사고 자기소개서',
-    description: '입시는세연쌤 자소서 컨설팅. 외고·국제고·자사고를 준비하는 중학생 대상, 자기소개서 완성까지 약 100만원, 4~6회 수업. 면접에서 보여 줄 서사 구조화에 초점.',
+    description: '입시는세연쌤 자소서 컨설팅. 외고·국제고·자사고를 준비하는 중학생 대상, 4~6회 수업. 면접에서 보여 줄 서사 구조화에 초점.',
     lead: '입시는세연쌤의 자소서 컨설팅은 외고·국제고 같은 특목고와 자사고 진학을 준비하는 중학생의 자기소개서를 완성하는 컨설팅입니다. 문장을 다듬기 전에, 면접에서 보여 줄 서사를 구조화하는 데 초점을 둡니다.',
     summary: [
       ['대상 학생', '외고·국제고 같은 특목고와 자사고 진학을 준비하는 중학생'],
-      ['비용', '자기소개서 완성까지 약 100만원 (면접 준비까지 포함하면 150~200만원)'],
+      ['비용', COST_GUIDE_PLAIN],
       ['진행 방식', '대부분 4~6회 수업 동안 자기소개서 작성 · 자기소개서 작성은 중3 여름방학부터'],
       ['마친 뒤', '자기소개서 수업이 끝날 때 예상 질문을 드리고, 면접 준비로 이어집니다'],
     ],
@@ -250,7 +260,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
       },
     ],
     faqs: [
-      { q: '자소서 컨설팅 비용은 얼마인가요?', a: '자기소개서 완성까지는 약 100만원입니다. 면접 준비까지 포함하면 150~200만원입니다.' },
+      { q: '자소서 컨설팅 비용은 얼마인가요?', a: COST_GUIDE_PLAIN },
       { q: '중3인데 아직 진로나 학교를 못 정했어요. 바로 자소서를 써도 되나요?', a: '앞 단계가 정해지지 않았다면 앞 단계부터 시작합니다. 진로가 없으면 진로 상담부터, 진로는 있는데 학교를 못 정했다면 진학 상담부터 합니다. 어디로, 왜 가고 싶은지가 서야 자소서에 어떤 경험을 쓸지 고를 수 있습니다.' },
       { q: '진로 상담에서는 무엇을 하나요?', a: '여러 진로 분야를 보여 주고, 학생이 흥미를 느끼는 쪽으로 진로를 정하도록 돕습니다. 특목고나 자사고에 가고 싶다는 마음이 있다면, 그 진로에 맞춰 스스로 알아볼 탐구 주제를 함께 정합니다.' },
     ],
@@ -261,11 +271,11 @@ export const KEYWORD_PAGES: KeywordPage[] = [
     keyword: '면접 컨설팅',
     title: '면접 컨설팅 | 외고·국제고·자사고 면접 준비·모의 면접 - 입시는세연쌤',
     h1: '면접 컨설팅 — 외고·국제고·자사고 면접 준비',
-    description: '입시는세연쌤 면접 컨설팅. 특목고·자사고를 준비하는 중학생 대상, 자소서부터 면접까지 150~200만원. 12월부터 실제 면접장처럼 선생님 3명·학생 1명 모의 면접, 당일 피드백.',
+    description: '입시는세연쌤 면접 컨설팅. 특목고·자사고를 준비하는 중학생 대상. 12월부터 실제 면접장처럼 선생님 3명·학생 1명 모의 면접, 당일 피드백.',
     lead: '입시는세연쌤의 면접 컨설팅은 외고·국제고·자사고 면접을 준비하는 중학생을 위한 컨설팅입니다. 자기소개서를 쓰는 시기부터 면접 직전까지 이어서 진행하고, 12월부터는 실제 면접장처럼 모의 면접을 합니다.',
     summary: [
       ['대상 학생', '외고·국제고 같은 특목고와 자사고 진학을 준비하는 중학생'],
-      ['비용', '면접 준비까지 포함하면 150~200만원 (자기소개서 완성까지는 약 100만원)'],
+      ['비용', COST_GUIDE_PLAIN],
       ['진행 방식', '자기소개서 수업이 끝날 때 예상 질문 제공 → 12월부터 모의 면접 (선생님 3명, 학생 1명)'],
       ['모의 면접', '대기 시간까지 1시간 정도 · 끝나면 바로 간단한 피드백 · 그날 저녁 훈련할 부분에 대한 조언을 적어서 전달'],
     ],
@@ -285,7 +295,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
       },
     ],
     faqs: [
-      { q: '면접 컨설팅 비용은 얼마인가요?', a: '자기소개서 완성까지는 약 100만원이고, 면접 준비까지 포함하면 150~200만원입니다.' },
+      { q: '면접 컨설팅 비용은 얼마인가요?', a: COST_GUIDE_PLAIN },
       { q: '모의 면접은 언제, 어떻게 하나요?', a: '12월부터 합니다. 실제 면접장처럼 선생님 3명, 학생 1명으로 진행하고, 대기 시간까지 1시간 정도 걸립니다.' },
       { q: '면접 준비가 됐는지는 어떻게 아나요?', a: '자소서에 쓴 이야기를 자기 말로 설명할 수 있으면 면접 준비가 된 것입니다.' },
     ],
@@ -295,14 +305,21 @@ export const KEYWORD_PAGES: KeywordPage[] = [
 
 export function keywordPageHtml(p: KeywordPage): string {
   const url = `${DOMAIN}/${p.slug}/`;
-  const summaryRows = p.summary.map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('');
+  const category = keywordPageCategory(p.slug);
+  const summaryRows = p.summary.map(([k, v]) => {
+    const cell = k === '비용' ? costGuideHtml(category) : escapeHtml(v);
+    return `<tr><th>${escapeHtml(k)}</th><td>${cell}</td></tr>`;
+  }).join('');
   const sections = p.sections.map(s => `
     <h2>${escapeHtml(s.h)}</h2>
     ${(s.paras || []).map(x => `<p>${escapeHtml(x)}</p>`).join('\n    ')}
     ${s.list ? `<ul class="steps">${s.list.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : ''}`).join('\n');
-  const faqs = p.faqs.map(f => `
+  const faqs = p.faqs.map(f => {
+    const answer = /비용은 얼마/.test(f.q) ? costGuideHtml(category) : escapeHtml(f.a);
+    return `
     <h2>${escapeHtml(f.q)}</h2>
-    <p>${escapeHtml(f.a)}</p>`).join('\n');
+    <p>${answer}</p>`;
+  }).join('\n');
   const others = KEYWORD_LINKS.filter(k => k.slug !== p.slug);
   const related = `
     <div class="related">
@@ -362,8 +379,13 @@ export interface ResourceLike {
   fileType: string;
   content?: string | null;
   locked?: boolean;
+  membersOnly?: boolean;
   category?: '대입' | '고입' | '학습자료';
   createdAt?: any;
+}
+
+export function isGatedResource(r: Pick<ResourceLike, 'locked' | 'membersOnly'>): boolean {
+  return !!(r.locked || r.membersOnly);
 }
 
 export function resourcePageHtml(r: ResourceLike): string {
@@ -372,16 +394,21 @@ export function resourcePageHtml(r: ResourceLike): string {
   const published = r.createdAt?.toDate ? r.createdAt.toDate() : (r.createdAt ? new Date(r.createdAt) : new Date());
   const publishedIso = published.toISOString();
   const dateLabel = published.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
-  const hasArticle = r.fileType === 'article' && !r.locked && !!r.content;
-  const description = (r.description && r.description.trim()) || (hasArticle ? plainSummary(r.content as string) : `${r.title} — 입시는세연쌤 입시 전략 자료`);
+  const gated = isGatedResource(r);
+  const hasArticle = r.fileType === 'article' && !gated && !!r.content;
+  const publicDescription = !gated && r.description?.trim() ? r.description.trim() : '';
+  const description = publicDescription
+    || (hasArticle ? plainSummary(r.content as string) : `${r.title} — 입시는세연쌤 입시 전략 자료`);
 
   let content: string;
   if (hasArticle) {
     content = articleToHtml(r.content as string);
-  } else if (r.locked) {
-    content = `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="${resourcesHref(category)}">자료실</a>에서 열람하실 수 있습니다.</p>`;
+  } else if (gated) {
+    content = r.membersOnly && !r.locked
+      ? `<p>이 자료는 회원 전용입니다. 회원가입 후 <a href="${resourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.</p>`
+      : `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="${resourcesHref(category)}">자료실</a>에서 열람하실 수 있습니다.</p>`;
   } else {
-    content = `${r.description ? `<p>${escapeHtml(r.description)}</p>` : ''}<p>이 자료는 <a href="${resourcesHref(category)}">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
+    content = `${publicDescription ? `<p>${escapeHtml(publicDescription)}</p>` : ''}<p>이 자료는 <a href="${resourcesHref(category)}">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
   }
 
   const body = `
@@ -391,7 +418,7 @@ export function resourcePageHtml(r: ResourceLike): string {
     <article>
 ${content}
     </article>
-${ctaBlock(category)}
+${ctaBlock(category === '고입' ? '고입' : category === '대입' ? '대입' : undefined)}
     <div class="related">
       ${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">→ 입시는세연쌤 ${k.label} 안내</a>`).join('\n      ')}
     </div>`;

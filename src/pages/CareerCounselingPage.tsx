@@ -10,12 +10,14 @@ import {
   CONSULT_DATE_MAX,
   CONSULT_DATE_MIN,
   CONSULT_TIMES,
+  COST_GUIDE,
   FAQS,
   GRADES,
   PAGE_META,
   PAY_GUIDE,
   PROGRAM_STEPS,
   REFUND_ITEMS,
+  RESOURCES_HREF,
   SCHEDULE_CARDS,
   SCHOOL_REGIONS,
   CAREER_COUNSELING_COLLECTION,
@@ -189,7 +191,7 @@ export const CareerCounselingPage = () => {
           <div className="meta">
             <span>40분 온라인 화상 상담</span>
             <span>과목 이수 로드맵 1장</span>
-            <span>60,000원</span>
+            <a href={RESOURCES_HREF}>비용은 자료실에서 확인</a>
           </div>
           <p className="slogan">DESIGN YOUR SUCCESS.</p>
         </div>
@@ -228,15 +230,19 @@ export const CareerCounselingPage = () => {
 
       <section className="gb" id="일정">
         <div className="wrap">
-          <p className="eyebrow">SCHEDULE &amp; PRICE</p>
-          <h2>일정과 가격</h2>
+          <p className="eyebrow">SCHEDULE</p>
+          <h2>일정 안내</h2>
           <p>이번 시즌에만 운영하는 상담이에요.</p>
           <div className="info">
             {SCHEDULE_CARDS.map((card) => (
               <div className="card" key={card.h}>
                 <h3>{card.h}</h3>
                 <div className={`big${card.red ? ' red' : ''}`}>{card.big}</div>
-                <p>{card.p}</p>
+                <p>
+                  {card.h === '비용'
+                    ? <>회원가입 후 <a href={RESOURCES_HREF}>자료실</a>에서 확인하실 수 있어요.</>
+                    : card.p}
+                </p>
               </div>
             ))}
           </div>
@@ -247,7 +253,7 @@ export const CareerCounselingPage = () => {
         <div className="wrap">
           <p className="eyebrow">APPLY</p>
           <h2>신청하기</h2>
-          <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요.</p>
+          <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. {COST_GUIDE}</p>
 
           {submitted ? (
             <div className="form-success" role="status">
@@ -373,7 +379,7 @@ export const CareerCounselingPage = () => {
                 ) : (
                   <button className="btn" type="button" onClick={openApply}>로그인하고 신청하기</button>
                 )}
-                <p className="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 일정 확정 시 60,000원 입금</p>
+                <p className="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · {COST_GUIDE}</p>
               </div>
             </form>
           )}
