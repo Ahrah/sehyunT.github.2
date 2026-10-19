@@ -168,6 +168,10 @@ p { text-wrap: pretty; }
   background: #ffffff;
 }
 
+details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
 @media (max-width: 640px) {
   .hero-grid { background-size: 36px 36px; }
   .contact-ring { width: 27rem; height: 27rem; box-shadow: 0 0 0 5rem rgba(255,255,255,0.03); }

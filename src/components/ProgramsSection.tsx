@@ -163,7 +163,6 @@ function schoolRow(school: SchoolDates) {
 export function ProgramsSection() {
   const reduceMotion = useReducedMotion();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [schoolsOpen, setSchoolsOpen] = useState(false);
   const [asideOpen, setAsideOpen] = useState(false);
 
   const reveal = reduceMotion
@@ -246,7 +245,7 @@ export function ProgramsSection() {
           </ol>
         </motion.div>
 
-        <motion.div {...reveal} className="mt-8 rounded-[2rem] border border-brand-ink/10 bg-brand-paper p-6 sm:p-10">
+        <motion.div {...reveal} className="mt-8 scroll-mt-28 rounded-[2rem] border border-brand-ink/10 bg-brand-paper p-6 sm:p-10" id="admission-dates">
           <p className="section-label text-brand-accent">{ADMISSION_CYCLE} 고입</p>
           <h3 className="mt-4 text-2xl font-black tracking-[-0.04em] sm:text-3xl">특목·자사고 원서접수 기간</h3>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-brand-ink/58">
@@ -284,30 +283,40 @@ export function ProgramsSection() {
             ))}
           </div>
 
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => setSchoolsOpen((open) => !open)}
-              aria-expanded={schoolsOpen}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-brand-ink/15 bg-white px-5 text-sm font-black"
-            >
+          <details className="mt-8">
+            <summary className="inline-flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-full border border-brand-ink/15 bg-white px-5 text-sm font-black [&::-webkit-details-marker]:hidden">
               학교별 일정 보기
-              <ChevronDown size={16} className={`transition-transform ${schoolsOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence initial={false}>
-              {schoolsOpen && (
-                <motion.div
-                  initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.35 }}
-                  className="overflow-hidden"
-                >
+              <ChevronDown size={16} className="transition-transform details-open:rotate-180" />
+            </summary>
                   <div className="mt-6 space-y-8">
                     {schoolGroups.map((group) => (
                       <div key={group.id}>
                         <h4 className="text-lg font-black tracking-[-0.03em]">{group.label}</h4>
-                        <div className="admission-table-wrap mt-3">
+                        <div className="mt-3 space-y-3 md:hidden">
+                          {group.schools.map((school) => (
+                            <article key={school.id} className="rounded-2xl border border-brand-ink/10 bg-white p-4">
+                              <h5 className="flex flex-wrap items-center gap-2 text-base font-black">
+                                {school.name}
+                                {school.officePlan && (
+                                  <span className="rounded-full bg-brand-ink px-2 py-0.5 text-[10px] font-black tracking-wide text-white">
+                                    교육청 기준
+                                  </span>
+                                )}
+                              </h5>
+                              <dl className="mt-3 grid grid-cols-[4.5rem_1fr] gap-y-1.5 text-sm">
+                                <dt className="text-brand-ink/45">원서</dt>
+                                <dd className="font-semibold">{school.apply}</dd>
+                                <dt className="text-brand-ink/45">자소서</dt>
+                                <dd className="font-semibold">{school.essay}</dd>
+                                <dt className="text-brand-ink/45">면접</dt>
+                                <dd className="font-semibold">{school.interview}</dd>
+                                <dt className="text-brand-ink/45">최종발표</dt>
+                                <dd className="font-semibold">{school.result}</dd>
+                              </dl>
+                            </article>
+                          ))}
+                        </div>
+                        <div className="admission-table-wrap mt-3 hidden md:block">
                           <table className="min-w-[720px] w-full text-left text-sm">
                             <thead>
                               <tr className="text-[11px] font-black uppercase tracking-[0.14em] text-brand-ink/45">
@@ -338,15 +347,12 @@ export function ProgramsSection() {
                     ))}
                     <p className="rounded-2xl bg-brand-mist px-4 py-3 text-sm leading-7 text-brand-ink/60">{ADMISSION_SOURCE_NOTE}</p>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          </details>
         </motion.div>
 
         <div className="mt-20 space-y-16">
           {programGroups.map((group) => (
-            <section key={group.id} aria-labelledby={`${group.id}-title`}>
+            <section key={group.id} id={`group-${group.id}`} className="scroll-mt-28" aria-labelledby={`${group.id}-title`}>
               <motion.div {...reveal} className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="section-label text-brand-accent">
