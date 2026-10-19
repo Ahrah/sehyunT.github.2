@@ -226,6 +226,42 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     }
   }, [loading]);
 
+  useEffect(() => {
+    if (!(isUploadOpen && isAdmin)) return;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = {
+      htmlOverflow: html.style.overflow,
+      htmlOverscroll: html.style.overscrollBehavior,
+      bodyOverflow: body.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyWidth: body.style.width,
+    };
+    const scrollY = window.scrollY;
+
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+
+    return () => {
+      html.style.overflow = previous.htmlOverflow;
+      html.style.overscrollBehavior = previous.htmlOverscroll;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.overscrollBehavior = previous.bodyOverscroll;
+      body.style.position = previous.bodyPosition;
+      body.style.top = previous.bodyTop;
+      body.style.width = previous.bodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isUploadOpen, isAdmin]);
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
@@ -1113,14 +1149,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 setCurrentEditPassword(null);
               }
             }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-text/95 backdrop-blur-md"
+            className="resource-editor-modal-overlay fixed inset-0 z-[200] flex items-center justify-center overflow-hidden p-6 bg-brand-text/95 backdrop-blur-md"
           >
             <motion.div 
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-brand-bg w-full max-w-lg p-10 relative border border-brand-light-gray"
+              className="resource-editor-modal bg-brand-bg w-full max-w-lg relative border border-brand-light-gray flex min-h-0 flex-col overflow-hidden"
             >
               <button 
                 onClick={() => {
@@ -1140,12 +1176,14 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   setCurrentEditPassword(null);
                 }}
                 disabled={uploading}
-                className="absolute top-8 right-8 p-2 hover:bg-brand-secondary transition-colors"
+                className="absolute top-8 right-8 z-10 p-2 hover:bg-brand-secondary transition-colors"
                 aria-label="닫기"
               >
                 <X size={24} />
               </button>
 
+              <form onSubmit={handleUploadSubmit} className="resource-editor-form">
+              <div className="resource-editor-modal-body p-10">
               <div className="mb-8">
                 <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-4">
                   {editingItem ? '✎' : '+DOC'}
@@ -1164,7 +1202,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 </div>
               )}
 
-              <form onSubmit={handleUploadSubmit} className="space-y-6">
+              <div className="space-y-6">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">자료 명칭</label>
                   <input 
@@ -1471,7 +1509,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   )}
                 </div>
 
-                <div className="pt-4">
+              </div>
+              </div>
+              <div className="shrink-0 border-t border-brand-light-gray bg-brand-bg px-10 pb-10 pt-4">
                   <button
                     type="submit"
                     disabled={uploading}
@@ -1479,7 +1519,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                   >
                     {uploading ? (editingItem ? "Updating..." : "Publishing Database...") : (editingItem ? "Update Resource" : "Add to Library")}
                   </button>
-                </div>
+              </div>
               </form>
             </motion.div>
           </motion.div>

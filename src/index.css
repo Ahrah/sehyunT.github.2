@@ -135,3 +135,30 @@ p { text-wrap: pretty; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Admin resource create/edit modal: inner scroll on long posts (iOS dvh + momentum). */
+.resource-editor-modal-overlay {
+  overscroll-behavior: none;
+}
+
+.resource-editor-modal {
+  max-height: calc(90vh - 3rem);
+  max-height: min(90vh, calc(100dvh - 3rem));
+  min-height: 0;
+}
+
+.resource-editor-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+  overflow: hidden;
+}
+
+.resource-editor-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
