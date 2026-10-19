@@ -12,7 +12,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { KEYWORD_PAGES, keywordPageHtml, resourcePageHtml, linksPageHtml } from './seo-pages';
+import { KEYWORD_PAGES, isGatedResource, keywordPageHtml, resourcePageHtml, linksPageHtml } from './seo-pages';
 import {
   CAREER_COUNSELING_CANONICAL,
   CAREER_COUNSELING_SLUG,
@@ -56,6 +56,7 @@ interface ResourceItem {
   createdAt: any;
   content?: string;
   locked?: boolean;
+  membersOnly?: boolean;
   category?: '대입' | '고입';
 }
 
@@ -183,9 +184,9 @@ function generateSitemap(resources: ResourceItem[]): string {
   </url>`,
   ];
 
-  // Add public (non-locked) resources
+  // Add public (unlocked, not members-only) resources
   resources
-    .filter(r => !r.locked)
+    .filter(r => !isGatedResource(r))
     .forEach(resource => {
       const lastmod = resource.createdAt?.toDate
         ? resource.createdAt.toDate().toISOString().split('T')[0]
@@ -231,10 +232,10 @@ async function main() {
       console.log('⚠️  Continuing with empty resource list...');
     }
 
-    // Filter out locked resources
-    const publicResources = resources.filter(r => !r.locked);
-    const lockedCount = resources.length - publicResources.length;
-    console.log(`📊 Resource counts: ${publicResources.length} unlocked, ${lockedCount} locked (total: ${resources.length})`);
+    // Filter out locked / members-only resources from public full-body pages
+    const publicResources = resources.filter(r => !isGatedResource(r));
+    const gatedResources = resources.filter(r => isGatedResource(r));
+    console.log(`📊 Resource counts: ${publicResources.length} public, ${gatedResources.length} gated (total: ${resources.length})`);
 
     // Ensure dist and resources directories exist
     ensureDir(DIST_DIR);
@@ -247,7 +248,16 @@ async function main() {
       const filename = path.join(RESOURCES_DIR, `${resource.id}.html`);
       fs.writeFileSync(filename, html);
     });
-    console.log(`✅ Generated ${publicResources.length} resource pages`);
+    gatedResources.forEach(resource => {
+      const html = resourcePageHtml({
+        ...resource,
+        content: null,
+        description: '',
+      });
+      const filename = path.join(RESOURCES_DIR, `${resource.id}.html`);
+      fs.writeFileSync(filename, html);
+    });
+    console.log(`✅ Generated ${publicResources.length} public and ${gatedResources.length} gated resource pages`);
 
     // Generate keyword landing pages (e.g. /saenggibu-consulting/)
     console.log('🔑 Generating keyword landing pages...');
@@ -296,11 +306,12 @@ async function main() {
     }
 
     console.log('\n✨ Static site generation complete!');
-    console.log(`   - ${publicResources.length} resource pages`);
+    console.log(`   - ${publicResources.length} public resource pages`);
+    console.log(`   - ${gatedResources.length} gated resource stubs (no body/description)`);
     console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
     console.log(`   - /jinro-counseling/ prerendered SPA page`);
     console.log(`   - /links page`);
-    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} URLs`);
+    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} public URLs`);
     console.log(`   - robots.txt`);
     
   } catch (error) {

@@ -179,12 +179,14 @@
   margin-top: 28px;
 }
 
-.cc-page .hero .meta span {
+.cc-page .hero .meta span,
+.cc-page .hero .meta a {
   background: #fff;
   border: 1px solid var(--cc-line);
   font-size: 14px;
   font-weight: 700;
   padding: 8px 12px;
+  text-decoration: none;
 }
 
 .cc-page .slogan {
@@ -350,6 +352,11 @@
   font-size: 15px;
   color: #333;
   margin-top: 6px;
+}
+
+.cc-page .card p a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .cc-page .elig-box {

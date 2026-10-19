@@ -3,8 +3,10 @@ export const CAREER_COUNSELING_PATH = `/${CAREER_COUNSELING_SLUG}/`;
 export const CAREER_COUNSELING_COLLECTION = 'careerCounselingApplications';
 
 export const CAREER_COUNSELING_PRODUCT = '온라인 진로·선택과목 상담';
+/** Stored on the signed-in application record (owner/admin only). Not shown on public pages. */
 export const CAREER_COUNSELING_PRICE = 60000;
-export const CAREER_COUNSELING_PRICE_LABEL = '60,000원';
+export const COST_GUIDE = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
+export const RESOURCES_HREF = '/#resources';
 
 export const APPLY_DATE_MIN = '2026-11-10';
 export const APPLY_DATE_MAX = '2026-12-10';
@@ -57,7 +59,7 @@ export const BIZ_INFO = {
 export const PAGE_META = {
   title: '온라인 진로·선택과목 상담 | 입시는세연쌤',
   description:
-    '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵. 60,000원.',
+    '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.',
   canonical: `https://sehyunt.re.kr${CAREER_COUNSELING_PATH}`,
 };
 
@@ -90,7 +92,7 @@ export const SCHEDULE_CARDS = [
   { h: '신청 기간', big: '11/10 ~ 12/10', p: '2026년, 시즌 한정', red: false },
   { h: '상담 진행', big: '11/25 ~ 12/25', p: '온라인 화상 40분', red: false },
   { h: '대상', big: '고1 · 고2', p: '서울·경기·인천 외 지역 고등학교 재학생', red: false },
-  { h: '가격', big: CAREER_COUNSELING_PRICE_LABEL, p: '40분 화상 상담 + 과목 이수 로드맵 1장', red: true },
+  { h: '비용', big: '자료실에서 확인', p: '회원가입 후 자료실에서 확인하실 수 있어요.', red: true },
 ] as const;
 
 export const REFUND_ITEMS = [
@@ -100,7 +102,7 @@ export const REFUND_ITEMS = [
 ] as const;
 
 export const PAY_GUIDE =
-  '신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요. 입금 계좌는 일정 확정 문자에서 안내해 드려요.';
+  `신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. ${COST_GUIDE} 일정이 확정되면 입금 안내를 문자로 보내 드려요.`;
 
 export const FAQS: { q: string; a: string }[] = [
   {
@@ -109,7 +111,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: '결제는 언제 하나요?',
-    a: '신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. 일정이 확정될 때 60,000원을 입금해 주시면 예약이 완료돼요. 입금 계좌는 일정 확정 문자에서 안내해 드려요.',
+    a: `신청서를 내신 뒤에는 문자로 상담 일정을 조율해요. ${COST_GUIDE} 일정이 확정되면 입금 안내와 계좌를 문자로 보내 드려요.`,
   },
   {
     q: '환불은 어떻게 되나요?',

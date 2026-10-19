@@ -145,7 +145,11 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
           return timeB - timeA;
         });
       }
-      setItems(fetched);
+      setItems(fetched.map((item) => (
+        item.membersOnly
+          ? { ...item, content: undefined, fileUrl: '', fileName: '', images: undefined }
+          : item
+      )));
     } catch (err) {
       console.error("Error fetching resource items:", err);
     } finally {
@@ -832,8 +836,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
   const filteredItems = items
     .filter(item => {
       const matchesTab = classifyResourceCategory(item) === selectedTab;
+      const canReadDescription = !item.membersOnly || !!currentUser;
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        (canReadDescription && item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesTab && matchesSearch;
     })
     .sort((a, b) => {
@@ -995,7 +1000,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                       {item.title}
                     </h3>
                     <p className="text-[14px] text-[#52525B] font-normal max-w-2xl leading-relaxed">
-                      {item.description || ""}
+                      {item.membersOnly && !currentUser
+                        ? '회원 전용 자료예요. 로그인하시면 내용을 보실 수 있어요.'
+                        : (item.description || '')}
                     </p>
                     {isAdmin && item.locked && (
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">

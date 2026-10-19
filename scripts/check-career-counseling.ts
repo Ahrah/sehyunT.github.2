@@ -10,6 +10,13 @@ import {
   careerCounselingPrerenderHtml,
 } from './career-counseling-prerender';
 import {
+  COST_GUIDE_PLAIN,
+  KEYWORD_PAGES,
+  keywordPageHtml,
+  resourcePageHtml,
+} from './seo-pages';
+import {
+  COST_GUIDE,
   isAllowedRegion,
   isCareerCounselingPath,
   isValidMobile,
@@ -19,9 +26,12 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rules = fs.readFileSync(path.join(__dirname, '../firestore.rules'), 'utf-8');
 
+const PUBLIC_PRICE_RE = /만원|60,?000\s*원|"price"\s*:/;
+
 assertNoSensitiveCopy(careerCounselingPrerenderHtml);
 assert.equal(careerCounselingPrerenderHtml.includes('경기도 성남시 수정구 창업로 43, 81호'), true);
-assert.equal(careerCounselingPrerenderHtml.includes('60,000원'), true);
+assert.equal(careerCounselingPrerenderHtml.includes(COST_GUIDE), true);
+assert.equal(PUBLIC_PRICE_RE.test(careerCounselingPrerenderHtml), false);
 assert.equal(/농협|국민은행|우리은행|신한은행|\d{2,3}-\d{2}-\d{6}/.test(careerCounselingPrerenderHtml), false);
 
 const shell = `<!doctype html><html><head>
@@ -39,6 +49,28 @@ assert.equal(applied.includes(CAREER_COUNSELING_TITLE), true);
 assert.equal(applied.includes(CAREER_COUNSELING_CANONICAL), true);
 assert.equal(applied.includes('온라인 진로·선택과목 상담'), true);
 assert.equal(applied.includes('<div>home</div>'), false);
+assert.equal(PUBLIC_PRICE_RE.test(applied), false);
+
+for (const page of KEYWORD_PAGES) {
+  const html = keywordPageHtml(page);
+  assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);
+  assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
+  assert.equal(html.includes('자료실'), true);
+}
+
+const membersOnlyHtml = resourcePageHtml({
+  id: 'secret-price-faq',
+  title: '회원 전용 비용 FAQ',
+  description: '한 학기 200만원 이내. 자소서 약 100만원.',
+  fileType: 'article',
+  content: '[H]비용[/H]\n한 학기 200만원 이내입니다. 자기소개서 완성까지 약 100만원.',
+  membersOnly: true,
+  category: '대입',
+});
+assert.equal(membersOnlyHtml.includes('200만원'), false);
+assert.equal(membersOnlyHtml.includes('100만원'), false);
+assert.equal(membersOnlyHtml.includes('회원 전용'), true);
+assert.equal(membersOnlyHtml.includes('한 학기 200만원 이내. 자소서 약 100만원.'), false);
 
 assert.equal(isCareerCounselingPath('/jinro-counseling/'), true);
 assert.equal(isCareerCounselingPath('/jinro-counseling'), true);
