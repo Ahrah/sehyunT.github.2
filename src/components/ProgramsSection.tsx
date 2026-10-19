@@ -9,6 +9,7 @@ import {
   schoolGroups,
   type SchoolDates,
 } from '../data/admissionDates';
+import { ProgramRoadmap } from './ProgramRoadmap';
 import {
   programGroups,
   programRoadmap,
@@ -209,39 +210,8 @@ export function ProgramsSection() {
           </p>
         </motion.div>
 
-        <motion.div {...reveal} className="mt-16 rounded-[2rem] bg-brand-paper p-6 sm:p-10">
-          <p className="section-label text-brand-accent">Grade Roadmap</p>
-          <h3 className="mt-4 text-2xl font-black tracking-[-0.04em] sm:text-3xl">학년별 로드맵</h3>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-brand-ink/58 sm:text-base">
-            항목을 누르면 아래 해당 프로그램으로 이동합니다.
-          </p>
-          <ol className="program-timeline mt-10">
-            {programRoadmap.map((item, index) => (
-              <li key={item.id} className="program-timeline-item">
-                <button
-                  type="button"
-                  onClick={() => openAndScroll(item.targetId)}
-                  className="w-full rounded-2xl px-1 py-1 text-left transition-colors hover:bg-white/80"
-                >
-                  <span className="flex items-baseline gap-3">
-                    <span className="font-mono text-[11px] font-bold text-brand-ink/35">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="text-xs font-black tracking-[0.08em] text-brand-accent">{item.period}</span>
-                  </span>
-                  <span className="mt-1.5 block text-[1.05rem] font-black tracking-[-0.03em] sm:text-xl">{item.title}</span>
-                  {item.steps && (
-                    <span className="mt-2 flex flex-col gap-1 text-sm font-semibold text-brand-ink/55">
-                      {item.steps.map((step) => (
-                        <span key={step} className="flex gap-2">
-                          <span className="text-brand-accent">→</span>
-                          {step}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ol>
+        <motion.div {...reveal} className="program-map-shell mt-16 overflow-x-auto rounded-[2rem]">
+          <ProgramRoadmap onSelect={openAndScroll} />
         </motion.div>
 
         <motion.div {...reveal} className="mt-8 scroll-mt-28 rounded-[2rem] border border-brand-ink/10 bg-brand-paper p-6 sm:p-10" id="admission-dates">
