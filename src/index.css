@@ -81,6 +81,25 @@ p { text-wrap: pretty; }
   transform-origin: left center;
 }
 
+.hero-step-line {
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.programs-heading {
+  white-space: nowrap;
+  font-size: clamp(2.15rem, 5vw, 3.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.belief-quote {
+  font-family: "Noto Serif KR", serif;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.78;
+}
+
 .motion-window {
   position: relative;
   isolation: isolate;
@@ -186,4 +205,31 @@ details[open] > summary svg {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Admin resource create/edit modal: inner scroll on long posts (iOS dvh + momentum). */
+.resource-editor-modal-overlay {
+  overscroll-behavior: none;
+}
+
+.resource-editor-modal {
+  max-height: calc(90vh - 3rem);
+  max-height: min(90vh, calc(100dvh - 3rem));
+  min-height: 0;
+}
+
+.resource-editor-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+  overflow: hidden;
+}
+
+.resource-editor-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }

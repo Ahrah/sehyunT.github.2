@@ -201,7 +201,10 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                     <input
+                      id="reset-email"
+                      name="reset-email"
                       type="email"
+                      autoComplete="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       placeholder="가입한 이메일 주소"
@@ -236,14 +239,28 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                     </button>
                   </div>
                 </form>
-              ) : (
+              ) : isSignUp ? (
                 <>
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                  <form
+                    id="member-join-form"
+                    name="member-join"
+                    method="post"
+                    autoComplete="on"
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="space-y-5"
+                  >
                     <div className="space-y-4">
                       <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                         <input
                           {...register("email")}
+                          id="signup-email"
+                          name="signup-email"
+                          type="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          autoCapitalize="none"
+                          spellCheck={false}
                           placeholder="아이디 (이메일)"
                           className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                         />
@@ -254,96 +271,176 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
                         <input
                           {...register("password")}
+                          id="signup-new-password"
+                          name="signup-new-password"
                           type="password"
+                          autoComplete="new-password"
                           placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
                           className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                         />
                         {errors.password && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.password.message}</p>}
                       </div>
 
-                      {!isSignUp && (
-                        <div className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsForgotPassword(true);
-                              setError(null);
-                            }}
-                            className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
-                          >
-                            비밀번호를 잊으셨나요?
-                          </button>
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-4 overflow-hidden pt-2"
+                      >
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                          <input
+                            {...register("childName")}
+                            id="signup-full-name"
+                            name="signup-full-name"
+                            type="text"
+                            autoComplete="name"
+                            placeholder="자녀 이름"
+                            className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                          />
                         </div>
-                      )}
 
-                      {isSignUp && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          className="space-y-4 overflow-hidden pt-2"
-                        >
-                          <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                        <div className="relative">
+                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                          <input
+                            {...register("phone")}
+                            id="signup-tel"
+                            name="signup-tel"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="휴대폰 번호 (- 제외)"
+                            className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                          />
+                        </div>
+
+                        <div className="relative">
+                          <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                          <select
+                            {...register("interestService")}
+                            id="signup-interest-service"
+                            name="signup-interest-service"
+                            autoComplete="off"
+                            className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors appearance-none"
+                          >
+                            <option value="">관심 서비스 선택</option>
+                            {services.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="pt-2">
+                          <label className="flex items-start gap-3 cursor-pointer group">
                             <input
-                              {...register("childName")}
-                              placeholder="자녀 이름"
-                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                              type="checkbox"
+                              {...register("emailWeeklyOptIn")}
+                              id="signup-email-weekly-opt-in"
+                              name="signup-email-weekly-opt-in"
+                              className="w-4 h-4 mt-0.5 accent-brand-text cursor-pointer shrink-0"
                             />
-                          </div>
-
-                          <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
-                            <input
-                              {...register("phone")}
-                              placeholder="휴대폰 번호 (- 제외)"
-                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
-                            />
-                          </div>
-
-                          <div className="relative">
-                            <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
-                            <select
-                              {...register("interestService")}
-                              className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors appearance-none"
-                            >
-                              <option value="">관심 서비스 선택</option>
-                              {services.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                          </div>
-
-                          <div className="pt-2">
-                            <label className="flex items-start gap-3 cursor-pointer group">
-                              <input 
-                                type="checkbox" 
-                                {...register("emailWeeklyOptIn")}
-                                className="w-4 h-4 mt-0.5 accent-brand-text cursor-pointer shrink-0"
-                              />
-                              <span className="text-xs text-brand-gray group-hover:text-brand-text transition-colors leading-relaxed">
-                                이메일로 매주 새 글 알림을 받을게요 (선택)
-                              </span>
-                            </label>
-                          </div>
-                        </motion.div>
-                      )}
+                            <span className="text-xs text-brand-gray group-hover:text-brand-text transition-colors leading-relaxed">
+                              이메일로 매주 새 글 알림을 받을게요 (선택)
+                            </span>
+                          </label>
+                        </div>
+                      </motion.div>
                     </div>
 
                     {error && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest text-center">{error}</p>}
 
                     <button
+                      type="submit"
                       disabled={loading}
                       className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
                     >
-                      {loading ? 'Processing...' : (isSignUp ? 'Join Now' : 'Login Now')}
+                      {loading ? 'Processing...' : 'Join Now'}
                       <ChevronRight size={18} />
                     </button>
                   </form>
 
                   <div className="mt-8 text-center border-t border-brand-light-gray/40 pt-6">
                     <button
+                      type="button"
                       onClick={handleToggleMode}
                       className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
                     >
-                      {isSignUp ? '이미 회원이신가요? 로그인' : '아직 회원이 아니신가요? 회원가입'}
+                      이미 회원이신가요? 로그인
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <form
+                    id="login-form"
+                    name="login"
+                    method="post"
+                    autoComplete="on"
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="space-y-5"
+                  >
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                        <input
+                          {...register("email")}
+                          id="login-username"
+                          name="username"
+                          type="email"
+                          inputMode="email"
+                          autoComplete="username"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          placeholder="아이디 (이메일)"
+                          className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                        />
+                        {errors.email && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.email.message}</p>}
+                      </div>
+
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gray" size={18} />
+                        <input
+                          {...register("password")}
+                          id="login-current-password"
+                          name="current-password"
+                          type="password"
+                          autoComplete="current-password"
+                          placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
+                          className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
+                        />
+                        {errors.password && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.password.message}</p>}
+                      </div>
+
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPassword(true);
+                            setError(null);
+                          }}
+                          className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
+                        >
+                          비밀번호를 잊으셨나요?
+                        </button>
+                      </div>
+                    </div>
+
+                    {error && <p className="text-[10px] text-red-500 font-black uppercase tracking-widest text-center">{error}</p>}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-brand-text text-brand-bg h-16 font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-brand-accent transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Processing...' : 'Login Now'}
+                      <ChevronRight size={18} />
+                    </button>
+                  </form>
+
+                  <div className="mt-8 text-center border-t border-brand-light-gray/40 pt-6">
+                    <button
+                      type="button"
+                      onClick={handleToggleMode}
+                      className="text-[10px] font-black uppercase tracking-widest text-brand-gray hover:text-brand-text transition-colors"
+                    >
+                      아직 회원이 아니신가요? 회원가입
                     </button>
                   </div>
                 </>

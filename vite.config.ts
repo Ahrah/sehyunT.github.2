@@ -27,9 +27,12 @@ export default defineConfig(({mode}) => {
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return;
-            if (id.includes('firebase') || id.includes('@firebase')) return 'firebase';
-            if (id.includes('lucide-react')) return 'icons';
-            return 'vendor';
+            if (id.includes('firebase') || id.includes('@firebase')) {
+              if (id.includes('firestore')) return 'fb-firestore';
+              if (id.includes('storage')) return 'fb-storage';
+              if (id.includes('auth')) return 'fb-auth';
+              return 'fb-app';
+            }
           },
         },
       },
