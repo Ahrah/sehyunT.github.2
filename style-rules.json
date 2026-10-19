@@ -16,7 +16,7 @@
     },
     {
       "id": "sehyunti",
-      "description": "대외 이름은 '세연샤'입니다. '세현티'를 쓰지 않습니다.",
+      "description": "대외 이름은 '세연쌤'입니다. '세현티'를 쓰지 않습니다.",
       "regex": "세현티",
       "exceptions": [],
       "severity": "warning"
