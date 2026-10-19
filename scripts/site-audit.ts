@@ -13,7 +13,7 @@ const REPORT_PATH = path.join(ROOT, 'site-audit-report.md');
 const MAX_REQUESTS = 300;
 const DELAY_MS = 120;
 const FETCH_TIMEOUT_MS = 15_000;
-const PRICE_RE = /\d[\d,]*\s*만?원/g;
+const PRICE_RE = /\d[\d,]*\s*만?원(?![가-힣])/g;
 const USER_AGENT = 'sehyunt-site-audit/1.0 (+https://sehyunt.re.kr)';
 
 type Severity = 'pass' | 'warn' | 'fail';
