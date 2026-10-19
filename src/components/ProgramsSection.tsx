@@ -105,7 +105,7 @@ function ProgramCardView({
       <div className="p-6 sm:p-8">
         <p className="text-xs font-black tracking-[0.14em] text-brand-accent">{card.period}</p>
         <h4 className="mt-2 text-2xl font-black tracking-[-0.04em] sm:text-[1.75rem]">{card.name}</h4>
-        <p className="mt-3 text-[0.95rem] leading-7 text-brand-ink/62">{card.blurb}</p>
+        {card.blurb && <p className="mt-3 text-[0.95rem] leading-7 text-brand-ink/62">{card.blurb}</p>}
         <button
           type="button"
           onClick={onToggle}
