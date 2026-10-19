@@ -107,7 +107,6 @@ const homePageContent = `
         <h3>${group.eyebrow} · ${group.title}</h3>
         <p>${group.intro}</p>
         ${group.cards.map((card) => `<h4>${card.name}</h4><p>${card.period} · ${card.blurb}</p>${card.details.map((detail) => `<p>${detail.content}</p>`).join('')}`).join('\n        ')}
-        ${group.aside ? `<h4>${group.aside.title}</h4><p>${group.aside.blurb}</p>` : ''}
       </div>`).join('\n      ')}
     </section>
 
