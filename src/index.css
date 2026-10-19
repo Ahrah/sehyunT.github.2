@@ -564,23 +564,35 @@ p { text-wrap: pretty; }
 }
 
 @media (min-width: 641px) and (max-width: 1099px) {
-  .program-map-grid { min-width: 52rem; }
+  .program-map { padding: 1.5rem 1rem 1.15rem; }
+  .program-map-grid {
+    grid-template-columns:
+      [ph] 3.55rem [gr] 2.15rem [tk] 2.55rem
+      [a1] minmax(0, 1fr) [b1] minmax(0, 1fr)
+      [l2] minmax(0, 2fr)
+      [a3] minmax(0, 1.2fr) [b3] minmax(0, 0.95fr) [end];
+  }
   .program-map-ds { display: none; }
-  .program-map-nm { font-size: 0.86rem; }
-  .program-map-nm--sm { font-size: 0.8rem; }
-  .program-map-per { font-size: 0.64rem; }
-  .program-map-phase { padding: 0 0.45rem; }
-  .program-map-phase b { font-size: 0.88rem; }
-  .program-map-phase small { font-size: 0.62rem; margin-top: 0.25rem; }
-  .program-map-gr { font-size: 0.82rem; padding-left: 0.3rem; }
-  .program-map-tk { font-size: 0.6rem; }
-  .program-map-lh b { font-size: 0.8rem; }
-  .program-map-block { padding: 0.55rem 0.6rem 0.7rem; }
+  .program-map-nm { font-size: 0.82rem; }
+  .program-map-nm--sm { font-size: 0.76rem; }
+  .program-map-per { font-size: 0.62rem; }
+  .program-map-phase { padding: 0 0.4rem; }
+  .program-map-phase b { font-size: 0.82rem; }
+  .program-map-phase small { font-size: 0.58rem; margin-top: 0.25rem; }
+  .program-map-gr { font-size: 0.78rem; padding-left: 0.25rem; }
+  .program-map-tk { font-size: 0.58rem; }
+  .program-map-lh { padding-left: 0.4rem; }
+  .program-map-lh b { font-size: 0.76rem; }
+  .program-map-lh span { display: none; }
+  .program-map-block { padding: 0.5rem 0.5rem 0.65rem; }
   .program-map-block--mock,
-  .program-map-block--badge { padding-left: 2.6rem; }
-  .program-map-badge { width: 1.7rem; height: 1.7rem; font-size: 0.64rem; left: 0.45rem; top: 0.5rem; }
-  .program-map-band-dates { font-size: 0.72rem; }
+  .program-map-block--badge { padding-left: 2.35rem; }
+  .program-map-badge { width: 1.55rem; height: 1.55rem; font-size: 0.58rem; left: 0.4rem; top: 0.45rem; }
+  .program-map-band { padding: 0.55rem 0.6rem; }
+  .program-map-band-top b { font-size: 0.72rem; }
+  .program-map-band-dates { font-size: 0.68rem; }
   .program-map-ivg-row { grid-template-columns: 1fr; }
+  .program-map-cell .program-map-block { margin: 0.25rem; }
 }
 
 @media (min-width: 1100px) {
