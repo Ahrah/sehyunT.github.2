@@ -44,7 +44,6 @@ export type RoadmapItem = {
 export const programRoadmap: RoadmapItem[] = [
   { id: 'rm-study', period: '중1~중3', title: '자기주도학습 컨설팅', targetId: 'program-self-study' },
   { id: 'rm-career', period: '중3~고1', title: '진로 컨설팅', targetId: 'program-career' },
-  { id: 'rm-subject', period: '고1~고2', title: '진로선택과목 상담', targetId: 'program-subject' },
   { id: 'rm-essay', period: '중3 여름방학', title: '자기소개서 집중 컨설팅', targetId: 'program-essay' },
   {
     id: 'rm-interview',
@@ -54,6 +53,7 @@ export const programRoadmap: RoadmapItem[] = [
     targetId: 'program-interview',
   },
   { id: 'rm-prehs', period: '중3 겨울', title: '고등학교 입학 전 컨설팅', targetId: 'program-pre-hs' },
+  { id: 'rm-subject', period: '고1~고2', title: '진로선택과목 상담', targetId: 'program-subject' },
   {
     id: 'rm-record',
     period: '고1 1학기~고3 1학기',
