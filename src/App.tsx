@@ -321,7 +321,7 @@ export default function App() {
               <h1 className="mt-4 max-w-5xl text-[clamp(2.5rem,5.4vw,5.8rem)] font-black leading-[1.08] tracking-[-0.065em]">
                 입시에 더해,<br /><span className="hero-emphasis hero-step-line">학생의 다음 STEP을</span><br />설계합니다.
               </h1>
-              <p className="mt-9 max-w-2xl text-lg font-medium leading-[1.9] text-brand-ink/68 sm:text-xl">학생이 자기 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.</p>
+              <p className="mt-9 max-w-2xl text-lg font-medium leading-[1.9] text-brand-ink/68 sm:text-xl">학생이 자신의 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.</p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
                 <a href="#programs"><Button variant="line" className="w-full bg-white/35 sm:w-auto">프로그램 살펴보기 <ChevronDown size={17} /></Button></a>
@@ -358,7 +358,7 @@ export default function App() {
             <motion.div {...reveal} className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
               <div><p className="section-label text-brand-accent">What Matters</p><h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.06em] sm:text-7xl">좋은 전략은<br />학생을 닮아야<br />합니다.</h2></div>
               <div className="lg:pt-16">
-                <p className="belief-quote text-2xl sm:text-3xl">"학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라, 자기 질문을 만들고 여러 관점에서 자료를 읽고 끝까지 생각해보는 경험입니다. 그 과정이 쌓이면 기록에서는 탐구의 깊이가 보이고, 면접에서는 짧은 시간 안에도 자기 생각을 설명할 수 있습니다."</p>
+                <p className="belief-quote text-2xl sm:text-3xl">"학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라, 자신의 질문을 만들고 여러 관점에서 자료를 읽고 끝까지 생각해보는 경험입니다. 그 과정이 쌓이면 기록에서는 탐구의 깊이가 보이고, 면접에서는 짧은 시간 안에도 자신의 생각을 설명할 수 있습니다."</p>
                 <div className="mt-12 grid gap-8 border-t border-brand-ink/15 pt-10 sm:grid-cols-2">
                   <div><h3 className="text-xl font-black">깊어지는 탐구</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.</p></div>
                   <div><h3 className="text-xl font-black">생각을 설명하는 힘</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.</p></div>

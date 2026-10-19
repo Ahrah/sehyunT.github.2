@@ -33,7 +33,7 @@ const homePageContent = `
           <span class="text-brand-accent not-italic">학생의 다음 STEP을</span> 설계합니다.
         </h1>
         <p class="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-normal">
-          학생이 자기 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.
+          학생이 자신의 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
           <a href="/jinro-counseling/">진로·선택과목 상담</a>
