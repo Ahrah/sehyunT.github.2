@@ -27,11 +27,11 @@ const homePageContent = `
           학생마다 다른 길을 설계합니다
         </div>
         <h1 class="text-6xl md:text-8xl font-extrabold leading-[1] tracking-tighter mb-8 italic">
-          입시가 아니라,<br />
-          <span class="text-brand-accent not-italic">학생의 다음</span>을 설계합니다.
+          입시에 더해,<br />
+          <span class="text-brand-accent not-italic">학생의 다음 STEP을</span> 설계합니다.
         </h1>
         <p class="text-lg md:text-xl text-brand-gray leading-relaxed max-w-xl mb-12 font-normal">
-          진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.
+          학생이 자기 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
           <a href="/jinro-counseling/">진로·선택과목 상담</a>
@@ -62,15 +62,15 @@ const homePageContent = `
         </h2>
         <div class="space-y-12">
           <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">연결된 성장</h3>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">깊어지는 탐구</h3>
             <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
-              진로, 수업, 탐구와 기록이 하나의 맥락 안에서 이어지도록 설계합니다.
+              넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.
             </p>
           </div>
           <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">학생의 주도권</h3>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">생각을 설명하는 힘</h3>
             <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
-              결과물을 대신 만들기보다 학생이 이해하고 선택하고 말하는 힘을 키웁니다.
+              결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.
             </p>
           </div>
         </div>
@@ -117,15 +117,15 @@ const homePageContent = `
     <!-- Strategy Map Section -->
     <section class="bg-brand-text py-40 px-6 lg:px-8 text-brand-bg">
       <div class="max-w-7xl mx-auto">
-        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Sehyun T Strategy Map</p>
+        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">How We Work</p>
         <h2 class="text-5xl md:text-7xl font-black tracking-tighter mb-12">합격만이 아닌 오래 남는 성장의 설계도</h2>
         <p class="mb-12">질문을 만들고, 범위를 좁히고, 자료를 비교하고, 직접 설명할 수 있을 때까지 탐구의 깊이를 만듭니다.</p>
         <ol class="space-y-8">
-          <li><strong>01 학생을 읽습니다</strong> — 다양한 진로 분야를 제시하고, 학생의 관심을 바탕으로 진로 방향을 정합니다.</li>
-          <li><strong>02 핵심 질문을 찾습니다</strong> — 진로에 맞는 목표 학교와 전형을 정하고, 탐구 주제를 선정합니다.</li>
-          <li><strong>03 성장의 흐름을 설계합니다</strong> — 중3 여름방학부터 자기소개서를 첨삭합니다.</li>
-          <li><strong>04 학생의 언어로 실행합니다</strong> — 12월 모의면접으로 실전 면접을 준비합니다.</li>
-          <li><strong>05 끝까지 점검하고 다듬습니다</strong> — 고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.</li>
+          <li><strong>01 관심사를 살핍니다</strong> — 다양한 진로 분야를 제시하고, 학생의 관심을 바탕으로 진로 방향을 정합니다.</li>
+          <li><strong>02 질문을 좁힙니다</strong> — 진로에 맞는 목표 학교와 전형을 정하고, 탐구 주제를 선정합니다.</li>
+          <li><strong>03 탐구를 깊게 만듭니다</strong> — 중3 여름방학부터 자기소개서를 첨삭합니다.</li>
+          <li><strong>04 직접 연구하고 정리합니다</strong> — 12월 모의면접으로 실전 면접을 준비합니다.</li>
+          <li><strong>05 기록하고 말하는 힘으로 남깁니다</strong> — 고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.</li>
         </ol>
       </div>
     </section>
