@@ -121,9 +121,57 @@ p { text-wrap: pretty; }
   pointer-events: none;
 }
 
+.program-timeline {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.program-timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.42rem;
+  top: 0.55rem;
+  bottom: 0.85rem;
+  width: 2px;
+  background: #111111;
+}
+
+.program-timeline-item {
+  position: relative;
+  padding: 0 0 1.35rem 1.65rem;
+}
+
+.program-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.program-timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 0.14rem;
+  top: 0.55rem;
+  z-index: 1;
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 9999px;
+  background: #b91c1c;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.admission-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
 @media (max-width: 640px) {
   .hero-grid { background-size: 36px 36px; }
   .contact-ring { width: 27rem; height: 27rem; box-shadow: 0 0 0 5rem rgba(255,255,255,0.03); }
+  .program-timeline-item { padding-left: 1.45rem; padding-bottom: 1.15rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

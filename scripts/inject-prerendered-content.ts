@@ -9,6 +9,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { SITE } from '../src/config/site';
+import { ADMISSION_CYCLE, ADMISSION_SOURCE_NOTE, officeWindows, schoolGroups } from '../src/data/admissionDates';
+import { programGroups, programRoadmap } from '../src/data/programs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,40 +80,35 @@ const homePageContent = `
     </section>
 
     <!-- Programs Section -->
-    <section class="py-48 px-6 lg:px-12 max-w-7xl mx-auto">
-      <div class="mb-32">
+    <section id="programs" class="py-48 px-6 lg:px-12 max-w-7xl mx-auto">
+      <div class="mb-16">
         <p class="text-[10px] uppercase tracking-[0.6em] text-brand-accent font-black">Programs</p>
-        <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] leading-none">지금 필요한 한 가지부터</h2>
-        <p class="text-brand-gray max-w-sm font-normal text-base md:text-lg leading-[1.6] mt-8 italic">
-          학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.
+        <h2 class="text-6xl md:text-7xl font-extrabold tracking-[-0.05em] leading-none">학년별로 이어지는 프로그램</h2>
+        <p class="text-brand-gray max-w-xl font-normal text-base md:text-lg leading-[1.6] mt-8">
+          중1 공부 습관부터 고3 면접까지, 시기에 맞춰 진로·학습·기록·면접을 연결합니다.
         </p>
       </div>
-
-      <div class="space-y-16">
-        <!-- Career & Middle -->
-        <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">진로·고입 전략</h3>
-          <p class="text-brand-gray">중학교 시기는 진로 방향과 학습 방식을 정하는 시기이며, 이 시기의 탐구 경험이 고입 자기소개서의 근거가 됩니다.</p>
-        </div>
-
-        <!-- Learning Coaching -->
-        <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자기주도학습</h3>
-          <p class="text-brand-gray">학생의 학습 패턴을 진단하고, 그에 맞는 학습 전략을 함께 세웁니다.</p>
-        </div>
-
-        <!-- Specialized Prep -->
-        <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">자소서·면접</h3>
-          <p class="text-brand-gray">자기소개서 첨삭, 12월 모의면접, 공통문항 특강으로 특목고 입시를 준비합니다.</p>
-        </div>
-
-        <!-- Student Record -->
-        <div>
-          <h3 class="text-4xl font-extrabold tracking-tighter mb-4">생기부·수시 전략</h3>
-          <p class="text-brand-gray">학생부종합전형 통합 컨설팅 및 수시 지원 전략으로 합격을 설계합니다.</p>
-        </div>
-      </div>
+      <h3>학년별 로드맵</h3>
+      <ol>
+        ${programRoadmap.map((item) => `<li>${item.period} — ${item.title}${item.steps ? ` → ${item.steps.join(' → ')}` : ''}</li>`).join('\n        ')}
+      </ol>
+      <h3>${ADMISSION_CYCLE} 특목·자사고 원서접수 기간</h3>
+      <ul>
+        ${officeWindows.map((office) => `<li>${office.region}: ${office.apply}${office.note ? ` (${office.note})` : ''}${office.extras ? ` · ${office.extras.map((extra) => `${extra.label} ${extra.value}`).join(', ')}` : ''}</li>`).join('\n        ')}
+      </ul>
+      ${schoolGroups.map((group) => `
+      <h4>${group.label}</h4>
+      <ul>
+        ${group.schools.map((school) => `<li>${school.name}${school.officePlan ? ' (교육청 기준)' : ''}: 원서 ${school.apply} · 자소서 ${school.essay} · 면접 ${school.interview} · 최종발표 ${school.result}</li>`).join('\n        ')}
+      </ul>`).join('\n      ')}
+      <p>${ADMISSION_SOURCE_NOTE}</p>
+      ${programGroups.map((group) => `
+      <div>
+        <h3>${group.eyebrow} · ${group.title}</h3>
+        <p>${group.intro}</p>
+        ${group.cards.map((card) => `<h4>${card.name}</h4><p>${card.period} · ${card.blurb}</p>${card.details.map((detail) => `<p>${detail.content}</p>`).join('')}`).join('\n        ')}
+        ${group.aside ? `<h4>${group.aside.title}</h4><p>${group.aside.blurb}</p>` : ''}
+      </div>`).join('\n      ')}
     </section>
 
     <!-- Strategy Map Section -->

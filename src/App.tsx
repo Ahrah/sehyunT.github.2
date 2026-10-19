@@ -9,24 +9,19 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
-  Check,
   ChevronDown,
-  Compass,
-  FileText,
   Instagram,
   LogOut,
   Mail,
   Menu,
-  MessageCircle,
-  Plus,
   ShieldAlert,
   Sparkles,
-  Target,
   User as UserIcon,
   Users,
   X,
 } from 'lucide-react';
 import { SITE } from './config/site';
+import { ProgramsSection } from './components/ProgramsSection';
 
 type AuthUser = { email: string | null; displayName: string | null };
 
@@ -36,163 +31,7 @@ const MyPage = lazy(() => import('./components/MyPage').then((m) => ({ default: 
 const ResourcesSection = lazy(() => import('./components/ResourcesSection').then((m) => ({ default: m.ResourcesSection })));
 const LegalModal = lazy(() => import('./components/LegalModals').then((m) => ({ default: m.LegalModal })));
 
-interface Program {
-  title: string;
-  subtitle: string;
-  desc: string;
-  content: string;
-  features: string[];
-  target: string[];
-  landing?: { href: string; label: string };
-}
-
-interface ProgramCategory {
-  id: string;
-  number: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  icon: typeof Compass;
-  programs: Program[];
-}
-
 const ADMIN_EMAIL = SITE.adminEmail;
-
-const programCategories: ProgramCategory[] = [
-  {
-    id: 'career',
-    number: '01',
-    eyebrow: '중학생 · 예비고',
-    title: '진로·고입 전략',
-    description: '중학교 시기는 진로 방향과 학습 방식을 정하는 시기이며, 이 시기의 탐구 경험이 고입 자기소개서의 근거가 됩니다.',
-    icon: Compass,
-    programs: [
-      {
-        title: 'Career Direction Consulting',
-        subtitle: '진로 컨설팅',
-        desc: '좋아하는 것과 잘하는 것을 입시의 방향으로 바꿉니다.',
-        content: '단순한 직업 추천이나 적성검사 해석을 넘어 학생의 관심사, 독서 성향, 탐구 방식, 학습 태도를 입체적으로 분석합니다. 장기적으로 지속 가능한 학업 방향을 제안하며, 이는 고등학교 선택과 학생부 로드맵의 기초가 됩니다.',
-        features: ['진로 관심사 및 학업 성향 분석', '탐구 분야 확장 방향 제안', '독서 및 활동 로드맵 설계', '고등학교 진학 방향 연결'],
-        target: ['진로 방향이 자주 바뀌는 학생', '좋아하는 분야를 찾고 싶은 학생', '학업과 진로의 연결고리가 필요한 학생'],
-      },
-      {
-        title: 'Online Career Subject Counseling',
-        subtitle: '온라인 진로·선택과목 상담',
-        desc: '비수도권 고1·고2를 위한 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.',
-        content: '희망 전공을 먼저 듣고, 앞으로 들을 과목의 이수 경로를 함께 설계합니다. 상담 전날까지 생기부와 희망 진로를 받아 미리 읽고, 상담이 끝나면 1장짜리 과목 이수 로드맵을 드립니다. 서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있으며, 비용은 회원가입 후 자료실에서 확인하실 수 있어요.',
-        features: ['40분 온라인 화상 상담', '과목 이수 로드맵 1장', '공동교육과정·온라인학교 대안 점검', '세특·탐구와 과목 연결'],
-        target: ['서울·경기·인천 외 지역 고등학교 재학생(고1·고2)', '희망 전공에 맞춰 과목을 고르고 싶은 학생', '학교에 없는 과목의 대안이 궁금한 학생'],
-        landing: { href: '/jinro-counseling/', label: '온라인 진로·선택과목 상담' },
-      },
-      {
-        title: 'Pre-High School Strategy',
-        subtitle: '고등학교 입학 전 컨설팅',
-        desc: '중3 겨울, 고등학교 3년의 시행착오를 줄입니다.',
-        content: '진학 예정 학교의 특징과 학업 환경을 분석하여 입학 후의 학생부 운영과 자기주도학습 루틴을 미리 구축합니다. 불필요한 스펙 경쟁 대신 학생의 성향에 맞는 활동 구조를 정립합니다.',
-        features: ['진학 예정 고교별 생활 전략', '학생부 운영 및 세특 구조 이해', '진로 기반 활동 흐름 설계', '과목 선택 및 학업 방향 조언'],
-        target: ['상위권 고교 진학 예정 학생', '입학 전 학생부 전략이 필요한 학생', '고등학교 생활에 대한 불안이 있는 학생'],
-      },
-    ],
-  },
-  {
-    id: 'learning',
-    number: '02',
-    eyebrow: '학습 습관 · 실행력',
-    title: '자기주도학습',
-    description: '학생의 학습 패턴을 진단하고, 그에 맞는 학습 전략을 함께 세웁니다.',
-    icon: Target,
-    programs: [
-      {
-        title: '1:1 Self-Directed Coaching',
-        subtitle: '1:1 자기주도학습 컨설팅',
-        desc: '학생마다 다른 공부의 작동 방식을 찾습니다.',
-        content: '단순 관리를 넘어 학생이 공부를 미루는 원인, 집중 유지 환경, 목표 달성 기제를 정밀 분석합니다. 티칭이 아닌 코칭 중심으로 운영되며, 진로 관심사와 학업을 연결하여 장기적인 학습 동기를 만듭니다.',
-        features: ['개인별 학습 습관 및 실행 구조 분석', '과목별 최적화 공부 방식 제안', '스트레스 및 멘탈 관리', '맞춤형 학습 루틴 및 교재 설계'],
-        target: ['나만의 공부법을 찾고 싶은 학생', '실행력이 부족해 고민인 학생', '공부 동기와 진로를 연결하고 싶은 학생'],
-      },
-      {
-        title: 'Group Learning Program',
-        subtitle: '자기주도학습 그룹 프로그램',
-        desc: '함께 읽고 말하며 사고의 깊이를 키웁니다.',
-        content: '학습 플랜 설계부터 비문학 독해, 정보 구조화 훈련을 동료들과 함께 수행합니다. 자신의 사고 과정을 언어화하고 타인의 관점을 수용하며 사고의 폭을 확장합니다.',
-        features: ['실행 가능한 학습 루틴 공동 설계', '비문학 및 원서 기반 논리 독해', '토론을 통한 표현 훈련', '면접 대비 사고 구조화'],
-        target: ['혼자서는 방향 유지가 힘든 학생', '독해력과 사고력을 키우고 싶은 학생', '표현 능력을 높이고 싶은 학생'],
-      },
-    ],
-  },
-  {
-    id: 'admissions',
-    number: '03',
-    eyebrow: '특목고 · 자사고',
-    title: '자소서·면접',
-    description: '자기소개서 첨삭, 12월 모의면접, 공통문항 특강으로 특목고 입시를 준비합니다.',
-    icon: MessageCircle,
-    programs: [
-      {
-        title: 'Admissions Consulting',
-        subtitle: '자기소개서 집중 컨설팅',
-        desc: '경험의 나열을 학생만의 서사로 바꿉니다.',
-        content: '단순 첨삭을 넘어 학생의 활동과 경험을 재해석합니다. 핵심 메시지를 도출하고 문항별 스토리라인을 구성하며, 면접과의 연결성까지 고려한 서사를 만듭니다.',
-        features: ['자기소개서 핵심 스토리라인 설계', '개별 경험 큐레이션 및 연결', '학교별 강조 포인트 분석', '면접 연계 질문 리스트 추출'],
-        target: ['특목·자사고 지원 예정 학생', '경험은 많으나 정리가 안 되는 학생', '차별화된 서사가 필요한 학생'],
-        landing: { href: '/jasoseo-consulting/', label: '자소서 컨설팅' },
-      },
-      {
-        title: 'Interview Coaching',
-        subtitle: '특목·자사고 면접 대비',
-        desc: '암기보다 사고력과 진정성을 보여주는 답변을 만듭니다.',
-        content: '학교별 면접 유형을 분석하고 예상 질문에 대한 구조적 답변 능력을 키웁니다. 면접 태도와 전달력까지 코칭하여 학생이 자신의 경험을 스스로 설명할 수 있도록 훈련합니다.',
-        features: ['3:1 실전 모의면접', '답변 구조 및 전달력 코칭', '실전 답변 피드백', '학생부 기반 압박 질문 훈련'],
-        target: ['실전 면접 경험이 부족한 학생', '논리적인 말하기가 어려운 학생', '경험의 진정성을 입증하고 싶은 학생'],
-        landing: { href: '/interview-consulting/', label: '면접 컨설팅' },
-      },
-      {
-        title: 'Common Question Program',
-        subtitle: '특목·자사고 공통문항 특강',
-        desc: '낯선 질문에도 흔들리지 않는 사고의 틀을 세웁니다.',
-        content: '반복 등장하는 핵심 질문들의 논리를 해부합니다. 답을 외우는 대신 어떤 질문이 나와도 학생의 경험과 사고를 구조화해 전달할 수 있는 프레임을 훈련합니다.',
-        features: ['공통문항 기출 분석', '유형별 답변 프레임 설계', '즉석 답변 훈련', '발표 및 메시지 전달력 강화'],
-        target: ['공통문항 답변이 어려운 학생', '사고를 말로 정리하기 힘든 학생', '실전 대응력을 키우고 싶은 학생'],
-      },
-    ],
-  },
-  {
-    id: 'record',
-    number: '04',
-    eyebrow: '고등학생 · 대입',
-    title: '생기부·수시 전략',
-    description: '세특, 탐구, 수행평가와 지원 전략을 하나의 성장 흐름으로 연결합니다.',
-    icon: FileText,
-    programs: [
-      {
-        title: 'Student Record Strategy',
-        subtitle: '학기별 생기부 통합 컨설팅',
-        desc: '학생부의 여러 기록을 하나의 방향으로 연결합니다.',
-        content: '한 학기 동안의 진로 관심사와 학업 흐름을 기반으로 세특, 탐구활동, 발표, 독서가 유기적으로 이어지도록 설계합니다. 대학이 읽어낼 수 있는 장기적인 성장 흐름을 만듭니다.',
-        features: ['학기별 학생부 스토리라인 설계', '세특 및 탐구활동 주제 기획', '교과-진로 연결 활동 설계', '발표 및 보고서 방향 가이드'],
-        target: ['학생부종합전형을 준비하는 학생', '활동 간 연결성이 부족한 학생', '깊이 있는 세특을 만들고 싶은 학생'],
-        landing: { href: '/saenggibu-consulting/', label: '생기부 컨설팅' },
-      },
-      {
-        title: 'Performance & Statement',
-        subtitle: '수행평가·생기부 상시 컨설팅',
-        desc: '결과보다 학생의 사고 과정이 보이는 기록을 만듭니다.',
-        content: '수행평가와 수시 활동 내용을 학생의 탐구 방향과 사고 흐름이 드러나도록 구체화합니다. 발표와 보고서의 논리 구조부터 최종 세특 기재 포인트까지 조력합니다.',
-        features: ['수행평가 주제 구체화', '탐구 내용 구조화', '보고서 초안 피드백', '생기부 기재용 활동 요약'],
-        target: ['수행평가 주제 선정이 어려운 학생', '탐구 과정을 정리하고 싶은 학생', '기록의 질을 높이고 싶은 학생'],
-        landing: { href: '/saenggibu-consulting/', label: '생기부 컨설팅' },
-      },
-      {
-        title: 'Early Admissions Strategy',
-        subtitle: '대학 수시 지원 전략',
-        desc: '데이터와 학생의 강점을 결합해 지원 조합을 설계합니다.',
-        content: '내신 성적과 생기부의 흐름, 면접 가능성을 종합하여 최적의 지원 조합을 제안합니다. 전형별 적합도를 검토하고 합격 가능성과 리스크를 함께 분석합니다.',
-        features: ['학생부 정성 평가', '전형별 적합도 분석', '지원 학과 및 조합 시뮬레이션', '가능성과 리스크 진단'],
-        target: ['수시 지원을 앞둔 고3', '지원 대학 범위가 궁금한 학생', '전략적인 지원 조합이 필요한 학생'],
-      },
-    ],
-  },
-];
 
 const strategySteps = [
   { number: '01', title: '학생을 읽습니다', label: 'Discover', text: '다양한 진로 분야를 제시하고, 학생의 관심을 바탕으로 진로 방향을 정합니다.' },
@@ -349,8 +188,6 @@ const StrategyMap = () => {
 };
 
 export default function App() {
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -374,10 +211,10 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [isAdminOpen]);
 
   useEffect(() => {
-    const locked = isAuthModalOpen || selectedProgram || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType;
+    const locked = isAuthModalOpen || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType;
     document.body.style.overflow = locked ? 'hidden' : 'auto';
     return () => { document.body.style.overflow = 'auto'; };
-  }, [isAuthModalOpen, selectedProgram, isMyPageOpen, isAdminOpen, user, legalModalType]);
+  }, [isAuthModalOpen, isMyPageOpen, isAdminOpen, user, legalModalType]);
 
   const reveal = reduceMotion ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.2 }, transition: { duration: 0.65 } };
 
@@ -430,49 +267,7 @@ export default function App() {
           </div>
         </section>
 
-        <section id="programs" className="scroll-mt-20 bg-white py-28 sm:py-36">
-          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-            <motion.div {...reveal} className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-              <div><p className="section-label text-brand-accent">Programs</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">지금 필요한<br />한 가지부터</h2></div>
-              <p className="max-w-2xl text-lg leading-8 text-brand-ink/60 lg:ml-auto">학생의 진로, 기록, 학업 현황을 분석해 1:1로 컨설팅합니다.</p>
-            </motion.div>
-
-            <div className="mt-16 grid gap-4 lg:grid-cols-2">
-              {programCategories.map((category) => {
-                const Icon = category.icon;
-                const expanded = expandedCategory === category.id;
-                return (
-                  <motion.article {...reveal} key={category.id} className={`overflow-hidden rounded-[1.75rem] border transition-colors ${expanded ? 'border-brand-ink bg-brand-mist' : 'border-brand-ink/10 bg-brand-paper hover:border-brand-ink/30'}`}>
-                    <button onClick={() => setExpandedCategory(expanded ? null : category.id)} aria-expanded={expanded} className="w-full p-7 text-left sm:p-9">
-                      <div className="flex items-start justify-between gap-5">
-                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-brand-accent shadow-sm"><Icon size={23} /></div>
-                        <span className="font-mono text-xs text-brand-ink/35">{category.number}</span>
-                      </div>
-                      <p className="mt-9 text-xs font-black tracking-[0.18em] text-brand-accent">{category.eyebrow}</p>
-                      <h3 className="mt-3 text-3xl font-black tracking-[-0.045em] sm:text-4xl">{category.title}</h3>
-                      <p className="mt-5 max-w-xl leading-7 text-brand-ink/58">{category.description}</p>
-                      <div className="mt-8 flex items-center justify-between border-t border-brand-ink/10 pt-5 text-sm font-bold"><span>세부 프로그램 {category.programs.length}개</span><Plus size={19} className={`transition-transform ${expanded ? 'rotate-45' : ''}`} /></div>
-                    </button>
-                    <AnimatePresence initial={false}>
-                      {expanded && (
-                        <motion.div initial={reduceMotion ? undefined : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.35 }} className="overflow-hidden">
-                          <div className="space-y-3 border-t border-brand-ink/10 p-5 sm:p-7">
-                            {category.programs.map((program) => (
-                              <div key={program.title} className="rounded-2xl bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
-                                <div><h4 className="font-black">{program.subtitle}</h4><p className="mt-1 text-sm leading-6 text-brand-ink/55">{program.desc}</p></div>
-                                <button onClick={() => setSelectedProgram(program)} className="mt-4 inline-flex shrink-0 items-center gap-2 text-sm font-black text-brand-accent sm:mt-0">자세히 <ArrowRight size={15} /></button>
-                              </div>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.article>
-                );
-              })}
-            </div>
-          </div>
-        </section>
+        <ProgramsSection />
 
         <section id="about" className="scroll-mt-20 bg-brand-sand py-28 sm:py-36 lg:py-44">
           <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
@@ -539,26 +334,6 @@ export default function App() {
         </div>
       </footer>
 
-      <AnimatePresence>
-        {selectedProgram && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedProgram(null)} className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-ink/80 p-4 backdrop-blur-sm sm:p-7">
-            <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="program-title" className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-brand-paper p-7 sm:p-12">
-              <button onClick={() => setSelectedProgram(null)} aria-label="닫기" className="absolute right-6 top-6 grid h-11 w-11 place-items-center rounded-full border border-brand-ink/10 bg-white"><X size={20} /></button>
-              <p className="section-label pr-16 text-brand-accent">{selectedProgram.title}</p>
-              <h2 id="program-title" className="mt-5 pr-12 text-4xl font-black tracking-[-0.055em] sm:text-5xl">{selectedProgram.subtitle}</h2>
-              <p className="mt-7 text-base leading-8 text-brand-ink/62">{selectedProgram.content}</p>
-              <div className="mt-10 grid gap-8 border-t border-brand-ink/10 pt-9 sm:grid-cols-2">
-                <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-accent">함께 하는 일</h3><ul className="mt-5 space-y-3">{selectedProgram.features.map((feature) => <li key={feature} className="flex gap-3 text-sm font-semibold leading-6"><Check size={16} className="mt-1 shrink-0 text-brand-accent" />{feature}</li>)}</ul></div>
-                <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-accent">이런 학생에게</h3><ul className="mt-5 space-y-3">{selectedProgram.target.map((target) => <li key={target} className="flex gap-3 text-sm leading-6 text-brand-ink/62"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-coral" />{target}</li>)}</ul></div>
-              </div>
-              <div className="mt-10 flex flex-col gap-3 border-t border-brand-ink/10 pt-8 sm:flex-row">
-                <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청 <ArrowRight size={16} /></Button></a>
-                {selectedProgram.landing && <a href={selectedProgram.landing.href}><Button variant="line" className="w-full sm:w-auto">{selectedProgram.landing.label} 안내</Button></a>}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
