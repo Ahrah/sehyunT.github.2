@@ -479,17 +479,28 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
         return new Date(koreaDate.getTime() + diff * 60 * 1000);
       })() : new Date();
 
+      const createdAt = (() => {
+        if (editingItem?.createdAt) {
+          if (!publishDate) return editingItem.createdAt;
+          const date = editingItem.createdAt.toDate ? editingItem.createdAt.toDate() : new Date(editingItem.createdAt);
+          const localDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+          const original = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+          if (original === publishDate) return editingItem.createdAt;
+        }
+        return finalDate;
+      })();
+
       let resourceId: string;
       if (editingItem) {
         await updateDoc(doc(db, 'resources', editingItem.id), {
           ...resourceData,
-          createdAt: finalDate
+          createdAt
         });
         resourceId = editingItem.id;
       } else {
         const docRef = await addDoc(collection(db, 'resources'), {
           ...resourceData,
-          createdAt: finalDate
+          createdAt
         });
         resourceId = docRef.id;
       }
@@ -552,7 +563,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     setEditingItem(item);
     setTitle(item.title);
     setDescription(item.description || '');
-    setCategory(item.category || '대입');
+    setCategory(classifyResourceCategory(item));
     setFileType(item.fileType);
     setPinned(item.pinned || false);
     setMembersOnly(item.membersOnly || false);
