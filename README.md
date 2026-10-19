@@ -144,7 +144,7 @@ git push origin main
 
 ## 📞 문의
 
-- **이메일**: consultantsyssam@gmail.com
+- **이메일**: sehyun@sehyunt.re.kr
 - **인스타그램**: @consultant.sy
 - **공식 블로그**: https://blog.naver.com/ahrahsehyun
 - **전략 블로그**: https://sehyunt-study.tistory.com/

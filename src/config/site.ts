@@ -5,7 +5,7 @@ export const SITE = {
   domain: 'https://sehyunt.re.kr',
   founder: '조세연',
   adminEmail: 'ahrah0365@gmail.com',
-  email: 'consultantsyssam@gmail.com',
+  email: 'sehyun@sehyunt.re.kr',
   consultUrl: 'https://tally.so/r/KYrWDz',
   phone: '010-5308-6879',
   phoneHref: 'tel:01053086879',

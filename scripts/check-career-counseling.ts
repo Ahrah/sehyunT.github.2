@@ -56,6 +56,8 @@ for (const page of KEYWORD_PAGES) {
   assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);
   assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
   assert.equal(html.includes('자료실'), true);
+  assert.equal(html.includes('sehyun@sehyunt.re.kr'), true, `${page.slug} is missing the public contact email`);
+  assert.equal(html.includes('consultantsyssam@gmail.com'), false, `${page.slug} still has the old contact email`);
 }
 
 const membersOnlyHtml = resourcePageHtml({
@@ -147,7 +149,13 @@ assert.equal(resourcesSrc.includes('SITE.kakaoChannelUrl'), true);
 
 const siteSrc = fs.readFileSync(path.join(root, 'src/config/site.ts'), 'utf-8');
 assert.equal(siteSrc.includes('pf.kakao.com/_xbijSX'), true);
-assert.equal(siteSrc.includes('consultantsyssam@gmail.com'), true);
+assert.equal(siteSrc.includes('sehyun@sehyunt.re.kr'), true);
+assert.equal(siteSrc.includes("adminEmail: 'ahrah0365@gmail.com'"), true);
+assert.equal(indexHtml.includes('sehyun@sehyunt.re.kr'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('sehyun@sehyunt.re.kr'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('consultantsyssam@gmail.com'), false);
+assert.equal(indexHtml.includes('consultantsyssam@gmail.com'), false);
+assert.equal(siteSrc.includes('consultantsyssam@gmail.com'), false);
 
 const ccCss = fs.readFileSync(path.join(root, 'src/pages/career-counseling.css'), 'utf-8');
 assert.equal(ccCss.includes('@import'), false);
