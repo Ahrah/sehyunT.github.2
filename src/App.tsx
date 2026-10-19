@@ -13,6 +13,7 @@ import {
   Compass,
   FileText,
   Instagram,
+  Youtube,
   LogOut,
   Mail,
   Menu,
@@ -478,9 +479,9 @@ export default function App() {
       <main>
         <section ref={heroRef} className="hero-stage relative overflow-hidden px-6 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40 lg:min-h-[92vh] lg:px-12 lg:pb-20">
           <div className="hero-grid" />
-          <div className="relative mx-auto grid max-w-[1440px] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
+          <div className="relative mx-auto grid max-w-[1440px] items-center gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
             <div>
-              <h1 className="mt-4 max-w-5xl text-[clamp(3rem,6.5vw,7rem)] font-black leading-[1.08] tracking-[-0.065em]">
+              <h1 className="mt-4 max-w-5xl text-[clamp(2.5rem,5.4vw,5.8rem)] font-black leading-[1.08] tracking-[-0.065em]">
                 입시에 더해,<br /><span className="hero-emphasis hero-step-line">학생의 다음 STEP을</span><br />설계합니다.
               </h1>
               <p className="mt-9 max-w-2xl text-lg font-medium leading-[1.9] text-brand-ink/68 sm:text-xl">학생이 자기 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.</p>
@@ -488,16 +489,16 @@ export default function App() {
                 <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
                 <a href="#programs"><Button variant="line" className="w-full bg-white/35 sm:w-auto">프로그램 살펴보기 <ChevronDown size={17} /></Button></a>
               </div>
-              <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/65">
+              <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-5 text-sm font-semibold text-brand-ink/65 lg:mt-12 lg:pt-6">
                 <span>질문을 만드는 힘</span><span>심화탐구·연구 역량</span><span>기록·면접 표현력</span>
               </div>
             </div>
 
-            <div ref={portraitRef} className="relative mx-auto w-full max-w-[610px] lg:mr-0" style={{ willChange: 'transform' }}>
+            <div ref={portraitRef} className="relative mx-auto w-[92%] max-w-[20rem] lg:mr-0 lg:w-full lg:max-w-[min(31.25rem,26.9vw)]" style={{ willChange: 'transform' }}>
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
                 <picture>
-                  <source type="image/webp" srcSet="/IMG_1441-800.webp 800w, /IMG_1441.webp 1536w" sizes="(max-width: 1024px) 92vw, 610px" />
-                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 92vw, 610px" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} loading="eager" fetchPriority="high" decoding="async" />
+                  <source type="image/webp" srcSet="/IMG_1441-800.webp 800w, /IMG_1441.webp 1536w" sizes="(max-width: 1024px) 81vw, 27vw" />
+                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 81vw, 27vw" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} loading="eager" fetchPriority="high" decoding="async" />
                 </picture>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-ink/85 via-brand-ink/20 to-transparent px-7 pb-7 pt-32 text-white sm:px-9 sm:pb-9">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-coral">Founder · Admissions Consultant</p>
@@ -621,7 +622,7 @@ export default function App() {
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{SITE.blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>
           <div className="grid gap-7 pt-9 text-xs leading-6 text-white/45 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div><p>상호명 {SITE.name} · 대표 {SITE.founder} · 사업자등록번호 {SITE.businessNumber}</p><a href={`mailto:${SITE.email}`} className="mt-1 inline-flex items-center gap-2 hover:text-white"><Mail size={13} /> {SITE.email}</a><a href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Instagram size={13} /> {SITE.instagramHandle}</a></div>
+            <div><p>상호명 {SITE.name} · 대표 {SITE.founder} · 사업자등록번호 {SITE.businessNumber}</p><a href={`mailto:${SITE.email}`} className="mt-1 inline-flex items-center gap-2 hover:text-white"><Mail size={13} /> {SITE.email}</a><a href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Instagram size={13} /> {SITE.instagramHandle}</a><a href={SITE.youtubeUrl} target="_blank" rel="noopener noreferrer" aria-label="YouTube 입시는세연쌤" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Youtube size={13} /> 유튜브</a></div>
             <div className="flex flex-wrap gap-5"><button onClick={() => setLegalModalType('terms')} className="hover:text-white">이용약관</button><button onClick={() => setLegalModalType('privacy')} className="hover:text-white">개인정보처리방침</button><span>© {new Date().getFullYear()} SEHYUN T</span></div>
           </div>
         </div>
