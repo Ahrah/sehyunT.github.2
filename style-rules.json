@@ -1,0 +1,46 @@
+{
+  "rules": [
+    {
+      "id": "jagi",
+      "description": "대명사 '자기'는 '자신'으로 씁니다. 자기소개서, 자기주도학습/자기주도, 자기평가서, 자기통제, 자기효능감은 예외입니다.",
+      "regex": "(?<![가-힣])자기(?!소개서|주도|평가서|통제|효능감)(?:가|에게|를|의|만의|\\s+[가-힣]+)",
+      "exceptions": ["자기소개서", "자기주도학습", "자기주도", "자기평가서", "자기통제", "자기효능감"],
+      "severity": "warning"
+    },
+    {
+      "id": "neomeo",
+      "description": "'을 넘어'/'를 넘어' 표현을 피합니다.",
+      "regex": "[을를]\\s*넘어",
+      "exceptions": [],
+      "severity": "warning"
+    },
+    {
+      "id": "sehyunti",
+      "description": "대외 이름은 '세연쌤'입니다. '세현티'를 쓰지 않습니다.",
+      "regex": "세현티",
+      "exceptions": [],
+      "severity": "warning"
+    },
+    {
+      "id": "book-title",
+      "description": "책 제목은 < >로 씁니다. 《 》는 쓰지 않습니다.",
+      "regex": "《[^》]*》",
+      "exceptions": [],
+      "severity": "warning"
+    },
+    {
+      "id": "bold-overuse",
+      "description": "공개 문구의 마크다운 굵게(**)를 보고합니다.",
+      "regex": "\\*\\*[^*\\n]+\\*\\*",
+      "exceptions": [],
+      "severity": "info"
+    },
+    {
+      "id": "gyeolguk-boda",
+      "description": "한 문장 안의 '결국 … 보다' 대조 표현을 피합니다.",
+      "regex": "결국[^\\n.!?。]{0,80}보다",
+      "exceptions": [],
+      "severity": "warning"
+    }
+  ]
+}

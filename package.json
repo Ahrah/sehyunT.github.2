@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/check-career-counseling.ts"
+    "test": "tsx scripts/check-career-counseling.ts && tsx scripts/style-check.test.ts",
+    "style:check": "tsx scripts/style-check.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
