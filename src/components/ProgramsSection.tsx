@@ -163,7 +163,6 @@ function schoolRow(school: SchoolDates) {
 export function ProgramsSection() {
   const reduceMotion = useReducedMotion();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [asideOpen, setAsideOpen] = useState(false);
 
   const reveal = reduceMotion
     ? {}
@@ -377,46 +376,6 @@ export function ProgramsSection() {
                   </div>
                 ))}
               </div>
-
-              {group.aside && (
-                <motion.aside
-                  {...reveal}
-                  className="mt-4 overflow-hidden rounded-[1.5rem] border border-dashed border-brand-ink/25 bg-brand-paper p-6 sm:p-7"
-                >
-                  <p className="text-xs font-black tracking-[0.14em] text-brand-accent">{group.aside.period}</p>
-                  <h4 className="mt-2 text-xl font-black tracking-[-0.03em]">{group.aside.title}</h4>
-                  <p className="mt-3 text-sm leading-7 text-brand-ink/62">{group.aside.blurb}</p>
-                  <div className="mt-4 flex flex-wrap items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setAsideOpen((open) => !open)}
-                      aria-expanded={asideOpen}
-                      className="inline-flex items-center gap-2 text-sm font-black"
-                    >
-                      자세히 보기
-                      <ChevronDown size={16} className={`transition-transform ${asideOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    <a href={group.aside.href} className="inline-flex items-center gap-2 text-sm font-black text-brand-accent">
-                      {group.aside.hrefLabel} <ArrowRight size={14} />
-                    </a>
-                  </div>
-                  <AnimatePresence initial={false}>
-                    {asideOpen && (
-                      <motion.div
-                        initial={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: reduceMotion ? 0 : 0.35 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-5 rounded-2xl bg-white p-5">
-                          <DetailBody detail={group.aside.details} />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.aside>
-              )}
 
               <div className="mt-6">
                 <InquiryButton />
