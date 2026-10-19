@@ -29,12 +29,14 @@ function Block({
       className={`program-map-block program-map-block--${tone}${long ? ' program-map-block--long' : ''}${small ? ' program-map-block--small' : ''}${badge ? ' program-map-block--badge' : ''}`}
       onClick={() => onSelect(targetId)}
     >
-      {badge && <span className="program-map-badge">3:1</span>}
-      <span className="program-map-block-copy">
-        {period && <span className="program-map-per">{period}</span>}
-        <span className={`program-map-nm${small ? ' program-map-nm--sm' : ''}`}>{name}</span>
-        {desc && <span className="program-map-ds">{desc}</span>}
+      <span className="program-map-block-head">
+        {badge && <span className="program-map-badge">3:1</span>}
+        <span className="program-map-block-copy">
+          {period && <span className="program-map-per">{period}</span>}
+          <span className={`program-map-nm${small ? ' program-map-nm--sm' : ''}`}>{name}</span>
+        </span>
       </span>
+      {desc && <span className="program-map-ds">{desc}</span>}
     </button>
   );
 }

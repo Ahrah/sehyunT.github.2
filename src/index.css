@@ -282,9 +282,19 @@ p { text-wrap: pretty; }
   color: inherit;
 }
 
+.program-map-block-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-width: 0;
+  width: 100%;
+}
+
 .program-map-block-copy {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.2rem;
 }
@@ -312,14 +322,7 @@ p { text-wrap: pretty; }
 }
 
 .program-map-block--badge {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 0.45rem;
-}
-
-.program-map-block--badge .program-map-block-copy {
-  flex: 1 1 auto;
-  min-width: 0;
+  align-items: stretch;
 }
 
 .program-map-per {
@@ -343,6 +346,9 @@ p { text-wrap: pretty; }
 .program-map-nm--sm { font-size: 0.92rem; }
 
 .program-map-ds {
+  display: block;
+  width: 100%;
+  min-width: 0;
   font-size: 0.8rem;
   font-weight: 500;
   line-height: 1.45;
@@ -584,9 +590,14 @@ p { text-wrap: pretty; }
     transform: rotate(90deg);
   }
 
-  .program-map-cell--hs-mock .program-map-block--mock {
-    flex-direction: row;
+  .program-map-cell--hs-mock .program-map-block-head {
     align-items: center;
+  }
+  .program-map-cell--hs-mock .program-map-block-copy {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.65rem;
   }
 }
 
@@ -612,7 +623,7 @@ p { text-wrap: pretty; }
   .program-map-lh b { font-size: 0.7rem; }
   .program-map-lh span { display: none; }
   .program-map-block { padding: 0.42rem 0.36rem 0.55rem; }
-  .program-map-block--badge { gap: 0.35rem; }
+  .program-map-block-head { gap: 0.35rem; }
   .program-map-badge { width: 1.45rem; height: 1.45rem; font-size: 0.54rem; }
   .program-map-band { padding: 0.45rem 0.45rem; margin: 0.25rem; }
   .program-map-band-top b { font-size: 0.66rem; }
