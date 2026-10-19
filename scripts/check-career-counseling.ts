@@ -138,10 +138,23 @@ assert.equal(indexHtml.includes('family=Noto+Sans+KR'), true);
 assert.equal(indexHtml.includes('display=swap'), true);
 
 const appSrc = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf-8');
-const heroSrc = appSrc.slice(appSrc.indexOf('relative overflow-hidden px-6 pb-24'), appSrc.indexOf('id="programs"'));
+const heroStart = appSrc.indexOf('relative overflow-hidden px-6 pb-24');
+const heroEnd = appSrc.indexOf('<ProgramsSection');
+const heroSrc = appSrc.slice(heroStart, heroEnd === -1 ? appSrc.indexOf('id="about"') : heroEnd);
 assert.equal(heroSrc.includes('whileInView'), false);
 assert.equal(heroSrc.includes('opacity: 0'), false);
 assert.equal(heroSrc.includes('<picture>'), true);
+
+const programsPublic = [
+  fs.readFileSync(path.join(root, 'src/data/programs.ts'), 'utf-8'),
+  fs.readFileSync(path.join(root, 'src/data/admissionDates.ts'), 'utf-8'),
+  fs.readFileSync(path.join(root, 'src/components/ProgramsSection.tsx'), 'utf-8'),
+].join('\n');
+assert.equal(PUBLIC_PRICE_RE.test(programsPublic), false, 'programs section added a public price');
+assert.equal(programsPublic.includes('김포외고'), true);
+assert.equal(programsPublic.includes('미확정(학교 요강 확인 전)'), false);
+assert.equal(programsPublic.includes('12.4~12.10 17:00(인터넷)'), true);
+assert.equal(programsPublic.includes('3:1 모의면접'), true);
 
 const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');
 assert.equal(resourcesSrc.includes('hover:bg-blue'), false);
