@@ -8,7 +8,6 @@
  */
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,6 +19,7 @@ import {
   assertNoSensitiveCopy,
   careerCounselingPrerenderHtml,
 } from './career-counseling-prerender';
+import { fetchResourcesPublic, type ResourceItem } from './fetch-public-resources';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -46,20 +46,6 @@ if (getApps().length === 0) {
   }
 }
 
-interface ResourceItem {
-  id: string;
-  title: string;
-  description?: string;
-  fileUrl: string;
-  fileName: string;
-  fileType: string;
-  createdAt: any;
-  content?: string;
-  locked?: boolean;
-  membersOnly?: boolean;
-  category?: '대입' | '고입';
-}
-
 const DOMAIN = 'https://sehyunt.re.kr';
 const DIST_DIR = path.join(__dirname, '../dist');
 const RESOURCES_DIR = path.join(DIST_DIR, 'resources');
@@ -69,94 +55,6 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-}
-
-// Fetch resources from Firestore using Web SDK (for public access)
-async function fetchResourcesPublic(): Promise<ResourceItem[]> {
-  const { initializeApp: webInitializeApp, getApps: webGetApps, deleteApp } = await import('firebase/app');
-  const { getFirestore: webGetFirestore, collection, getDocs, query, orderBy, terminate } = await import('firebase/firestore');
-
-  const firebaseConfig = {
-    apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
-    authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
-    projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
-    storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
-    messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
-    appId: process.env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId
-  };
-
-  const app = webGetApps().length === 0 ? webInitializeApp(firebaseConfig, 'ssg-app') : webGetApps()[0];
-  
-  // Use the specific Firestore database ID if configured (matches live app behavior)
-  const db = firebaseAppletConfig.firestoreDatabaseId
-    ? webGetFirestore(app, firebaseAppletConfig.firestoreDatabaseId)
-    : webGetFirestore(app);
-
-  const resources: ResourceItem[] = [];
-  
-  try {
-    // Add timeout to Firestore operations (30 seconds)
-    const fetchWithTimeout = async () => {
-      const q = query(collection(db, 'resources'), orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
-      
-      querySnapshot.forEach((doc) => {
-        resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
-      });
-    };
-
-    await Promise.race([
-      fetchWithTimeout(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Firestore fetch timeout')), 30000)
-      )
-    ]);
-  } catch (orderErr: any) {
-    if (orderErr.message === 'Firestore fetch timeout') {
-      console.warn('⚠️  Firestore fetch timed out after 30 seconds');
-    } else {
-      console.warn('Ordered query failed, falling back to unordered:', orderErr.message);
-      
-      try {
-        const fetchUnorderedWithTimeout = async () => {
-          const querySnapshot = await getDocs(collection(db, 'resources'));
-          
-          querySnapshot.forEach((doc) => {
-            resources.push({ id: doc.id, ...doc.data() } as ResourceItem);
-          });
-          
-          resources.sort((a, b) => {
-            const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-            const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-            return timeB - timeA;
-          });
-        };
-
-        await Promise.race([
-          fetchUnorderedWithTimeout(),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Firestore fetch timeout')), 30000)
-          )
-        ]);
-      } catch (fallbackErr: any) {
-        if (fallbackErr.message === 'Firestore fetch timeout') {
-          console.warn('⚠️  Firestore unordered fetch also timed out');
-        } else {
-          console.warn('⚠️  Fallback fetch also failed:', fallbackErr.message);
-        }
-      }
-    }
-  } finally {
-    // Clean up Firestore connection
-    try {
-      await terminate(db);
-      await deleteApp(app);
-    } catch (cleanupErr) {
-      console.warn('Warning: Could not clean up Firebase app:', cleanupErr);
-    }
-  }
-
-  return resources;
 }
 
 // Generate HTML for a resource page (full article body for public articles, no redirect)
