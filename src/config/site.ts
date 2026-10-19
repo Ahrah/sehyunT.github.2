@@ -29,7 +29,10 @@ export const SITE = {
 } as const;
 
 export const NOTO_SANS_KR_HREF =
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap';
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400..900&display=swap';
+
+export const NOTO_SERIF_KR_HREF =
+  'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400&display=swap';
 
 export const PRETENDARD_HREF =
   'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css';
