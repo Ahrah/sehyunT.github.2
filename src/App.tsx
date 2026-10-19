@@ -26,9 +26,9 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth } from './lib/firebase';
 import { SITE } from './config/site';
+
+type AuthUser = { email: string | null; displayName: string | null };
 
 const AuthModal = lazy(() => import('./components/AuthModal').then((m) => ({ default: m.AuthModal })));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
@@ -218,7 +218,7 @@ const Button = ({ children, className = '', variant = 'dark' }: { children: Reac
   return <span className={`inline-flex min-h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-bold transition-colors ${variants[variant]} ${className}`}>{children}</span>;
 };
 
-const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: FirebaseUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
+const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -231,7 +231,10 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
   }, []);
 
   const logout = async () => {
-    try { await signOut(auth); } catch (error) { console.error('Logout failed', error); }
+    try {
+      const [{ auth }, { signOut }] = await Promise.all([import('./lib/firebase'), import('firebase/auth')]);
+      await signOut(auth);
+    } catch (error) { console.error('Logout failed', error); }
   };
 
   const closeAnd = (action?: () => void) => {
@@ -351,14 +354,22 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => onAuthStateChanged(auth, (currentUser) => {
-    setUser(currentUser);
-    setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
-  }), []);
+  useEffect(() => {
+    let cancelled = false;
+    let unsub = () => {};
+    void Promise.all([import('./lib/firebase'), import('firebase/auth')]).then(([{ auth }, { onAuthStateChanged }]) => {
+      if (cancelled) return;
+      unsub = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
+      });
+    });
+    return () => { cancelled = true; unsub(); };
+  }, []);
 
   useEffect(() => { window.scrollTo(0, 0); }, [isAdminOpen]);
 

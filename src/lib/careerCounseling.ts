@@ -1,6 +1,7 @@
 import { SITE } from '../config/site';
+import { CAREER_COUNSELING_SLUG } from './careerCounselingPath';
 
-export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
+export { CAREER_COUNSELING_SLUG, isCareerCounselingPath } from './careerCounselingPath';
 export const CAREER_COUNSELING_PATH = `/${CAREER_COUNSELING_SLUG}/`;
 export const CAREER_COUNSELING_COLLECTION = 'careerCounselingApplications';
 
@@ -153,11 +154,6 @@ export type CareerCounselingApplicationInput = {
   eligibilityConfirmed: boolean;
   privacyAgreed: boolean;
 };
-
-export function isCareerCounselingPath(pathname = typeof window !== 'undefined' ? window.location.pathname : ''): boolean {
-  const normalized = pathname.replace(/\/+$/, '') || '/';
-  return normalized === `/${CAREER_COUNSELING_SLUG}`;
-}
 
 export function normalizePhone(value: string): string {
   return value.replace(/[^\d]/g, '');

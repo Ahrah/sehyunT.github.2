@@ -1,6 +1,6 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import { isCareerCounselingPath } from './lib/careerCounseling';
+import { isCareerCounselingPath } from './lib/careerCounselingPath';
 import './index.css';
 
 const isCounseling = isCareerCounselingPath();
