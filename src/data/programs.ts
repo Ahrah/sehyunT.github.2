@@ -145,7 +145,7 @@ export const programGroups: ProgramGroup[] = [
     id: 'admission',
     number: '02',
     eyebrow: '고입 준비',
-    title: '특목·자사고 서류를 면접까지 잇습니다',
+    title: '특목·자사고 서류부터 면접까지',
     intro: '중3 여름방학 자소서부터 원서 접수 뒤 면접, 입학 직전 준비까지 이어 갑니다.',
     cards: [
       {
