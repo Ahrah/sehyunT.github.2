@@ -43,6 +43,17 @@ function LaneTag({ children }: { children: string }) {
   return <span className="program-map-lane-tag">{children}</span>;
 }
 
+function BandDates() {
+  return (
+    <div className="program-map-band-dates">
+      <span className="program-map-date">원서 12.4~12.10</span>
+      <span className="program-map-date-dot">·</span>
+      <span className="program-map-date">자소서 12.15~12.16</span>
+      <span className="program-map-date">면접 12.17~12.24</span>
+    </div>
+  );
+}
+
 export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => void }) {
   return (
     <div className="program-map">
@@ -167,10 +178,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
             <b>중3 12월 고입 일정</b>
             <small>경기도교육청 기준</small>
           </div>
-          <div className="program-map-band-dates">
-            <span>원서 12.4~12.10 · 자소서 12.15~12.16</span>
-            <span>면접 12.17~12.24</span>
-          </div>
+          <BandDates />
         </div>
 
         <div className="program-map-ivg">
@@ -279,10 +287,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
               <b>중3 12월 고입 일정</b>
               <small>경기도교육청 기준</small>
             </div>
-            <div className="program-map-band-dates">
-              <span>원서 12.4~12.10 · 자소서 12.15~12.16</span>
-              <span>면접 12.17~12.24</span>
-            </div>
+            <BandDates />
           </div>
           <div className="program-map-stack-row">
             <p className="program-map-stack-grade">중3 · 11~12월</p>

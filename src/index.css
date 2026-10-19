@@ -144,6 +144,7 @@ p { text-wrap: pretty; }
 .program-map * {
   word-break: keep-all;
   overflow-wrap: break-word;
+  line-break: strict;
 }
 
 .program-map {
@@ -314,6 +315,8 @@ p { text-wrap: pretty; }
   font-weight: 700;
   letter-spacing: 0.02em;
   opacity: 0.75;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .program-map-nm {
@@ -321,6 +324,8 @@ p { text-wrap: pretty; }
   font-size: 1rem;
   letter-spacing: -0.02em;
   line-height: 1.3;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .program-map-nm--sm { font-size: 0.92rem; }
@@ -330,6 +335,8 @@ p { text-wrap: pretty; }
   font-weight: 500;
   line-height: 1.45;
   opacity: 0.85;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .program-map-badge {
@@ -397,9 +404,17 @@ p { text-wrap: pretty; }
 .program-map-band-dates {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem 0.9rem;
+  align-items: baseline;
+  gap: 0.15rem 0.45rem;
   font-size: 0.82rem;
   font-weight: 700;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.program-map-date,
+.program-map-date-dot {
+  white-space: nowrap;
 }
 
 .program-map-foot {
@@ -419,9 +434,9 @@ p { text-wrap: pretty; }
     min-width: 0;
     grid-template-columns:
       [ph] 5.4rem [gr] 3rem [tk] 3.6rem
-      [a1] minmax(0, 1fr) [b1] minmax(0, 1fr)
-      [l2] minmax(0, 2.1fr)
-      [a3] minmax(0, 1.25fr) [b3] minmax(0, 1fr) [end];
+      [a1] minmax(6.6rem, 1fr) [b1] minmax(6.6rem, 1fr)
+      [l2] minmax(10.5rem, 2.1fr)
+      [a3] minmax(6.4rem, 1.25fr) [b3] minmax(5.6rem, 1fr) [end];
     grid-template-rows:
       [hd] auto
       [r1] minmax(5.4rem, auto)
@@ -564,44 +579,61 @@ p { text-wrap: pretty; }
 }
 
 @media (min-width: 641px) and (max-width: 1099px) {
+  .program-map { padding: 1.5rem 0.7rem 1.15rem; }
+  .program-map-grid {
+    grid-template-columns:
+      [ph] 2.9rem [gr] 1.8rem [tk] 2.35rem
+      [a1] minmax(5.9rem, 1.25fr) [b1] minmax(5.9rem, 1.25fr)
+      [l2] minmax(8.3rem, 2.15fr)
+      [a3] minmax(3.5rem, 1.05fr) [b3] minmax(3rem, 0.85fr) [end];
+  }
+  .program-map-ds { display: none; }
+  .program-map-nm { font-size: 0.72rem; }
+  .program-map-nm--sm { font-size: 0.66rem; }
+  .program-map-per { font-size: 0.56rem; }
+  .program-map-phase { padding: 0 0.28rem; }
+  .program-map-phase b { font-size: 0.74rem; }
+  .program-map-phase small { font-size: 0.54rem; margin-top: 0.25rem; }
+  .program-map-gr { font-size: 0.7rem; padding-left: 0.15rem; }
+  .program-map-tk { font-size: 0.54rem; }
+  .program-map-lh { padding-left: 0.3rem; }
+  .program-map-lh b { font-size: 0.7rem; }
+  .program-map-lh span { display: none; }
+  .program-map-block { padding: 0.42rem 0.36rem 0.55rem; }
+  .program-map-block--mock,
+  .program-map-block--badge { padding-left: 2.15rem; }
+  .program-map-badge { width: 1.45rem; height: 1.45rem; font-size: 0.54rem; left: 0.32rem; top: 0.4rem; }
+  .program-map-band { padding: 0.45rem 0.45rem; margin: 0.25rem; }
+  .program-map-band-top b { font-size: 0.66rem; }
+  .program-map-band-dates { font-size: 0.62rem; gap: 0.1rem 0.35rem; }
+  .program-map-ivg-row { grid-template-columns: 1fr; }
+  .program-map-cell .program-map-block { margin: 0.18rem; }
+}
+
+@media (min-width: 900px) and (max-width: 1099px) {
   .program-map { padding: 1.5rem 1rem 1.15rem; }
   .program-map-grid {
     grid-template-columns:
-      [ph] 3.55rem [gr] 2.15rem [tk] 2.55rem
-      [a1] minmax(0, 1fr) [b1] minmax(0, 1fr)
-      [l2] minmax(0, 2fr)
-      [a3] minmax(0, 1.2fr) [b3] minmax(0, 0.95fr) [end];
+      [ph] 3.3rem [gr] 2rem [tk] 2.55rem
+      [a1] minmax(6.4rem, 1.2fr) [b1] minmax(6.4rem, 1.2fr)
+      [l2] minmax(9.4rem, 2.15fr)
+      [a3] minmax(5.4rem, 1.15fr) [b3] minmax(4.8rem, 0.9fr) [end];
   }
-  .program-map-ds { display: none; }
-  .program-map-nm { font-size: 0.82rem; }
-  .program-map-nm--sm { font-size: 0.76rem; }
-  .program-map-per { font-size: 0.62rem; }
-  .program-map-phase { padding: 0 0.4rem; }
-  .program-map-phase b { font-size: 0.82rem; }
-  .program-map-phase small { font-size: 0.58rem; margin-top: 0.25rem; }
-  .program-map-gr { font-size: 0.78rem; padding-left: 0.25rem; }
-  .program-map-tk { font-size: 0.58rem; }
-  .program-map-lh { padding-left: 0.4rem; }
-  .program-map-lh b { font-size: 0.76rem; }
-  .program-map-lh span { display: none; }
-  .program-map-block { padding: 0.5rem 0.5rem 0.65rem; }
-  .program-map-block--mock,
-  .program-map-block--badge { padding-left: 2.35rem; }
-  .program-map-badge { width: 1.55rem; height: 1.55rem; font-size: 0.58rem; left: 0.4rem; top: 0.45rem; }
-  .program-map-band { padding: 0.55rem 0.6rem; }
-  .program-map-band-top b { font-size: 0.72rem; }
+  .program-map-nm { font-size: 0.8rem; }
+  .program-map-nm--sm { font-size: 0.74rem; }
+  .program-map-per { font-size: 0.6rem; }
+  .program-map-block { padding: 0.5rem 0.48rem 0.65rem; }
+  .program-map-band { padding: 0.5rem 0.55rem; }
   .program-map-band-dates { font-size: 0.68rem; }
-  .program-map-ivg-row { grid-template-columns: 1fr; }
-  .program-map-cell .program-map-block { margin: 0.25rem; }
 }
 
 @media (min-width: 1100px) {
   .program-map-grid {
     grid-template-columns:
       [ph] 6.4rem [gr] 3.6rem [tk] 4.4rem
-      [a1] minmax(0, 1fr) [b1] minmax(0, 1fr)
-      [l2] minmax(0, 2.1fr)
-      [a3] minmax(0, 1.25fr) [b3] minmax(0, 1fr) [end];
+      [a1] minmax(8.9rem, 1fr) [b1] minmax(8.9rem, 1fr)
+      [l2] minmax(10.5rem, 2.1fr)
+      [a3] minmax(7.2rem, 1.25fr) [b3] minmax(6.4rem, 1fr) [end];
   }
   .program-map-title { font-size: 2.5rem; }
   .program-map-phase b { font-size: 1.25rem; }
