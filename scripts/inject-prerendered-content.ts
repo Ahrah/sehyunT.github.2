@@ -88,10 +88,13 @@ const homePageContent = `
           중1 공부 습관부터 고3 면접까지, 시기에 맞춰 진로·학습·기록·면접을 연결합니다.
         </p>
       </div>
-      <h3>학년별 로드맵</h3>
+      <h3>학년별 프로그램 로드맵</h3>
+      <p>PROGRAM ROADMAP</p>
       <ol>
         ${programRoadmap.map((item) => `<li>${item.period} — ${item.title}${item.steps ? ` → ${item.steps.join(' → ')}` : ''}</li>`).join('\n        ')}
       </ol>
+      <p>중3 12월 고입 일정 · 경기도교육청 기준 · 원서 12.4~12.10 · 자소서 12.15~12.16 · 면접 12.17~12.24</p>
+      <p>고입 일정은 2027학년도 경기도교육청 기준이며, 학교별 면접일은 요강에서 확인해 주세요.</p>
       <h3>${ADMISSION_CYCLE} 특목·자사고 원서접수 기간</h3>
       <ul>
         ${officeWindows.map((office) => `<li>${office.region}: ${office.apply}${office.note ? ` (${office.note})` : ''}${office.extras ? ` · ${office.extras.map((extra) => `${extra.label} ${extra.value}`).join(', ')}` : ''}</li>`).join('\n        ')}

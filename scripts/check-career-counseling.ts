@@ -149,7 +149,13 @@ const programsPublic = [
   fs.readFileSync(path.join(root, 'src/data/programs.ts'), 'utf-8'),
   fs.readFileSync(path.join(root, 'src/data/admissionDates.ts'), 'utf-8'),
   fs.readFileSync(path.join(root, 'src/components/ProgramsSection.tsx'), 'utf-8'),
+  fs.readFileSync(path.join(root, 'src/components/ProgramRoadmap.tsx'), 'utf-8'),
 ].join('\n');
+assert.equal(programsPublic.includes('학년별 프로그램 로드맵'), true);
+assert.equal(programsPublic.includes('PROGRAM ROADMAP'), true);
+assert.equal(programsPublic.includes('중1부터 고3까지, 시기별로 맡는 프로그램'), false);
+assert.equal(programsPublic.includes('경기도교육청 기준'), true);
+assert.equal(programsPublic.includes('학교별 면접일은 요강에서 확인해 주세요'), true);
 assert.equal(PUBLIC_PRICE_RE.test(programsPublic), false, 'programs section added a public price');
 assert.equal(programsPublic.includes('김포외고'), true);
 assert.equal(programsPublic.includes('미확정(학교 요강 확인 전)'), false);
