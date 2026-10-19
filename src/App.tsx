@@ -478,7 +478,7 @@ export default function App() {
       <main>
         <section ref={heroRef} className="hero-stage relative overflow-hidden px-6 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40 lg:min-h-[92vh] lg:px-12 lg:pb-20">
           <div className="hero-grid" />
-          <div className="relative mx-auto grid max-w-[1440px] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
+          <div className="relative mx-auto grid max-w-[1440px] items-center gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:gap-16">
             <div>
               <h1 className="mt-4 max-w-5xl text-[clamp(2.5rem,5.4vw,5.8rem)] font-black leading-[1.08] tracking-[-0.065em]">
                 입시에 더해,<br /><span className="hero-emphasis hero-step-line">학생의 다음 STEP을</span><br />설계합니다.
@@ -488,16 +488,16 @@ export default function App() {
                 <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
                 <a href="#programs"><Button variant="line" className="w-full bg-white/35 sm:w-auto">프로그램 살펴보기 <ChevronDown size={17} /></Button></a>
               </div>
-              <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/65">
+              <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-5 text-sm font-semibold text-brand-ink/65 lg:mt-12 lg:pt-6">
                 <span>질문을 만드는 힘</span><span>심화탐구·연구 역량</span><span>기록·면접 표현력</span>
               </div>
             </div>
 
-            <div ref={portraitRef} className="relative mx-auto w-[83%] max-w-[26.25rem] lg:mr-0 lg:w-full" style={{ willChange: 'transform' }}>
+            <div ref={portraitRef} className="relative mx-auto w-[92%] max-w-[20rem] lg:mr-0 lg:w-full lg:max-w-[min(31.25rem,26.9vw)]" style={{ willChange: 'transform' }}>
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
                 <picture>
-                  <source type="image/webp" srcSet="/IMG_1441-800.webp 800w, /IMG_1441.webp 1536w" sizes="(max-width: 1024px) 74vw, 420px" />
-                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 74vw, 420px" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} loading="eager" fetchPriority="high" decoding="async" />
+                  <source type="image/webp" srcSet="/IMG_1441-800.webp 800w, /IMG_1441.webp 1536w" sizes="(max-width: 1024px) 81vw, 27vw" />
+                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 81vw, 27vw" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} loading="eager" fetchPriority="high" decoding="async" />
                 </picture>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-ink/85 via-brand-ink/20 to-transparent px-7 pb-7 pt-32 text-white sm:px-9 sm:pb-9">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-coral">Founder · Admissions Consultant</p>
