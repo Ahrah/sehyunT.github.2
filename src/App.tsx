@@ -479,7 +479,7 @@ export default function App() {
         <section ref={heroRef} className="hero-stage relative overflow-hidden px-6 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40 lg:min-h-[92vh] lg:px-12 lg:pb-20">
           <div className="hero-grid" />
           <div className="relative mx-auto grid max-w-[1440px] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
-            <motion.div {...reveal}>
+            <div>
               <h1 className="mt-4 max-w-5xl text-[clamp(3rem,6.5vw,7rem)] font-black leading-[1.08] tracking-[-0.065em]">
                 입시에 더해,<br /><span className="hero-emphasis hero-step-line">학생의 다음 STEP을</span><br />설계합니다.
               </h1>
@@ -491,7 +491,7 @@ export default function App() {
               <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/65">
                 <span>질문을 만드는 힘</span><span>심화탐구·연구 역량</span><span>기록·면접 표현력</span>
               </div>
-            </motion.div>
+            </div>
 
             <div ref={portraitRef} className="relative mx-auto w-full max-w-[610px] lg:mr-0" style={{ willChange: 'transform' }}>
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
