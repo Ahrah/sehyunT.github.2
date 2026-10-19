@@ -5,6 +5,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth
 import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { AuthModal } from '../components/AuthModal';
+import { loadPretendard } from '../config/site';
 import {
   BIZ_INFO,
   CONSULT_DATE_MAX,
@@ -52,6 +53,7 @@ export const CareerCounselingPage = () => {
   const pendingApply = useRef(false);
 
   useEffect(() => {
+    loadPretendard();
     document.title = PAGE_META.title;
     const desc = document.querySelector('meta[name="description"]');
     if (desc) desc.setAttribute('content', PAGE_META.description);
@@ -168,8 +170,8 @@ export const CareerCounselingPage = () => {
 
       <header className="top">
         <div className="wrap">
-          <a className="brand" href="/" aria-label="입시는세연쌤 홈">
-            <img src="/logo-mark.svg" alt="SEHYUN T ADMISSIONS LAB 로고" />
+          <a className="brand" href="/">
+            <img src="/logo-mark.svg" alt="" width={32} height={32} />
             <span className="en"><strong>SEHYUN T</strong><span>ADMISSIONS LAB</span></span>
           </a>
           <div className="top-actions">

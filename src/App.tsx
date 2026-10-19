@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   ArrowRight,
@@ -26,13 +26,15 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth } from './lib/firebase';
-import { AuthModal } from './components/AuthModal';
-import { AdminDashboard } from './components/AdminDashboard';
-import { MyPage } from './components/MyPage';
-import { ResourcesSection } from './components/ResourcesSection';
-import { LegalModal } from './components/LegalModals';
+import { SITE } from './config/site';
+
+type AuthUser = { email: string | null; displayName: string | null };
+
+const AuthModal = lazy(() => import('./components/AuthModal').then((m) => ({ default: m.AuthModal })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const MyPage = lazy(() => import('./components/MyPage').then((m) => ({ default: m.MyPage })));
+const ResourcesSection = lazy(() => import('./components/ResourcesSection').then((m) => ({ default: m.ResourcesSection })));
+const LegalModal = lazy(() => import('./components/LegalModals').then((m) => ({ default: m.LegalModal })));
 
 interface Program {
   title: string;
@@ -54,8 +56,7 @@ interface ProgramCategory {
   programs: Program[];
 }
 
-const ADMIN_EMAIL = 'ahrah0365@gmail.com';
-const CONSULT_URL = 'https://tally.so/r/KYrWDz';
+const ADMIN_EMAIL = SITE.adminEmail;
 
 const programCategories: ProgramCategory[] = [
   {
@@ -207,11 +208,6 @@ const studentCases = [
   { tag: '자기주도학습', before: '계획은 잘 세우지만 며칠 뒤면 지쳐 포기하던 학생', after: '집중 시간과 회복 패턴을 반영한 작은 루틴으로 바꾸며 스스로 다시 시작하는 힘을 길렀습니다.' },
 ];
 
-const blogs = [
-  { name: '입시 전략 인사이트', url: 'https://blog.naver.com/ahrahsehyun' },
-  { name: '논리·시사 탐구 기록', url: 'https://sehyunt-logic.tistory.com/' },
-  { name: '실전 면접 아카이브', url: 'https://sehyunt-study.tistory.com/' },
-];
 
 const Button = ({ children, className = '', variant = 'dark' }: { children: ReactNode; className?: string; variant?: 'dark' | 'light' | 'line' }) => {
   const variants = {
@@ -222,7 +218,7 @@ const Button = ({ children, className = '', variant = 'dark' }: { children: Reac
   return <span className={`inline-flex min-h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-bold transition-colors ${variants[variant]} ${className}`}>{children}</span>;
 };
 
-const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: FirebaseUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
+const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -235,7 +231,10 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
   }, []);
 
   const logout = async () => {
-    try { await signOut(auth); } catch (error) { console.error('Logout failed', error); }
+    try {
+      const [{ auth }, { signOut }] = await Promise.all([import('./lib/firebase'), import('firebase/auth')]);
+      await signOut(auth);
+    } catch (error) { console.error('Logout failed', error); }
   };
 
   const closeAnd = (action?: () => void) => {
@@ -254,8 +253,8 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
   return (
     <nav className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? 'border-b border-brand-ink/10 bg-brand-paper/95 py-3 backdrop-blur-xl' : 'bg-transparent py-5'}`}>
       <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <a href="#top" className="flex items-center gap-3" aria-label="입시는세연쌤 홈">
-          <img src="/logo-mark.svg" alt="" className="h-10 w-10 object-contain" />
+        <a href="#top" className="flex items-center gap-3">
+          <img src="/logo-mark.svg" alt="" className="h-10 w-10 object-contain" width={40} height={40} />
           <div className="leading-none">
             <strong className="block text-lg tracking-[-0.04em]">입시는세연쌤</strong>
             <span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.24em] text-brand-accent">Sehyun T Admissions</span>
@@ -273,7 +272,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
               <button onClick={logout} aria-label="로그아웃" className="text-brand-ink/50 hover:text-brand-accent"><LogOut size={17} /></button>
             </div>
           ) : <button onClick={onOpenAuth} className="text-sm font-bold text-brand-ink/65 hover:text-brand-ink">로그인</button>}
-          <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="min-h-12 px-6">상담 신청 <ArrowUpRight size={16} /></Button></a>
+          <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="min-h-12 px-6">상담 신청 <ArrowUpRight size={16} /></Button></a>
         </div>
 
         <button onClick={() => setIsMenuOpen(true)} aria-label="메뉴 열기" className="grid h-11 w-11 place-items-center rounded-full border border-brand-ink/15 lg:hidden"><Menu size={21} /></button>
@@ -292,7 +291,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: Firebas
                 {user ? <button onClick={() => closeAnd(onOpenMyPage)} className="mr-6 text-base font-bold">마이페이지</button> : <button onClick={() => closeAnd(onOpenAuth)} className="mr-6 text-base font-bold">로그인</button>}
                 {isAdmin && <button onClick={() => closeAnd(onOpenAdmin)} className="text-base font-bold text-brand-coral">관리자</button>}
               </div>
-              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full">상담 신청하기 <ArrowRight size={17} /></Button></a>
+              <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full">상담 신청하기 <ArrowRight size={17} /></Button></a>
             </div>
           </motion.div>
         )}
@@ -321,24 +320,24 @@ const StrategyMap = () => {
         <div className="h-fit lg:sticky lg:top-32">
           <p className="section-label text-brand-coral">Sehyun T Strategy Map</p>
           <h2 className="mt-7 whitespace-nowrap text-[clamp(1.6rem,7.6vw,2.1rem)] font-black leading-[1.1] tracking-[-0.06em] lg:text-[2.15rem]">합격만이 아닌<br />오래 남는 성장의 설계도</h2>
-          <p className="mt-8 max-w-md text-base leading-7 text-white/55">상담은 정답을 대신 주는 일이 아닙니다. 학생이 자기 방향을 이해하고 다음 선택을 해낼 수 있도록 다섯 단계를 함께 걷습니다.</p>
+          <p className="mt-8 max-w-md text-base leading-7 text-white/72">상담은 정답을 대신 주는 일이 아닙니다. 학생이 자기 방향을 이해하고 다음 선택을 해낼 수 있도록 다섯 단계를 함께 걷습니다.</p>
           <div className="mt-12 hidden lg:block">
             <div className="relative h-1 overflow-hidden rounded-full bg-white/10">
               <motion.div className="absolute inset-y-0 left-0 bg-brand-coral" animate={{ width: `${((activeStep + 1) / strategySteps.length) * 100}%` }} transition={reduceMotion ? { duration: 0 } : { duration: 0.45 }} />
             </div>
-            <div className="mt-4 flex justify-between text-[10px] font-bold tracking-[0.2em] text-white/35"><span>START</span><span>GROWTH</span></div>
+            <div className="mt-4 flex justify-between text-[10px] font-bold tracking-[0.2em] text-white/60"><span>START</span><span>GROWTH</span></div>
           </div>
         </div>
 
         <div>
           {strategySteps.map((step, index) => (
             <div key={step.number} ref={(node) => { stepRefs.current[index] = node; }} data-step={index} className="flex min-h-[42vh] border-t border-white/15 py-12 first:border-t-0 lg:min-h-[58vh] lg:py-20">
-              <motion.div animate={{ opacity: activeStep === index ? 1 : 0.38, x: activeStep === index || reduceMotion ? 0 : 14 }} transition={{ duration: reduceMotion ? 0 : 0.4 }} className="grid w-full grid-cols-[auto_1fr] gap-6 sm:gap-10">
-                <span className="pt-2 font-mono text-xs text-brand-coral">{step.number}</span>
+              <motion.div animate={{ opacity: activeStep === index ? 1 : 0.72, x: activeStep === index || reduceMotion ? 0 : 14 }} transition={{ duration: reduceMotion ? 0 : 0.4 }} className="grid w-full grid-cols-[auto_1fr] gap-6 sm:gap-10">
+                <span className="pt-2 font-mono text-sm font-bold text-brand-coral">{step.number}</span>
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white/40">{step.label}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white/70">{step.label}</p>
                   <h3 className="mt-5 text-3xl font-black tracking-[-0.04em] sm:text-5xl">{step.title}</h3>
-                  <p className="mt-7 max-w-xl text-base leading-8 text-white/62 sm:text-lg">{step.text}</p>
+                  <p className="mt-7 max-w-xl text-base leading-8 text-white/78 sm:text-lg">{step.text}</p>
                 </div>
               </motion.div>
             </div>
@@ -355,14 +354,22 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => onAuthStateChanged(auth, (currentUser) => {
-    setUser(currentUser);
-    setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
-  }), []);
+  useEffect(() => {
+    let cancelled = false;
+    let unsub = () => {};
+    void Promise.all([import('./lib/firebase'), import('firebase/auth')]).then(([{ auth }, { onAuthStateChanged }]) => {
+      if (cancelled) return;
+      unsub = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
+      });
+    });
+    return () => { cancelled = true; unsub(); };
+  }, []);
 
   useEffect(() => { window.scrollTo(0, 0); }, [isAdminOpen]);
 
@@ -376,10 +383,12 @@ export default function App() {
 
   return (
     <div id="top" className="min-h-screen bg-brand-paper text-brand-ink selection:bg-brand-coral/35">
-      <AnimatePresence>{isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}</AnimatePresence>
-      <AnimatePresence>{isMyPageOpen && <MyPage onClose={() => setIsMyPageOpen(false)} />}</AnimatePresence>
-      <AnimatePresence>{isAdminOpen && user?.email === ADMIN_EMAIL && <AdminDashboard onBack={() => setIsAdminOpen(false)} />}</AnimatePresence>
-      <LegalModal isOpen={!!legalModalType} type={legalModalType} onClose={() => setLegalModalType(null)} />
+      <Suspense fallback={null}>
+        <AnimatePresence>{isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}</AnimatePresence>
+        <AnimatePresence>{isMyPageOpen && <MyPage onClose={() => setIsMyPageOpen(false)} />}</AnimatePresence>
+        <AnimatePresence>{isAdminOpen && user?.email === ADMIN_EMAIL && <AdminDashboard onBack={() => setIsAdminOpen(false)} />}</AnimatePresence>
+        <LegalModal isOpen={!!legalModalType} type={legalModalType} onClose={() => setLegalModalType(null)} />
+      </Suspense>
 
       <Navbar user={user} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenAdmin={() => setIsAdminOpen(true)} onOpenMyPage={() => setIsMyPageOpen(true)} />
 
@@ -388,24 +397,27 @@ export default function App() {
           <div className="hero-orbit hero-orbit-one" />
           <div className="hero-orbit hero-orbit-two" />
           <div className="relative mx-auto grid max-w-[1440px] items-center gap-14 lg:grid-cols-[1.08fr_0.92fr] lg:gap-20">
-            <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.7 }}>
+            <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-ink/12 bg-white/70 px-4 py-2 text-xs font-bold backdrop-blur"><Sparkles size={14} className="text-brand-accent" /> 학생마다 다른 길을 설계합니다</div>
               <h1 className="mt-8 max-w-4xl text-[clamp(3.45rem,7vw,7.5rem)] font-black leading-[0.92] tracking-[-0.075em]">
                 입시가 아니라,<br /><span className="hero-emphasis">학생의 다음</span>을<br />설계합니다.
               </h1>
               <p className="mt-8 max-w-xl text-lg font-medium leading-8 text-brand-ink/62 sm:text-xl">진로·학습·기록·면접을 따로 보지 않습니다. 학생이 자기 힘으로 성장할 수 있도록 하나의 흐름으로 연결합니다.</p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
+                <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowRight size={17} /></Button></a>
                 <a href="#programs"><Button variant="line" className="w-full bg-white/35 sm:w-auto">프로그램 살펴보기 <ChevronDown size={17} /></Button></a>
               </div>
-              <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/55">
+              <div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 border-t border-brand-ink/10 pt-6 text-sm font-semibold text-brand-ink/65">
                 <span>진로에서 입시까지</span><span>학생 중심 1:1 설계</span><span>실행과 기록의 연결</span>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div initial={reduceMotion ? undefined : { opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reduceMotion ? 0 : 0.9, delay: 0.1 }} className="relative mx-auto w-full max-w-[610px] lg:mr-0">
+            <div className="relative mx-auto w-full max-w-[610px] lg:mr-0">
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
-                <img src="/IMG_1441.JPG" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" loading="eager" decoding="async" />
+                <picture>
+                  <source srcSet="/IMG_1441.webp" type="image/webp" />
+                  <img src="/IMG_1441.jpg" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={1536} height={2304} loading="eager" fetchPriority="high" decoding="async" />
+                </picture>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-ink/85 via-brand-ink/20 to-transparent px-7 pb-7 pt-32 text-white sm:px-9 sm:pb-9">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-coral">Founder · Admissions Consultant</p>
                   <p className="mt-2 text-2xl font-black">조세연</p>
@@ -414,7 +426,7 @@ export default function App() {
               <div className="absolute -bottom-7 -left-3 max-w-[260px] rounded-3xl bg-white p-5 shadow-xl sm:-left-10 sm:p-6">
                 <p className="text-sm font-normal leading-6">“학생이 감당할 수 있는 속도에 맞춰 전략을 세웁니다.”</p>
               </div>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -484,7 +496,7 @@ export default function App() {
               {studentCases.map((item, index) => (
                 <motion.article {...reveal} key={item.tag} className="flex min-h-[360px] flex-col rounded-[1.75rem] border border-brand-ink/10 bg-white p-7 sm:p-9">
                   <div className="flex items-center justify-between"><span className="rounded-full bg-brand-coral/30 px-3 py-1.5 text-xs font-black">{item.tag}</span><span className="font-mono text-xs text-brand-ink/30">0{index + 1}</span></div>
-                  <p className="mt-9 text-base font-bold leading-7 text-brand-ink/45">{item.before}</p>
+                  <p className="mt-9 text-base font-bold leading-7 text-brand-ink/62">{item.before}</p>
                   <div className="my-7 h-px bg-brand-ink/10" />
                   <p className="mt-auto text-xl font-black leading-8 tracking-[-0.025em]">“{item.after}”</p>
                 </motion.article>
@@ -495,7 +507,9 @@ export default function App() {
 
         <StrategyMap />
 
-        <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} onOpenAuth={() => setIsAuthModalOpen(true)} />
+        <Suspense fallback={<section id="resources" className="scroll-mt-20 bg-brand-secondary py-40" />}>
+          <ResourcesSection isAdmin={user?.email === ADMIN_EMAIL} onOpenAuth={() => setIsAuthModalOpen(true)} />
+        </Suspense>
 
         <section id="contact" className="relative overflow-hidden bg-brand-coral px-6 py-28 sm:px-8 sm:py-36 lg:px-12 lg:py-44">
           <div className="contact-ring" />
@@ -504,8 +518,8 @@ export default function App() {
             <h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.065em] sm:text-7xl lg:text-8xl">1:1 상담 신청하기</h2>
             <p className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-brand-ink/65">현재 상황과 고민을 남겨주시면, 어떤 프로그램이 필요한지부터 차근차근 안내드립니다.</p>
             <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-              <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowUpRight size={18} /></Button></a>
-              <a href="https://blog.naver.com/ahrahsehyun" target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full sm:w-auto">블로그에서 더 알아보기</Button></a>
+              <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowUpRight size={18} /></Button></a>
+              <a href={SITE.naverBlogUrl} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full sm:w-auto">블로그에서 더 알아보기</Button></a>
             </div>
           </motion.div>
         </section>
@@ -514,12 +528,12 @@ export default function App() {
       <footer className="bg-brand-ink px-6 py-16 text-white sm:px-8 lg:px-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
-            <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" /><strong className="text-2xl tracking-[-0.04em]">입시는세연쌤</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤</p></div>
+            <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" width={44} height={44} loading="lazy" /><strong className="text-2xl tracking-[-0.04em]">{SITE.name}</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤</p></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/jinro-counseling/">진로·선택과목 상담</a><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
-            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
+            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{SITE.blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>
           <div className="grid gap-7 pt-9 text-xs leading-6 text-white/45 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div><p>상호명 입시는세연쌤 · 대표 조세연 · 사업자등록번호 612-69-00756</p><a href="mailto:consultantsyssam@gmail.com" className="mt-1 inline-flex items-center gap-2 hover:text-white"><Mail size={13} /> consultantsyssam@gmail.com</a><a href="https://instagram.com/consultant.sy" target="_blank" rel="noopener noreferrer" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Instagram size={13} /> @consultant.sy</a></div>
+            <div><p>상호명 {SITE.name} · 대표 {SITE.founder} · 사업자등록번호 {SITE.businessNumber}</p><a href={`mailto:${SITE.email}`} className="mt-1 inline-flex items-center gap-2 hover:text-white"><Mail size={13} /> {SITE.email}</a><a href={SITE.instagramUrl} target="_blank" rel="noopener noreferrer" className="ml-5 inline-flex items-center gap-2 hover:text-white"><Instagram size={13} /> {SITE.instagramHandle}</a></div>
             <div className="flex flex-wrap gap-5"><button onClick={() => setLegalModalType('terms')} className="hover:text-white">이용약관</button><button onClick={() => setLegalModalType('privacy')} className="hover:text-white">개인정보처리방침</button><span>© {new Date().getFullYear()} SEHYUN T</span></div>
           </div>
         </div>
@@ -538,7 +552,7 @@ export default function App() {
                 <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-accent">이런 학생에게</h3><ul className="mt-5 space-y-3">{selectedProgram.target.map((target) => <li key={target} className="flex gap-3 text-sm leading-6 text-brand-ink/62"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-coral" />{target}</li>)}</ul></div>
               </div>
               <div className="mt-10 flex flex-col gap-3 border-t border-brand-ink/10 pt-8 sm:flex-row">
-                <a href={CONSULT_URL} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청 <ArrowRight size={16} /></Button></a>
+                <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청 <ArrowRight size={16} /></Button></a>
                 {selectedProgram.landing && <a href={selectedProgram.landing.href}><Button variant="line" className="w-full sm:w-auto">{selectedProgram.landing.label} 안내</Button></a>}
               </div>
             </motion.div>

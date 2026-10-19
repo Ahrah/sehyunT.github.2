@@ -1,8 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", ui-sans-serif, system-ui, sans-serif;
   --color-brand-paper: #ffffff;
   --color-brand-mist: #f5f5f5;
   --color-brand-sand: #eeeeee;
@@ -14,7 +13,7 @@
   --color-brand-bg: #ffffff;
   --color-brand-secondary: #f5f5f5;
   --color-brand-text: #111111;
-  --color-brand-gray: #666666;
+  --color-brand-gray: #555555;
   --color-brand-light-gray: #dddddd;
 }
 

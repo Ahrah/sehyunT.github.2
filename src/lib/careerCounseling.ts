@@ -1,4 +1,7 @@
-export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
+import { SITE } from '../config/site';
+import { CAREER_COUNSELING_SLUG } from './careerCounselingPath';
+
+export { CAREER_COUNSELING_SLUG, isCareerCounselingPath } from './careerCounselingPath';
 export const CAREER_COUNSELING_PATH = `/${CAREER_COUNSELING_SLUG}/`;
 export const CAREER_COUNSELING_COLLECTION = 'careerCounselingApplications';
 
@@ -47,20 +50,20 @@ export const SCHOOL_REGIONS = [
 export const EXCLUDED_REGIONS = ['서울특별시', '경기도', '인천광역시'] as const;
 
 export const BIZ_INFO = {
-  name: '입시는세연쌤',
-  ceo: '조세연',
-  address: '경기도 성남시 수정구 창업로 43, 81호',
-  phone: '010-5308-6879',
-  phoneHref: 'tel:01053086879',
-  email: 'consultantsyssam@gmail.com',
-  instagram: '@consultant.sy',
+  name: SITE.name,
+  ceo: SITE.founder,
+  address: SITE.address,
+  phone: SITE.phone,
+  phoneHref: SITE.phoneHref,
+  email: SITE.email,
+  instagram: SITE.instagramHandle,
 } as const;
 
 export const PAGE_META = {
   title: '온라인 진로·선택과목 상담 | 입시는세연쌤',
   description:
     '비수도권 고등학교 재학생 전용. 희망 전공에서 과목 이수 경로를 역설계하는 40분 온라인 화상 상담과 1장짜리 과목 이수 로드맵.',
-  canonical: `https://sehyunt.re.kr${CAREER_COUNSELING_PATH}`,
+  canonical: `${SITE.domain}${CAREER_COUNSELING_PATH}`,
 };
 
 export const PROGRAM_STEPS = [
@@ -151,11 +154,6 @@ export type CareerCounselingApplicationInput = {
   eligibilityConfirmed: boolean;
   privacyAgreed: boolean;
 };
-
-export function isCareerCounselingPath(pathname = typeof window !== 'undefined' ? window.location.pathname : ''): boolean {
-  const normalized = pathname.replace(/\/+$/, '') || '/';
-  return normalized === `/${CAREER_COUNSELING_SLUG}`;
-}
 
 export function normalizePhone(value: string): string {
   return value.replace(/[^\d]/g, '');

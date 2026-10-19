@@ -1,23 +1,37 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import { CareerCounselingPage } from './pages/CareerCounselingPage';
-import { isCareerCounselingPath } from './lib/careerCounseling';
+import { isCareerCounselingPath } from './lib/careerCounselingPath';
 import './index.css';
-import { initHomeEnhancements } from './homeEnhancements';
-import { initHomeHeadlineFixes } from './homeHeadlineFixes';
-import { initHomeRequestedHotfix } from './homeRequestedHotfix';
 
 const isCounseling = isCareerCounselingPath();
+const root = createRoot(document.getElementById('root')!);
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    {isCounseling ? <CareerCounselingPage /> : <App />}
-  </StrictMode>,
-);
+async function boot() {
+  if (isCounseling) {
+    const { CareerCounselingPage } = await import('./pages/CareerCounselingPage');
+    root.render(
+      <StrictMode>
+        <CareerCounselingPage />
+      </StrictMode>,
+    );
+    return;
+  }
 
-if (!isCounseling) {
-  initHomeEnhancements();
-  initHomeHeadlineFixes();
-  initHomeRequestedHotfix();
+  const [{ default: App }, enhancements, headlines, hotfix] = await Promise.all([
+    import('./App.tsx'),
+    import('./homeEnhancements'),
+    import('./homeHeadlineFixes'),
+    import('./homeRequestedHotfix'),
+  ]);
+
+  root.render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+  enhancements.initHomeEnhancements();
+  headlines.initHomeHeadlineFixes();
+  hotfix.initHomeRequestedHotfix();
 }
+
+void boot();

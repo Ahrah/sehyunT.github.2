@@ -74,7 +74,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   };
 
   const stats = [
-    { label: "Total Members", value: users.length.toString(), icon: Users, color: "text-blue-500" },
+    { label: "Total Members", value: users.length.toString(), icon: Users, color: "text-brand-accent" },
     { label: "Avg. Session", value: "8m 42s", icon: Clock, color: "text-emerald-500" },
     { label: "Daily Visits", value: "124", icon: MousePointer2, color: "text-amber-500" },
   ];
