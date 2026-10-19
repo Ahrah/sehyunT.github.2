@@ -1183,8 +1183,8 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
               </button>
 
               <form onSubmit={handleUploadSubmit} className="resource-editor-form">
-              <div className="resource-editor-modal-body p-10">
-              <div className="mb-8">
+              <div className="shrink-0 bg-brand-bg pl-10 pr-14 pt-10">
+                <div className="mb-8">
                 <div className="flex h-10 w-10 items-center justify-center bg-brand-text text-brand-bg font-black text-sm mb-4">
                   {editingItem ? '✎' : '+DOC'}
                 </div>
@@ -1194,7 +1194,9 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 <p className="text-brand-gray text-[10px] uppercase tracking-widest font-black">
                   {editingItem ? '기존 자료 정보를 수정합니다.' : '자료실용 프리미엄 배포 자료를 등록합니다.'}
                 </p>
+                </div>
               </div>
+              <div className="resource-editor-modal-body px-10">
 
               {errorMsg && (
                 <div className="mb-6 p-4 bg-red-50 text-red-700 text-xs font-bold leading-relaxed border border-red-200">
@@ -1202,7 +1204,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 </div>
               )}
 
-              <div className="space-y-6">
+              <div className="space-y-6 pb-2">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest mb-3 text-brand-accent">자료 명칭</label>
                   <input 
