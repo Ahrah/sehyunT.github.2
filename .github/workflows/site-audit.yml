@@ -1,0 +1,39 @@
+name: Weekly site audit
+
+on:
+  schedule:
+    - cron: '0 21 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Set up Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Site audit
+        run: npm run audit:site
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+      - name: Upload site-audit report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-audit-report
+          path: site-audit-report.md
+          if-no-files-found: ignore

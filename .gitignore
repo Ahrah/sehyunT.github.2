@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 style-check-report.md
+site-audit-report.md
+.lighthouse-*.json
