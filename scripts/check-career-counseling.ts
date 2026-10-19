@@ -152,7 +152,8 @@ const programsPublic = [
 ].join('\n');
 assert.equal(PUBLIC_PRICE_RE.test(programsPublic), false, 'programs section added a public price');
 assert.equal(programsPublic.includes('김포외고'), true);
-assert.equal(programsPublic.includes('교육청 기준'), true);
+assert.equal(programsPublic.includes('미확정(학교 요강 확인 전)'), false);
+assert.equal(programsPublic.includes('12.4~12.10 17:00(인터넷)'), true);
 assert.equal(programsPublic.includes('3:1 모의면접'), true);
 
 const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');

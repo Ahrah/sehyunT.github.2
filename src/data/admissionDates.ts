@@ -112,14 +112,13 @@ export const schoolGroups: SchoolGroup[] = [
         result: '12.29 이내',
       },
       {
+        // 김포외고 2027 신입생 전형요항(2026.9.3) p.2
         id: 'gimpo-flhs',
         name: '김포외고',
-        apply: '12.4~12.10',
-        essay: '미확정(학교 요강 확인 전)',
-        interview: '미확정(학교 요강 확인 전)',
-        result: '12.29',
-        officePlan: true,
-        note: '경기도교육청 기본계획 기준. 경기 공통 2단계 서류 12.15~12.16, 면접 12.17~12.24.',
+        apply: '12.4~12.10 17:00(인터넷)',
+        essay: '12.15~12.16 17:00 온라인',
+        interview: '12.19(토)',
+        result: '12.29 이내',
       },
       {
         id: 'dongducheon-flhs',
