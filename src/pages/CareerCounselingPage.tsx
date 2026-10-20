@@ -1,11 +1,13 @@
-import { FormEvent, Fragment, useEffect, useRef, useState } from 'react';
+import { FormEvent, Fragment, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence } from 'motion/react';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-import { AuthModal } from '../components/AuthModal';
+import type { User as FirebaseUser } from 'firebase/auth';
 import { loadPretendard } from '../config/site';
+import {
+  ensureCareerAuth,
+  signOutCareer,
+  submitCareerApplication,
+  watchCareerAuth,
+} from '../lib/careerCounselingSession';
 import {
   BIZ_INFO,
   CONSULT_DATE_MAX,
@@ -21,12 +23,22 @@ import {
   RESOURCES_HREF,
   SCHEDULE_CARDS,
   SCHOOL_REGIONS,
-  CAREER_COUNSELING_COLLECTION,
   formatPhone,
   toCareerCounselingRecord,
   validateCareerCounselingForm,
 } from '../lib/careerCounseling';
 import './career-counseling.css';
+
+const CareerCounselingAuthGate = lazy(() => import('./CareerCounselingAuthGate'));
+
+function afterIdle(fn: () => void, timeout: number) {
+  if (typeof requestIdleCallback === 'function') {
+    const id = requestIdleCallback(fn, { timeout });
+    return () => cancelIdleCallback(id);
+  }
+  const id = window.setTimeout(fn, 1);
+  return () => window.clearTimeout(id);
+}
 
 const emptySlots = [
   { date: '', time: '' },
@@ -53,34 +65,35 @@ export const CareerCounselingPage = () => {
   const pendingApply = useRef(false);
 
   useEffect(() => {
-    loadPretendard();
+    if (!document.querySelector('link[href*="pretendard"]')) {
+      loadPretendard();
+    }
     document.title = PAGE_META.title;
     const desc = document.querySelector('meta[name="description"]');
     if (desc) desc.setAttribute('content', PAGE_META.description);
   }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (currentUser) => {
+    const unsub = watchCareerAuth((currentUser, profile) => {
       setUser(currentUser);
       if (!currentUser) {
         setChildName('');
         return;
       }
-      try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const data = snap.exists() ? snap.data() : {};
-        setChildName((data.childName as string) || currentUser.displayName || '');
-        setPhone((prev) => prev || formatPhone((data.phone as string) || ''));
-      } catch (err) {
-        console.error(err);
-        setChildName(currentUser.displayName || '');
-      }
+      setChildName(profile.childName);
+      setPhone((prev) => prev || formatPhone(profile.phone));
       if (pendingApply.current) {
         pendingApply.current = false;
         document.getElementById('신청서')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
-    return () => unsub();
+    const cancelIdle = afterIdle(() => {
+      void ensureCareerAuth();
+    }, 2500);
+    return () => {
+      unsub();
+      cancelIdle();
+    };
   }, []);
 
   useEffect(() => {
@@ -91,6 +104,7 @@ export const CareerCounselingPage = () => {
   const openApply = () => {
     if (!user) {
       pendingApply.current = true;
+      void ensureCareerAuth();
       setAuthOpen(true);
       return;
     }
@@ -109,6 +123,7 @@ export const CareerCounselingPage = () => {
     event.preventDefault();
     if (!user) {
       pendingApply.current = true;
+      void ensureCareerAuth();
       setAuthOpen(true);
       return;
     }
@@ -137,10 +152,7 @@ export const CareerCounselingPage = () => {
     setSubmitting(true);
     setError(null);
     try {
-      await addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
-        ...toCareerCounselingRecord(payload),
-        createdAt: serverTimestamp(),
-      });
+      await submitCareerApplication(toCareerCounselingRecord(payload));
       setSubmitted(true);
       document.getElementById('자격')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err: any) {
@@ -153,16 +165,14 @@ export const CareerCounselingPage = () => {
 
   return (
     <div className="cc-page">
-      {createPortal(
-        <AnimatePresence>
-          {authOpen && (
-            <div style={{ position: 'relative', zIndex: 1000 }}>
-              <AuthModal onClose={() => setAuthOpen(false)} />
-            </div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+      {authOpen
+        ? createPortal(
+            <Suspense fallback={null}>
+              <CareerCounselingAuthGate open onClose={() => setAuthOpen(false)} />
+            </Suspense>,
+            document.body
+          )
+        : null}
 
       <div className="elig-bar" role="note">
         <b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)
@@ -171,13 +181,13 @@ export const CareerCounselingPage = () => {
       <header className="top">
         <div className="wrap">
           <a className="brand" href="/">
-            <img src="/logo-mark.svg" alt="" width={32} height={32} />
+            <img src="/logo-mark.svg" alt="" width={40} height={40} />
             <span className="en"><strong>SEHYUN T</strong><span>ADMISSIONS LAB</span></span>
           </a>
           <div className="top-actions">
             <a className="top-call" href={BIZ_INFO.phoneHref}>{BIZ_INFO.phone}</a>
             {user ? (
-              <button type="button" className="top-auth" onClick={() => signOut(auth)}>로그아웃</button>
+              <button type="button" className="top-auth" onClick={() => void signOutCareer()}>로그아웃</button>
             ) : (
               <button type="button" className="top-auth" onClick={() => setAuthOpen(true)}>로그인</button>
             )}

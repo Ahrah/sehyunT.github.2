@@ -24,6 +24,10 @@ export default defineConfig(({mode}) => {
     },
     build: {
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          counseling: path.resolve(__dirname, 'jinro-counseling/index.html'),
+        },
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return;
