@@ -57,6 +57,17 @@ function ensureDir(dir: string) {
   }
 }
 
+function inlineLocalStylesheets(html: string, distDir: string): string {
+  return html.replace(
+    /<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/g,
+    (full, href: string) => {
+      const file = path.join(distDir, href.replace(/^\//, ''));
+      if (!fs.existsSync(file)) return full;
+      return `<style data-href="${href}">${fs.readFileSync(file, 'utf-8')}</style>`;
+    },
+  );
+}
+
 // Generate HTML for a resource page (full article body for public articles, no redirect)
 function generateResourceHTML(resource: ResourceItem): string {
   return resourcePageHtml(resource);
@@ -169,14 +180,20 @@ async function main() {
     // SPA route + prerender for 온라인 진로·선택과목 상담
     console.log('🧭 Generating /jinro-counseling/ SPA shell with prerender...');
     assertNoSensitiveCopy(careerCounselingPrerenderHtml);
-    const spaIndex = path.join(DIST_DIR, 'index.html');
-    if (!fs.existsSync(spaIndex)) {
-      throw new Error('dist/index.html is required to prerender /jinro-counseling/');
-    }
     const counselingDir = path.join(DIST_DIR, CAREER_COUNSELING_SLUG);
-    ensureDir(counselingDir);
-    const counselingHtml = applyCareerCounselingSpaShell(fs.readFileSync(spaIndex, 'utf-8'));
-    fs.writeFileSync(path.join(counselingDir, 'index.html'), counselingHtml);
+    const counselingBuilt = path.join(counselingDir, 'index.html');
+    if (!fs.existsSync(counselingBuilt)) {
+      throw new Error('Vite MPA output dist/jinro-counseling/index.html is required');
+    }
+    let counselingHtml = applyCareerCounselingSpaShell(fs.readFileSync(counselingBuilt, 'utf-8'));
+    counselingHtml = inlineLocalStylesheets(counselingHtml, DIST_DIR);
+    if (/IMG_1441/.test(counselingHtml)) {
+      throw new Error('Counseling HTML still preloads the home hero image');
+    }
+    if (/\/assets\/index-[^"]+\.(js|css)/.test(counselingHtml)) {
+      throw new Error('Counseling HTML still references the home bundle');
+    }
+    fs.writeFileSync(counselingBuilt, counselingHtml);
     console.log('✅ Generated /jinro-counseling/');
 
     // Generate /links page

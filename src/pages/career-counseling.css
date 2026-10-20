@@ -109,6 +109,7 @@
   overflow: hidden;
   padding: 72px 0 64px;
   background: var(--cc-off);
+  contain: paint;
 }
 
 .cc-page .hero::after {
@@ -121,6 +122,7 @@
   background: var(--cc-red);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   opacity: 0.95;
+  pointer-events: none;
 }
 
 .cc-page .hero::before {
@@ -132,6 +134,7 @@
   height: 180px;
   background: var(--cc-black);
   clip-path: polygon(0 0, 100% 0, 78% 72%, 18% 100%);
+  pointer-events: none;
 }
 
 .cc-page .hero .wrap {

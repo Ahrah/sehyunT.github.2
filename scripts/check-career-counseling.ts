@@ -31,6 +31,7 @@ const PUBLIC_PRICE_RE = /만원|60,?000\s*원|"price"\s*:/;
 assertNoSensitiveCopy(careerCounselingPrerenderHtml);
 assert.equal(careerCounselingPrerenderHtml.includes('경기도 성남시 수정구 창업로 43, 81호'), true);
 assert.equal(careerCounselingPrerenderHtml.includes(COST_GUIDE), true);
+assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);
 assert.equal(PUBLIC_PRICE_RE.test(careerCounselingPrerenderHtml), false);
 assert.equal(/농협|국민은행|우리은행|신한은행|\d{2,3}-\d{2}-\d{6}/.test(careerCounselingPrerenderHtml), false);
 
@@ -50,6 +51,15 @@ assert.equal(applied.includes(CAREER_COUNSELING_CANONICAL), true);
 assert.equal(applied.includes('온라인 진로·선택과목 상담'), true);
 assert.equal(applied.includes('<div>home</div>'), false);
 assert.equal(PUBLIC_PRICE_RE.test(applied), false);
+assert.equal(applied.includes('top-auth'), true);
+assert.equal(applied.includes('로그인'), true);
+
+const withHeroPreload = applyCareerCounselingSpaShell(shell.replace(
+  '</head>',
+  '<link rel="preload" as="image" type="image/webp" href="/IMG_1441-800.webp" fetchpriority="high" />\n</head>',
+));
+assert.equal(withHeroPreload.includes('IMG_1441'), false);
+assert.equal(withHeroPreload.includes('pretendard-dynamic-subset.min.css'), true);
 
 for (const page of KEYWORD_PAGES) {
   const html = keywordPageHtml(page);
@@ -178,5 +188,27 @@ assert.equal(siteSrc.includes('consultantsyssam@gmail.com'), false);
 
 const ccCss = fs.readFileSync(path.join(root, 'src/pages/career-counseling.css'), 'utf-8');
 assert.equal(ccCss.includes('@import'), false);
+assert.equal(ccCss.includes('contain: paint'), true);
+
+const counselingHtmlSrc = fs.readFileSync(path.join(root, 'jinro-counseling/index.html'), 'utf-8');
+assert.equal(counselingHtmlSrc.includes('IMG_1441'), false);
+assert.equal(counselingHtmlSrc.includes('Noto+Sans+KR'), false);
+assert.equal(counselingHtmlSrc.includes('counseling-main.tsx'), true);
+assert.equal(counselingHtmlSrc.includes('pretendard-dynamic-subset.min.css'), true);
+
+const counselingMain = fs.readFileSync(path.join(root, 'src/counseling-main.tsx'), 'utf-8');
+assert.equal(counselingMain.includes('CareerCounselingPage'), true);
+assert.equal(counselingMain.includes('./App'), false);
+assert.equal(counselingMain.includes('hydrateRoot'), true);
+
+const mainSrc = fs.readFileSync(path.join(root, 'src/main.tsx'), 'utf-8');
+assert.equal(mainSrc.includes('CareerCounselingPage'), false);
+assert.equal(mainSrc.includes("import App from './App.tsx'"), true);
+
+const ccPageSrc = fs.readFileSync(path.join(root, 'src/pages/CareerCounselingPage.tsx'), 'utf-8');
+assert.equal(ccPageSrc.includes("from 'motion/react'"), false);
+assert.equal(ccPageSrc.includes("from '../components/AuthModal'"), false);
+assert.equal(ccPageSrc.includes("from '../lib/firebase'"), false);
+assert.equal(ccPageSrc.includes('CareerCounselingAuthGate'), true);
 
 console.log('✅ career counseling checks passed');

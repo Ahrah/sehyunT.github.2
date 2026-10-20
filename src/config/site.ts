@@ -35,7 +35,7 @@ export const NOTO_SERIF_KR_HREF =
   'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400&display=swap';
 
 export const PRETENDARD_HREF =
-  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css';
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css';
 
 export const PRETENDARD_HEAD = `
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>

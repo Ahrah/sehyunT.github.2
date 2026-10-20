@@ -72,10 +72,13 @@ export const careerCounselingPrerenderHtml = `
   <div class="elig-bar" role="note"><b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)</div>
   <header class="top"><div class="wrap">
     <a class="brand" href="/">
-      <img src="/logo-mark.svg" alt="" width="32" height="32">
+      <img src="/logo-mark.svg" alt="" width="40" height="40">
       <span class="en"><strong>SEHYUN T</strong><span>ADMISSIONS LAB</span></span>
     </a>
-    <a class="top-call" href="${SITE.phoneHref}">${SITE.phone}</a>
+    <div class="top-actions">
+      <a class="top-call" href="${SITE.phoneHref}">${SITE.phone}</a>
+      <button type="button" class="top-auth">로그인</button>
+    </div>
   </div></header>
   <div class="hero"><div class="wrap">
     <span class="tag">비수도권 학생 전용 · 시즌 한정</span>
@@ -117,17 +120,21 @@ export const careerCounselingPrerenderHtml = `
     <p class="eyebrow">APPLY</p>
     <h2>신청하기</h2>
     <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
-    <p class="pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내를 문자로 보내 드려요.</p>
-    <div class="refund"><b>환불 안내</b>
-      <ul>
-        <li>상담 2일 전까지 취소하면 전액 환불해 드려요.</li>
-        <li>상담 1일 전부터 당일까지 취소하면 환불하지 않아요.</li>
-        <li>자격이 맞지 않으면 전액 환불해 드려요.</li>
-      </ul>
-    </div>
-    <div class="elig-box"><strong>신청 자격을 확인해 주세요</strong><p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p></div>
-    <a class="btn" href="/jinro-counseling/#신청서">로그인하고 신청하기</a>
-    <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
+    <form class="apply" id="신청서">
+      <p class="f full pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내를 문자로 보내 드려요.</p>
+      <div class="f full refund"><b>환불 안내</b>
+        <ul>
+          <li>상담 2일 전까지 취소하면 전액 환불해 드려요.</li>
+          <li>상담 1일 전부터 당일까지 취소하면 환불하지 않아요.</li>
+          <li>자격이 맞지 않으면 전액 환불해 드려요.</li>
+        </ul>
+      </div>
+      <div class="f full">
+        <div class="elig-box" style="margin-top: 0px"><strong>신청 자격을 확인해 주세요</strong><p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p></div>
+        <button class="btn" type="button">로그인하고 신청하기</button>
+        <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
+      </div>
+    </form>
   </div></section>
   <section id="faq"><div class="wrap">
     <p class="eyebrow">FAQ</p>
@@ -178,7 +185,9 @@ export function applyCareerCounselingSpaShell(html: string): string {
     /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
     `<script type="application/ld+json">\n    ${JSON.stringify(JSON_LD).replace(/</g, '\\u003c')}\n    </script>`
   );
-  if (!out.includes('pretendard.min.css')) {
+  out = out.replace(/<link[^>]*rel="preload"[^>]*IMG_1441[^>]*>\s*/gi, '');
+  out = out.replace(/<link[^>]*IMG_1441[^>]*rel="preload"[^>]*>\s*/gi, '');
+  if (!out.includes('pretendard')) {
     out = out.replace('</head>', `${PRETENDARD_HEAD}\n  </head>`);
   }
 
