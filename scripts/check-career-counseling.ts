@@ -153,7 +153,7 @@ const heroEnd = appSrc.indexOf('<ProgramsSection');
 const heroSrc = appSrc.slice(heroStart, heroEnd === -1 ? appSrc.indexOf('id="about"') : heroEnd);
 assert.equal(heroSrc.includes('whileInView'), false);
 assert.equal(heroSrc.includes('opacity: 0'), false);
-assert.equal(heroSrc.includes('<picture>'), true);
+assert.equal(heroSrc.includes('<picture'), true);
 
 const programsPublic = [
   fs.readFileSync(path.join(root, 'src/data/programs.ts'), 'utf-8'),
@@ -209,6 +209,19 @@ assert.equal(authGateSrc.includes("import '../index.css'"), true);
 const mainSrc = fs.readFileSync(path.join(root, 'src/main.tsx'), 'utf-8');
 assert.equal(mainSrc.includes('CareerCounselingPage'), false);
 assert.equal(mainSrc.includes("import App from './App.tsx'"), true);
+
+const sessionSrc = fs.readFileSync(path.join(root, 'src/lib/careerCounselingSession.ts'), 'utf-8');
+assert.equal(sessionSrc.includes("import('firebase/firestore')"), false);
+assert.equal(sessionSrc.includes("import('./firestoreApi')"), true);
+
+const firestoreApiSrc = fs.readFileSync(path.join(root, 'src/lib/firestoreApi.ts'), 'utf-8');
+assert.equal(firestoreApiSrc.includes("from 'firebase/firestore'"), true);
+for (const name of ['doc', 'getDoc', 'addDoc', 'collection', 'serverTimestamp']) {
+  assert.equal(firestoreApiSrc.includes(name), true, `firestoreApi missing ${name}`);
+}
+
+assert.equal(appSrc.includes("aspectRatio: '4 / 5'"), true);
+assert.equal(appSrc.includes('aspect-[4/5]'), true);
 
 const ccPageSrc = fs.readFileSync(path.join(root, 'src/pages/CareerCounselingPage.tsx'), 'utf-8');
 assert.equal(ccPageSrc.includes("from 'motion/react'"), false);

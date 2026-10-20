@@ -332,10 +332,10 @@ export default function App() {
             </div>
 
             <div ref={portraitRef} className="relative mx-auto w-[92%] max-w-[20rem] lg:mr-0 lg:w-full lg:max-w-[min(31.25rem,26.9vw)]" style={{ willChange: 'transform' }}>
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]">
-                <picture>
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2.2rem] bg-brand-sand shadow-[0_35px_90px_rgba(28,34,40,0.17)]" style={{ aspectRatio: '4 / 5' }}>
+                <picture className="absolute inset-0 block h-full w-full">
                   <source type="image/webp" srcSet="/IMG_1441-800.webp 800w, /IMG_1441.webp 1536w" sizes="(max-width: 1024px) 81vw, 27vw" />
-                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 81vw, 27vw" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} loading="eager" fetchPriority="high" decoding="async" />
+                  <img src="/IMG_1441-800.jpg" srcSet="/IMG_1441-800.jpg 800w, /IMG_1441.jpg 1536w" sizes="(max-width: 1024px) 81vw, 27vw" alt="입시 컨설턴트 조세연" className="h-full w-full object-cover object-[center_23%]" width={800} height={1200} style={{ aspectRatio: '4 / 5' }} loading="eager" fetchPriority="high" decoding="async" />
                 </picture>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-ink/85 via-brand-ink/20 to-transparent px-7 pb-7 pt-32 text-white sm:px-9 sm:pb-9">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-coral">Founder · Admissions Consultant</p>
