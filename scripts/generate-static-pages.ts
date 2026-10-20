@@ -193,6 +193,14 @@ async function main() {
     if (/\/assets\/index-[^"]+\.(js|css)/.test(counselingHtml)) {
       throw new Error('Counseling HTML still references the home bundle');
     }
+    const counselingJsHref = counselingHtml.match(/src="(\/assets\/counseling-[^"]+\.js)"/)?.[1];
+    if (!counselingJsHref) {
+      throw new Error('Counseling HTML missing counseling JS');
+    }
+    const counselingJs = fs.readFileSync(path.join(DIST_DIR, counselingJsHref.slice(1)), 'utf-8');
+    if (!/assets\/index-[^"]+\.css/.test(counselingJs)) {
+      throw new Error('Counseling AuthGate chunk must load the Tailwind stylesheet');
+    }
     fs.writeFileSync(counselingBuilt, counselingHtml);
     console.log('✅ Generated /jinro-counseling/');
 
