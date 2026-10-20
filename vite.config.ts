@@ -37,7 +37,9 @@ export default defineConfig(({mode}) => {
           counseling: path.resolve(__dirname, 'jinro-counseling/index.html'),
         },
         output: {
+          hoistTransitiveImports: false,
           manualChunks(id) {
+            if (id.includes('src/lib/firestoreApi')) return 'firestore-api';
             if (!id.includes('node_modules')) return;
             if (id.includes('firebase') || id.includes('@firebase')) {
               if (id.includes('firestore')) return 'fb-firestore';

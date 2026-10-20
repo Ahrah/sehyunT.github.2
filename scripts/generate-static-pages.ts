@@ -207,6 +207,9 @@ async function main() {
     if (!/assets\/index-[^"]+\.css/.test(counselingJs)) {
       throw new Error('Counseling AuthGate chunk must load the Tailwind stylesheet');
     }
+    if (/(?:from|import)"\.\/fb-(?:app|auth|firestore|storage)-/.test(counselingJs)) {
+      throw new Error('Counseling entry must not statically import Firebase chunks');
+    }
     fs.writeFileSync(counselingBuilt, counselingHtml);
     console.log('✅ Generated /jinro-counseling/');
 
