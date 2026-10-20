@@ -23,7 +23,7 @@ export function ensureCareerAuth(): Promise<void> {
     const [{ auth, db }, { onAuthStateChanged }, { doc, getDoc }] = await Promise.all([
       import('./firebase'),
       import('firebase/auth'),
-      import('firebase/firestore'),
+      import('./firestoreApi'),
     ]);
     unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -69,7 +69,7 @@ export async function submitCareerApplication(record: object) {
   await ensureCareerAuth();
   const [{ db }, { addDoc, collection, serverTimestamp }] = await Promise.all([
     import('./firebase'),
-    import('firebase/firestore'),
+    import('./firestoreApi'),
   ]);
   await addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
     ...record,
