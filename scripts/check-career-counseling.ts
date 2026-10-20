@@ -199,7 +199,12 @@ assert.equal(counselingHtmlSrc.includes('pretendard-dynamic-subset.min.css'), tr
 const counselingMain = fs.readFileSync(path.join(root, 'src/counseling-main.tsx'), 'utf-8');
 assert.equal(counselingMain.includes('CareerCounselingPage'), true);
 assert.equal(counselingMain.includes('./App'), false);
-assert.equal(counselingMain.includes('hydrateRoot'), true);
+assert.equal(counselingMain.includes('hydrateRoot'), false);
+assert.equal(counselingMain.includes('createRoot'), true);
+
+const authGateSrc = fs.readFileSync(path.join(root, 'src/pages/CareerCounselingAuthGate.tsx'), 'utf-8');
+assert.equal(authGateSrc.includes("from '../components/AuthModal'"), true);
+assert.equal(authGateSrc.includes("import '../index.css'"), true);
 
 const mainSrc = fs.readFileSync(path.join(root, 'src/main.tsx'), 'utf-8');
 assert.equal(mainSrc.includes('CareerCounselingPage'), false);
