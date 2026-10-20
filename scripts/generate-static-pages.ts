@@ -193,6 +193,12 @@ async function main() {
     if (/\/assets\/index-[^"]+\.(js|css)/.test(counselingHtml)) {
       throw new Error('Counseling HTML still references the home bundle');
     }
+    if (/rel="modulepreload"[^>]*fb-(?:app|auth|firestore|storage)-/.test(counselingHtml)) {
+      throw new Error('Counseling HTML still modulepreloads Firebase chunks');
+    }
+    if (!/rel="modulepreload"[^>]*\/assets\/site-/.test(counselingHtml)) {
+      throw new Error('Counseling HTML must keep the site chunk modulepreload');
+    }
     const counselingJsHref = counselingHtml.match(/src="(\/assets\/counseling-[^"]+\.js)"/)?.[1];
     if (!counselingJsHref) {
       throw new Error('Counseling HTML missing counseling JS');
@@ -200,6 +206,9 @@ async function main() {
     const counselingJs = fs.readFileSync(path.join(DIST_DIR, counselingJsHref.slice(1)), 'utf-8');
     if (!/assets\/index-[^"]+\.css/.test(counselingJs)) {
       throw new Error('Counseling AuthGate chunk must load the Tailwind stylesheet');
+    }
+    if (/(?:from|import)"\.\/fb-(?:app|auth|firestore|storage)-/.test(counselingJs)) {
+      throw new Error('Counseling entry must not statically import Firebase chunks');
     }
     fs.writeFileSync(counselingBuilt, counselingHtml);
     console.log('✅ Generated /jinro-counseling/');

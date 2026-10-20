@@ -23,13 +23,23 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
+      modulePreload: {
+        resolveDependencies(filename, deps, { hostId, hostType }) {
+          if (hostType === 'html' && /jinro-counseling/.test(`${filename}\0${hostId}`)) {
+            return deps.filter((dep) => !/(^|\/)fb-(app|auth|firestore|storage)-/.test(dep));
+          }
+          return deps;
+        },
+      },
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           counseling: path.resolve(__dirname, 'jinro-counseling/index.html'),
         },
         output: {
+          hoistTransitiveImports: false,
           manualChunks(id) {
+            if (id.includes('src/lib/firestoreApi')) return 'firestore-api';
             if (!id.includes('node_modules')) return;
             if (id.includes('firebase') || id.includes('@firebase')) {
               if (id.includes('firestore')) return 'fb-firestore';

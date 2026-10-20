@@ -61,6 +61,19 @@ const withHeroPreload = applyCareerCounselingSpaShell(shell.replace(
 assert.equal(withHeroPreload.includes('IMG_1441'), false);
 assert.equal(withHeroPreload.includes('pretendard-dynamic-subset.min.css'), true);
 
+const withFbPreload = applyCareerCounselingSpaShell(shell.replace(
+  '</head>',
+  [
+    '<link rel="modulepreload" crossorigin href="/assets/site-test.js">',
+    '<link rel="modulepreload" crossorigin href="/assets/fb-app-test.js">',
+    '<link rel="modulepreload" crossorigin href="/assets/fb-firestore-test.js">',
+    '</head>',
+  ].join('\n'),
+));
+assert.equal(withFbPreload.includes('fb-app-test.js'), false);
+assert.equal(withFbPreload.includes('fb-firestore-test.js'), false);
+assert.equal(withFbPreload.includes('/assets/site-test.js'), true);
+
 for (const page of KEYWORD_PAGES) {
   const html = keywordPageHtml(page);
   assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);

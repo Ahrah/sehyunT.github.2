@@ -187,6 +187,9 @@ export function applyCareerCounselingSpaShell(html: string): string {
   );
   out = out.replace(/<link[^>]*rel="preload"[^>]*IMG_1441[^>]*>\s*/gi, '');
   out = out.replace(/<link[^>]*IMG_1441[^>]*rel="preload"[^>]*>\s*/gi, '');
+  out = out.replace(/<link\b[^>]*\brel="modulepreload"[^>]*>\s*/gi, (tag) => (
+    /fb-(?:app|auth|firestore|storage)-/.test(tag) ? '' : tag
+  ));
   if (!out.includes('pretendard')) {
     out = out.replace('</head>', `${PRETENDARD_HEAD}\n  </head>`);
   }
