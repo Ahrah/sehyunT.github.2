@@ -1,16 +1,9 @@
 import {StrictMode} from 'react';
-import {createRoot, hydrateRoot} from 'react-dom/client';
+import {createRoot} from 'react-dom/client';
 import { CareerCounselingPage } from './pages/CareerCounselingPage';
 
-const rootEl = document.getElementById('root')!;
-const tree = (
+createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <CareerCounselingPage />
-  </StrictMode>
+  </StrictMode>,
 );
-
-if (rootEl.firstElementChild) {
-  hydrateRoot(rootEl, tree);
-} else {
-  createRoot(rootEl).render(tree);
-}

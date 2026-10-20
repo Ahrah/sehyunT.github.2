@@ -1,5 +1,6 @@
 import { AnimatePresence } from 'motion/react';
 import { AuthModal } from '../components/AuthModal';
+import '../index.css';
 
 export default function CareerCounselingAuthGate({
   open,
