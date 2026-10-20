@@ -193,6 +193,12 @@ async function main() {
     if (/\/assets\/index-[^"]+\.(js|css)/.test(counselingHtml)) {
       throw new Error('Counseling HTML still references the home bundle');
     }
+    if (/rel="modulepreload"[^>]*fb-(?:app|auth|firestore|storage)-/.test(counselingHtml)) {
+      throw new Error('Counseling HTML still modulepreloads Firebase chunks');
+    }
+    if (!/rel="modulepreload"[^>]*\/assets\/site-/.test(counselingHtml)) {
+      throw new Error('Counseling HTML must keep the site chunk modulepreload');
+    }
     const counselingJsHref = counselingHtml.match(/src="(\/assets\/counseling-[^"]+\.js)"/)?.[1];
     if (!counselingJsHref) {
       throw new Error('Counseling HTML missing counseling JS');

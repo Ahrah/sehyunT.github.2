@@ -23,6 +23,14 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
+      modulePreload: {
+        resolveDependencies(filename, deps, { hostId, hostType }) {
+          if (hostType === 'html' && /jinro-counseling/.test(`${filename}\0${hostId}`)) {
+            return deps.filter((dep) => !/(^|\/)fb-(app|auth|firestore|storage)-/.test(dep));
+          }
+          return deps;
+        },
+      },
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
