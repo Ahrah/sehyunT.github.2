@@ -69,6 +69,8 @@ const STYLE = `
   .date { font-size:13px; color:var(--gray); }
   h1 { font-size:clamp(26px, 5vw, 36px); line-height:1.35; letter-spacing:-0.03em; margin:12px 0 20px; font-weight:900; }
   h2 { font-size:20px; line-height:1.45; margin:40px 0 12px; font-weight:800; letter-spacing:-0.02em; }
+  h3 { font-size:17px; line-height:1.45; margin:28px 0 10px; font-weight:800; letter-spacing:-0.02em; }
+  h2 + h3 { margin-top:16px; }
   p { font-size:17px; margin:0 0 16px; color:#18181B; }
   .lead { font-size:18px; color:#18181B; }
   .hl { color:var(--blue); font-weight:700; }
@@ -180,7 +182,7 @@ interface KeywordPage {
   description: string;
   lead: string;           // first paragraph — must contain keyword
   summary: [string, string][]; // 대상 / 비용 / 진행 방식 table
-  sections: { h: string; paras?: string[]; list?: string[] }[];
+  sections: { h: string; paras?: string[]; list?: string[]; subs?: { h: string; p: string }[] }[];
   faqs: Faq[];
   relatedArticle?: { id: string; title: string };
 }
@@ -205,6 +207,26 @@ export const KEYWORD_PAGES: KeywordPage[] = [
         paras: [
           '컨설팅을 시작하면 세연쌤이 학생과 1:1 개인톡으로 직접 연락합니다. 학생에게 연락처를 알려 주기 때문에 밤늦게나 새벽에 보내도 괜찮습니다. 답변은 하루 이내, 컨설팅은 이틀 이내가 원칙입니다. 실제로는 대부분 12시간 안에 답하고, 하루 안에 컨설팅을 진행합니다.',
           '생기부는 매 학기 확인합니다. 다만 학교에 따라 여름방학에는 생기부에서 아무것도 확인할 수 없는 경우가 있어서, 그럴 때는 겨울방학에 확인합니다. 무엇이 남았고 무엇이 비었는지를 보고, 다음 학기에 채울 것을 정합니다.',
+        ],
+      },
+      {
+        h: '학년별로 무엇을 관리하나요?',
+        subs: [
+          {
+            h: '고1 — 계열을 정하고 기록의 방향을 잡습니다',
+            p: '고1에는 계열까지만 정해도 충분합니다. 정한 계열에 맞춰 수행평가와 자율탐구보고서, 동아리 활동의 주제를 고릅니다. 1학년 1학기 말과 2학기 말에는 2학년 때 들을 선택과목을 정합니다. 각 학기에 어떤 과목이 개설되는지, 이번 학기에 놓쳐도 다른 학기에 들을 수 있는 과목인지를 보고 판단합니다.',
+          },
+          {
+            h: '고2 — 분야를 좁히고 탐구를 깊게 만듭니다',
+            p: '고2가 되면 계열 안에서 어떤 분야로 갈지 정합니다. 분야가 정해지면 선택과목과 탐구 주제를 그 분야에 맞춥니다. 1학년에 남긴 활동과 이어지도록 주제를 고르고, 세특에 학생 자신의 탐구 과정이 드러나도록 수행평가를 준비합니다.',
+          },
+          {
+            h: '고3 1학기 — 남은 기록을 채웁니다',
+            p: '생기부 컨설팅은 3학년 1학기까지 진행합니다. 3학년 1학기 생기부까지 학생부종합전형에 반영되므로, 고1·고2 기록을 함께 펼쳐 보고 비어 있는 부분을 이 학기에 채웁니다. 수시 원서 전략과 면접 준비는 생기부 컨설팅에 포함되지 않으며, 각각 별도 서비스로 신청하실 수 있습니다.',
+          },
+        ],
+        paras: [
+          '모든 학년에서 생기부는 매 학기 확인합니다. 무엇이 남았고 무엇이 비었는지 보고, 다음 학기에 채울 것을 정합니다.',
         ],
       },
       {
@@ -314,6 +336,7 @@ export function keywordPageHtml(p: KeywordPage): string {
   }).join('');
   const sections = p.sections.map(s => `
     <h2>${escapeHtml(s.h)}</h2>
+    ${(s.subs || []).map((sub) => `<h3>${escapeHtml(sub.h)}</h3>\n    <p>${escapeHtml(sub.p)}</p>`).join('\n    ')}
     ${(s.paras || []).map(x => `<p>${escapeHtml(x)}</p>`).join('\n    ')}
     ${s.list ? `<ul class="steps">${s.list.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : ''}`).join('\n');
   const faqs = p.faqs.map(f => {

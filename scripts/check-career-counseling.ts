@@ -83,6 +83,21 @@ for (const page of KEYWORD_PAGES) {
   assert.equal(html.includes('consultantsyssam@gmail.com'), false, `${page.slug} still has the old contact email`);
 }
 
+const saenggibuHtml = keywordPageHtml(KEYWORD_PAGES.find((page) => page.slug === 'saenggibu-consulting')!);
+const howIdx = saenggibuHtml.indexOf('생기부 컨설팅은 어떻게 진행되나요?');
+const gradeIdx = saenggibuHtml.indexOf('학년별로 무엇을 관리하나요?');
+const clubIdx = saenggibuHtml.indexOf('자율탐구보고서·동아리 활동도 학종 기준으로 봅니다');
+assert.equal(howIdx !== -1, true);
+assert.equal(gradeIdx !== -1, true);
+assert.equal(clubIdx !== -1, true);
+assert.equal(howIdx < gradeIdx && gradeIdx < clubIdx, true, '학년별 섹션은 진행 방식 다음이어야 합니다');
+assert.equal(saenggibuHtml.includes('<h3>고1 — 계열을 정하고 기록의 방향을 잡습니다</h3>'), true);
+assert.equal(saenggibuHtml.includes('<h3>고2 — 분야를 좁히고 탐구를 깊게 만듭니다</h3>'), true);
+assert.equal(saenggibuHtml.includes('<h3>고3 1학기 — 남은 기록을 채웁니다</h3>'), true);
+assert.equal(saenggibuHtml.includes('세특에 학생 자신의 탐구 과정이 드러나도록 수행평가를 준비합니다.'), true);
+assert.equal(saenggibuHtml.includes('모든 학년에서 생기부는 매 학기 확인합니다. 무엇이 남았고 무엇이 비었는지 보고, 다음 학기에 채울 것을 정합니다.'), true);
+assert.equal(saenggibuHtml.includes('한 학기 200만원 이내'), false);
+
 const membersOnlyHtml = resourcePageHtml({
   id: 'secret-price-faq',
   title: '회원 전용 비용 FAQ',
