@@ -295,6 +295,7 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                             placeholder="자녀 이름"
                             className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                           />
+                          {errors.childName && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.childName.message}</p>}
                         </div>
 
                         <div className="relative">
