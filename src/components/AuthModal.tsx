@@ -9,7 +9,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
 const authSchema = z.object({
-  email: z.string().email("올바른 이메일 형식이 아닙니다.").trim(),
+  // Trim before format check so leading/trailing spaces do not fail validation.
+  email: z.string().trim().email("올바른 이메일 형식이 아닙니다."),
   password: z.string()
     .min(8, "비밀번호는 8자 이상이어야 합니다.")
     .regex(/[0-9]/, "숫자를 포함해야 합니다.")
@@ -255,7 +256,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                         <input
                           {...register("email")}
                           id="signup-email"
-                          name="signup-email"
                           type="email"
                           inputMode="email"
                           autoComplete="email"
@@ -272,7 +272,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                         <input
                           {...register("password")}
                           id="signup-new-password"
-                          name="signup-new-password"
                           type="password"
                           autoComplete="new-password"
                           placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
@@ -291,12 +290,12 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                           <input
                             {...register("childName")}
                             id="signup-full-name"
-                            name="signup-full-name"
                             type="text"
                             autoComplete="name"
                             placeholder="자녀 이름"
                             className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors"
                           />
+                          {errors.childName && <p className="text-[10px] text-red-500 mt-1 font-black uppercase tracking-widest">{errors.childName.message}</p>}
                         </div>
 
                         <div className="relative">
@@ -304,7 +303,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                           <input
                             {...register("phone")}
                             id="signup-tel"
-                            name="signup-tel"
                             type="tel"
                             inputMode="tel"
                             autoComplete="tel"
@@ -318,7 +316,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                           <select
                             {...register("interestService")}
                             id="signup-interest-service"
-                            name="signup-interest-service"
                             autoComplete="off"
                             className="w-full bg-brand-secondary border border-brand-light-gray h-14 pl-12 pr-4 text-sm font-bold focus:border-brand-accent outline-none transition-colors appearance-none"
                           >
@@ -333,7 +330,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                               type="checkbox"
                               {...register("emailWeeklyOptIn")}
                               id="signup-email-weekly-opt-in"
-                              name="signup-email-weekly-opt-in"
                               className="w-4 h-4 mt-0.5 accent-brand-text cursor-pointer shrink-0"
                             />
                             <span className="text-xs text-brand-gray group-hover:text-brand-text transition-colors leading-relaxed">
@@ -382,7 +378,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                         <input
                           {...register("email")}
                           id="login-username"
-                          name="username"
                           type="email"
                           inputMode="email"
                           autoComplete="username"
@@ -399,7 +394,6 @@ export const AuthModal = ({ onClose }: AuthModalProps) => {
                         <input
                           {...register("password")}
                           id="login-current-password"
-                          name="current-password"
                           type="password"
                           autoComplete="current-password"
                           placeholder="비밀번호 (8자 이상, 숫자+특수문자)"
