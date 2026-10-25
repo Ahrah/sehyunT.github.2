@@ -11,7 +11,17 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { KEYWORD_PAGES, isGatedResource, keywordPageHtml, resourcePageHtml, linksPageHtml } from './seo-pages';
+import {
+  KEYWORD_PAGES,
+  escapeHtml,
+  isGatedResource,
+  keywordPageHtml,
+  linksPageHtml,
+  pickRelatedResources,
+  pickServiceRelated,
+  resourcePageHtml,
+  resourcesIndexHtml,
+} from './seo-pages';
 import {
   CAREER_COUNSELING_CANONICAL,
   CAREER_COUNSELING_SLUG,
@@ -68,9 +78,29 @@ function inlineLocalStylesheets(html: string, distDir: string): string {
   );
 }
 
-// Generate HTML for a resource page (full article body for public articles, no redirect)
-function generateResourceHTML(resource: ResourceItem): string {
-  return resourcePageHtml(resource);
+function generateResourceHTML(resource: ResourceItem, publicResources: ResourceItem[]): string {
+  return resourcePageHtml(resource, pickRelatedResources(resource, publicResources));
+}
+
+function injectHomeResourceLinks(publicResources: ResourceItem[]) {
+  const indexPath = path.join(DIST_DIR, 'index.html');
+  if (!fs.existsSync(indexPath) || !publicResources.length) return;
+  let html = fs.readFileSync(indexPath, 'utf-8');
+  if (html.includes('aria-label="자료실"')) return;
+  const latest = publicResources.slice(0, 10);
+  const links = latest.map((r) => `<a href="/resources/${r.id}">${escapeHtml(r.title)}</a>`).join('');
+  const block = `<nav aria-label="자료실">${links}</nav>`;
+  if (html.includes('</footer>')) {
+    html = html.replace('</footer>', `${block}</footer>`);
+    fs.writeFileSync(indexPath, html);
+  }
+}
+
+function relatedNavHtml(articles: { id: string; title: string }[]): string {
+  if (!articles.length) return '';
+  return `<nav class="related" aria-label="자료실">${articles
+    .map((a) => `<a href="/resources/${a.id}">${escapeHtml(a.title)}</a>`)
+    .join('')}</nav>`;
 }
 
 // Generate sitemap.xml
@@ -88,6 +118,11 @@ function generateSitemap(resources: ResourceItem[]): string {
   </url>`),
     `  <url>
     <loc>${CAREER_COUNSELING_CANONICAL}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>`,
+    `  <url>
+    <loc>${DOMAIN}/resources/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>`,
@@ -153,7 +188,7 @@ async function main() {
     // Generate individual resource pages
     console.log('📝 Generating resource pages...');
     publicResources.forEach(resource => {
-      const html = generateResourceHTML(resource);
+      const html = generateResourceHTML(resource, publicResources);
       const filename = path.join(RESOURCES_DIR, `${resource.id}.html`);
       fs.writeFileSync(filename, html);
     });
@@ -162,18 +197,23 @@ async function main() {
         ...resource,
         content: null,
         description: '',
-      });
+      }, pickRelatedResources(resource, publicResources));
       const filename = path.join(RESOURCES_DIR, `${resource.id}.html`);
       fs.writeFileSync(filename, html);
     });
     console.log(`✅ Generated ${publicResources.length} public and ${gatedResources.length} gated resource pages`);
+
+    console.log('📚 Generating /resources/ index...');
+    fs.writeFileSync(path.join(RESOURCES_DIR, 'index.html'), resourcesIndexHtml(publicResources));
+    console.log('✅ Generated /resources/');
 
     // Generate keyword landing pages (e.g. /saenggibu-consulting/)
     console.log('🔑 Generating keyword landing pages...');
     KEYWORD_PAGES.forEach(page => {
       const dir = path.join(DIST_DIR, page.slug);
       ensureDir(dir);
-      fs.writeFileSync(path.join(dir, 'index.html'), keywordPageHtml(page));
+      const related = pickServiceRelated(page.slug, publicResources);
+      fs.writeFileSync(path.join(dir, 'index.html'), keywordPageHtml(page, related));
     });
     console.log(`✅ Generated ${KEYWORD_PAGES.length} keyword pages`);
 
@@ -210,8 +250,15 @@ async function main() {
     if (/(?:from|import)"\.\/fb-(?:app|auth|firestore|storage)-/.test(counselingJs)) {
       throw new Error('Counseling entry must not statically import Firebase chunks');
     }
+    const jinroRelated = pickServiceRelated('jinro-counseling', publicResources);
+    const jinroRelatedNav = relatedNavHtml(jinroRelated);
+    if (jinroRelatedNav && !/nav class="related"/.test(counselingHtml) && counselingHtml.includes('<footer class="site">')) {
+      counselingHtml = counselingHtml.replace('<footer class="site">', `${jinroRelatedNav}\n  <footer class="site">`);
+    }
     fs.writeFileSync(counselingBuilt, counselingHtml);
     console.log('✅ Generated /jinro-counseling/');
+
+    injectHomeResourceLinks(publicResources);
 
     // Generate /links page
     console.log('🔗 Generating /links page...');
@@ -243,7 +290,8 @@ async function main() {
     console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
     console.log(`   - /jinro-counseling/ prerendered SPA page`);
     console.log(`   - /links page`);
-    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} public URLs`);
+    console.log(`   - /resources/ index`);
+    console.log(`   - sitemap.xml with ${publicResources.length + 3 + KEYWORD_PAGES.length} public URLs`);
     console.log(`   - robots.txt`);
     
   } catch (error) {

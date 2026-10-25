@@ -205,10 +205,10 @@ async function expectedPublicCount(): Promise<{ expected: number | null; note: s
   try {
     const resources = await fetchResourcesPublic(12_000);
     const publicCount = resources.filter((item) => !isGatedResource(item)).length;
-    const staticCount = 1 + 1 + KEYWORD_PAGES.length;
+    const staticCount = 1 + 1 + 1 + KEYWORD_PAGES.length;
     return {
       expected: staticCount + publicCount,
-      note: `공개 자료 ${publicCount} + 고정 페이지 ${staticCount}(홈, /${CAREER_COUNSELING_SLUG}/, 키워드 ${KEYWORD_PAGES.length}) = ${staticCount + publicCount}`,
+      note: `공개 자료 ${publicCount} + 고정 페이지 ${staticCount}(홈, /${CAREER_COUNSELING_SLUG}/, /resources/, 키워드 ${KEYWORD_PAGES.length}) = ${staticCount + publicCount}`,
     };
   } catch (err: any) {
     return { expected: null, note: `자료실을 읽지 못했습니다 (${err?.message || err}).` };
@@ -385,6 +385,27 @@ async function main() {
   }
   if (!findings.seo.some((item) => item.level !== 'pass')) add('seo', 'pass', `HTML ${htmlByUrl.size}페이지의 메타를 확인했습니다.`);
   if (!findings.prices.length) add('prices', 'pass', '공개 페이지에서 원/만원 가격 패턴이 없습니다.');
+
+  const inbound = new Map<string, number>();
+  for (const [pageUrl, html] of htmlByUrl) {
+    for (const href of extractLinks(html, pageUrl)) {
+      if (!isSameOrigin(href) || samePage(href, pageUrl)) continue;
+      inbound.set(href, (inbound.get(href) || 0) + 1);
+    }
+  }
+  const resourceUrls = sitemapUrls.filter((url) => {
+    const pathName = new URL(url).pathname;
+    return pathName.startsWith('/resources/') && pathName !== '/resources/' && pathName !== '/resources';
+  });
+  const missingInbound = resourceUrls.filter((url) => {
+    const hits = [...inbound.entries()].filter(([from]) => samePage(from, url)).reduce((sum, [, n]) => sum + n, 0);
+    return hits < 1;
+  });
+  if (resourceUrls.length && !missingInbound.length) {
+    add('links', 'pass', `사이트맵 자료실 글 ${resourceUrls.length}개가 내부 <a href>를 1개 이상 받습니다.`);
+  } else if (missingInbound.length) {
+    add('links', 'warn', `내부 링크 0개인 자료실 URL ${missingInbound.length}개: ${missingInbound.slice(0, 8).join(', ')}`);
+  }
 
   const lighthouseTargets = [
     { label: '홈', url: `${ORIGIN}/` },

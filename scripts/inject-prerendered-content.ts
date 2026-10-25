@@ -40,6 +40,7 @@ const homePageContent = `
           <a href="/saenggibu-consulting/">생기부 컨설팅</a>
           <a href="/jasoseo-consulting/">자소서 컨설팅</a>
           <a href="/interview-consulting/">면접 컨설팅</a>
+          <a href="/resources/">자료실</a>
         </nav>
         
         <div class="mt-20 grid grid-cols-2 gap-12 border-t border-brand-light-gray pt-12 max-w-lg">
@@ -171,6 +172,7 @@ const homePageContent = `
         <a href="/saenggibu-consulting/">생기부 컨설팅</a>
         <a href="/jasoseo-consulting/">자소서 컨설팅</a>
         <a href="/interview-consulting/">면접 컨설팅</a>
+        <a href="/resources/">자료실</a>
       </nav>
       <div class="mt-16 sm:mt-24 pt-8 border-t border-brand-light-gray/70 text-[14px] sm:text-[15px] text-[#71717A] space-y-2">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-2">

@@ -11,12 +11,18 @@ import {
 } from './career-counseling-prerender';
 import {
   COST_GUIDE_PLAIN,
+  EXISTING_HOME_DESCRIPTION,
   KEYWORD_PAGES,
   keywordPageHtml,
+  pickRelatedResources,
   resourcePageHtml,
+  resourcesHref,
+  resourcesIndexHtml,
 } from './seo-pages';
 import {
   COST_GUIDE,
+  JINRO_RELATED_ARTICLES,
+  RESOURCES_HREF,
   isAllowedRegion,
   isCareerCounselingPath,
   isValidMobile,
@@ -203,6 +209,56 @@ assert.equal(programsPublic.includes('3:1 모의면접'), true);
 const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');
 assert.equal(resourcesSrc.includes('hover:bg-blue'), false);
 assert.equal(resourcesSrc.includes('SITE.kakaoChannelUrl'), true);
+assert.equal(resourcesSrc.includes('href={`/resources/${item.id}`}'), true);
+assert.equal(resourcesSrc.includes('e.preventDefault()'), true);
+
+assert.equal(RESOURCES_HREF, '/resources/');
+assert.equal(resourcesHref('고입'), '/resources/#goip');
+assert.equal(resourcesHref('대입'), '/resources/#daeip');
+assert.equal(resourcesHref(), '/resources/');
+assert.equal(appSrc.includes("['자료실', '/resources/']"), true);
+
+const resourcesIndex = resourcesIndexHtml([
+  { id: 'goip-1', title: '고입 글 제목', fileType: 'article', category: '고입' },
+  { id: 'daeip-1', title: '대입 글 제목', fileType: 'article', category: '대입' },
+]);
+assert.equal(resourcesIndex.includes('<h1>자료실</h1>'), true);
+assert.equal(resourcesIndex.includes(EXISTING_HOME_DESCRIPTION), true);
+assert.equal(resourcesIndex.includes('href="/resources/goip-1"'), true);
+assert.equal(resourcesIndex.includes('href="/resources/daeip-1"'), true);
+assert.equal(resourcesIndex.includes('<link rel="canonical" href="https://sehyunt.re.kr/resources/">'), true);
+
+const relatedOnlyGoip = pickRelatedResources(
+  { id: 'goip-1', title: '외고 면접 준비', fileType: 'article', category: '고입' },
+  [
+    { id: 'goip-1', title: '외고 면접 준비', fileType: 'article', category: '고입' },
+    { id: 'goip-2', title: '특목고 면접 질문', fileType: 'article', category: '고입' },
+    { id: 'goip-3', title: '자소서 첨삭', fileType: 'article', category: '고입' },
+    { id: 'goip-4', title: '중3 자소서', fileType: 'article', category: '고입' },
+    { id: 'daeip-1', title: '학종 면접 준비', fileType: 'article', category: '대입' },
+  ],
+);
+assert.equal(relatedOnlyGoip.every((item) => item.category === '고입'), true);
+assert.equal(relatedOnlyGoip.some((item) => item.id === 'daeip-1'), false);
+assert.equal(relatedOnlyGoip.length >= 3, true);
+
+const articleRelatedHtml = resourcePageHtml(
+  { id: 'goip-1', title: '외고 면접 준비', fileType: 'article', content: '본문', category: '고입' },
+  relatedOnlyGoip,
+);
+assert.equal(articleRelatedHtml.includes('href="/resources/goip-2"'), true);
+assert.equal(articleRelatedHtml.includes('<a href="/resources/">자료실</a>'), true);
+
+for (const article of JINRO_RELATED_ARTICLES) {
+  assert.equal(careerCounselingPrerenderHtml.includes(`/resources/${article.id}`), true);
+  assert.equal(careerCounselingPrerenderHtml.includes(article.title), true);
+}
+
+const saenggibuRelated = keywordPageHtml(
+  KEYWORD_PAGES.find((page) => page.slug === 'saenggibu-consulting')!,
+  [{ id: 'rel-1', title: '고2가 끝나기 전에 생기부를 어디까지 채워 두면 고3 1학기가 편해질까: 최상위권 치트키 세연쌤', fileType: 'article', category: '대입' }],
+);
+assert.equal(saenggibuRelated.includes('href="/resources/rel-1"'), true);
 
 const siteSrc = fs.readFileSync(path.join(root, 'src/config/site.ts'), 'utf-8');
 assert.equal(siteSrc.includes('pf.kakao.com/_xbijSX'), true);
@@ -256,5 +312,6 @@ assert.equal(ccPageSrc.includes("from 'motion/react'"), false);
 assert.equal(ccPageSrc.includes("from '../components/AuthModal'"), false);
 assert.equal(ccPageSrc.includes("from '../lib/firebase'"), false);
 assert.equal(ccPageSrc.includes('CareerCounselingAuthGate'), true);
+assert.equal(ccPageSrc.includes('JINRO_RELATED_ARTICLES'), true);
 
 console.log('✅ career counseling checks passed');
