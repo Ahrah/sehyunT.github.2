@@ -25,6 +25,7 @@ import {
   PROGRAM_STEPS,
   QUESTION_PLACEHOLDER,
   REFUND_ITEMS,
+  JINRO_RELATED_ARTICLES,
   SCHEDULE_CARDS,
   SCHEDULE_TITLE,
   SCHOOL_PLACEHOLDER,
@@ -412,6 +413,12 @@ export const CareerCounselingPage = () => {
           </div>
         </div>
       </section>
+
+      <nav className="related" aria-label="자료실">
+        {JINRO_RELATED_ARTICLES.map((article) => (
+          <a key={article.id} href={`/resources/${article.id}`}>{article.title}</a>
+        ))}
+      </nav>
 
       <footer className="site">
         <div className="wrap">

@@ -84,7 +84,7 @@ const Navbar = ({ user, previewMember, cartCount, onOpenAuth, onOpenAdmin, onOpe
   const links = [
     ['프로그램', '#programs'],
     ['진로 컨설팅', '/jinro-counseling/'],
-    ['자료실', '#resources'],
+    ['자료실', '/resources/'],
   ];
 
   return (
