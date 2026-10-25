@@ -4,6 +4,8 @@
  */
 
 import { PRETENDARD_HEAD, SITE } from '../src/config/site';
+import { JINRO_RELATED_ARTICLES } from '../src/lib/careerCounseling';
+import { escapeHtml } from './seo-pages';
 
 export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
 export const CAREER_COUNSELING_TITLE = '온라인 진로·선택과목 상담 | 입시는세연쌤';
@@ -84,7 +86,7 @@ export const careerCounselingPrerenderHtml = `
     <span class="tag">비수도권 학생 전용 · 시즌 한정</span>
     <h1>희망 전공에서 거꾸로 짜는<br><em>온라인 진로·선택과목 상담</em></h1>
     <p class="lead">고1·고2 학생의 희망 전공을 먼저 듣고, 앞으로 들을 과목의 이수 경로를 함께 설계해요. 상담이 끝나면 1장짜리 과목 이수 로드맵을 드려요.</p>
-    <div class="meta"><span>40분 온라인 화상 상담</span><span>과목 이수 로드맵 1장</span><a href="/#resources">비용은 자료실에서 확인</a></div>
+    <div class="meta"><span>40분 온라인 화상 상담</span><span>과목 이수 로드맵 1장</span><a href="/resources/">비용은 자료실에서 확인</a></div>
     <p class="slogan">DESIGN YOUR SUCCESS.</p>
   </div></div>
   <section class="alt"><div class="wrap">
@@ -113,7 +115,7 @@ export const careerCounselingPrerenderHtml = `
       <div class="card"><h3>신청 기간</h3><div class="big">11/10 ~ 12/10</div><p>2026년, 시즌 한정</p></div>
       <div class="card"><h3>상담 진행</h3><div class="big">11/25 ~ 12/25</div><p>온라인 화상 40분</p></div>
       <div class="card"><h3>대상</h3><div class="big">고1 · 고2</div><p>서울·경기·인천 외 지역 고등학교 재학생</p></div>
-      <div class="card"><h3>비용</h3><div class="big red">자료실에서 확인</div><p>회원가입 후 <a href="/#resources">자료실</a>에서 확인하실 수 있어요.</p></div>
+      <div class="card"><h3>비용</h3><div class="big red">자료실에서 확인</div><p>회원가입 후 <a href="/resources/">자료실</a>에서 확인하실 수 있어요.</p></div>
     </div>
   </div></section>
   <section class="alt" id="자격"><div class="wrap">
@@ -149,6 +151,7 @@ export const careerCounselingPrerenderHtml = `
       <details><summary>상담은 어떤 방식으로 진행되나요?</summary><p>40분 온라인 화상 상담으로 진행해요. 신청서에 적어 주신 희망 일정 세 가지를 바탕으로 문자로 일정을 조율하고, 확정된 뒤에는 상담 전날까지 자료를 받아 미리 읽어 둘게요. 상담 진행 기간은 11/25~12/25예요.</p></details>
     </div>
   </div></section>
+  <nav class="related" aria-label="자료실">${JINRO_RELATED_ARTICLES.map((a) => `<a href="/resources/${a.id}">${escapeHtml(a.title)}</a>`).join('')}</nav>
   <footer class="site"><div class="wrap">
     <div><strong>SEHYUN T ADMISSIONS LAB</strong><br>입시는세연쌤 · <span class="sl">DESIGN YOUR SUCCESS.</span></div>
     <div>문의 <a href="${SITE.phoneHref}">${SITE.phone}</a> · <a href="mailto:${SITE.email}">${SITE.email}</a><br><a href="${SITE.domain}">sehyunt.re.kr</a> · Instagram ${SITE.instagramHandle}</div>

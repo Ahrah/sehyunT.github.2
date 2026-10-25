@@ -589,6 +589,19 @@
   color: #333;
 }
 
+.cc-page nav.related {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 8px;
+}
+
+.cc-page nav.related a {
+  display: block;
+  padding: 6px 0;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .cc-page footer.site {
   background: var(--cc-black);
   color: #ddd;

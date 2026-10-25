@@ -132,14 +132,14 @@ export function pageShell(o: PageShellOpts): string {
       <a href="/saenggibu-consulting/">생기부</a>
       <a href="/jasoseo-consulting/">자소서</a>
       <a href="/interview-consulting/">면접</a>
-      <a class="hide-sm" href="/#resources">자료실</a>
+      <a class="hide-sm" href="/resources/">자료실</a>
     </nav>
   </div></header>
   <main>
 ${o.body}
   </main>
   <footer class="site"><div class="in">
-    <nav><a href="/">홈</a><a href="/#resources">자료실</a>${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">${k.label}</a>`).join('')}</nav>
+    <nav><a href="/">홈</a><a href="/resources/">자료실</a>${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">${k.label}</a>`).join('')}</nav>
     <p style="margin-top:14px">상호명: ${SITE.name} · 대표: ${SITE.founder} · 사업자등록번호: ${SITE.businessNumber}</p>
     <p>이메일: ${SITE.email} · 문의: 카카오톡 '입시는세연쌤' 채널</p>
     <p>© ${new Date().getFullYear()} SEHYUN T. ALL RIGHTS RESERVED.</p>
@@ -148,9 +148,13 @@ ${o.body}
 </html>`;
 }
 
-/** Link to the home 자료실 section with the matching 고입/대입/학습자료 tab opened. */
+/** Existing home meta description — reused verbatim on /resources/. */
+export const EXISTING_HOME_DESCRIPTION =
+  '특목고 진학 컨설팅과 최상위권 학생부종합전형 생기부 관리. 입시는세연쌤 조세연 대표가 1:1로 직접 지도합니다.';
+
+/** Link to the crawlable 자료실 index, with the matching 고입/대입/학습자료 heading. */
 export const resourcesHref = (category?: '대입' | '고입' | '학습자료') =>
-  category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : category === '학습자료' ? '/?cat=study#resources' : '/#resources';
+  category === '고입' ? '/resources/#goip' : category === '대입' ? '/resources/#daeip' : category === '학습자료' ? '/resources/#study' : '/resources/';
 
 export const COST_GUIDE_PLAIN = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
 
@@ -327,7 +331,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
   },
 ];
 
-export function keywordPageHtml(p: KeywordPage): string {
+export function keywordPageHtml(p: KeywordPage, relatedArticles: ResourceLike[] = []): string {
   const url = `${DOMAIN}/${p.slug}/`;
   const category = keywordPageCategory(p.slug);
   const summaryRows = p.summary.map(([k, v]) => {
@@ -348,6 +352,7 @@ export function keywordPageHtml(p: KeywordPage): string {
   const others = KEYWORD_LINKS.filter(k => k.slug !== p.slug);
   const related = `
     <div class="related">
+      ${relatedArticles.map(r => `<a href="/resources/${r.id}">${escapeHtml(r.title)}</a>`).join('\n      ')}
       ${p.relatedArticle ? `<a href="/resources/${p.relatedArticle.id}">→ ${escapeHtml(p.relatedArticle.title)}</a>` : ''}
       ${others.map(k => `<a href="/${k.slug}/">→ 입시는세연쌤 ${k.label}</a>`).join('\n      ')}
     </div>`;
@@ -413,7 +418,149 @@ export function isGatedResource(r: Pick<ResourceLike, 'locked' | 'membersOnly'>)
   return !!(r.locked || r.membersOnly);
 }
 
-export function resourcePageHtml(r: ResourceLike): string {
+export type ResourceCategory = '대입' | '고입' | '학습자료';
+export type RelatedGroup = '면접' | '자소서' | '탐구' | '진로' | '생기부' | '경쟁률' | '일반';
+
+export function resourceCategoryOf(r: Pick<ResourceLike, 'category'>): ResourceCategory {
+  return r.category || '대입';
+}
+
+export function relatedGroupOf(title: string): RelatedGroup {
+  if (title.includes('경쟁률')) return '경쟁률';
+  if (title.includes('면접')) return '면접';
+  if (title.includes('자소서') || title.includes('자기소개서')) return '자소서';
+  if (title.includes('탐구')) return '탐구';
+  if (title.includes('권장과목') || title.includes('과목') || title.includes('진로가') || title.includes('지역전형')) return '진로';
+  if (title.includes('생기부') || title.includes('학종')) return '생기부';
+  return '일반';
+}
+
+function createdAtMs(r: ResourceLike): number {
+  if (r.createdAt?.toMillis) return r.createdAt.toMillis();
+  if (r.createdAt?.toDate) return r.createdAt.toDate().getTime();
+  if (r.createdAt) {
+    const t = new Date(r.createdAt).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  }
+  return 0;
+}
+
+function newestFirst(a: ResourceLike, b: ResourceLike) {
+  return createdAtMs(b) - createdAtMs(a);
+}
+
+function takeCircular(list: ResourceLike[], id: string, n: number): ResourceLike[] {
+  if (n <= 0 || !list.length) return [];
+  const start = list.findIndex((r) => r.id === id);
+  const out: ResourceLike[] = [];
+  for (let i = 1; i <= list.length && out.length < n; i++) {
+    const item = list[(Math.max(start, 0) + i) % list.length];
+    if (item.id !== id && !out.some((x) => x.id === item.id)) out.push(item);
+  }
+  return out;
+}
+
+export function pickRelatedResources(
+  current: ResourceLike,
+  pool: ResourceLike[],
+  min = 3,
+  max = 5,
+): ResourceLike[] {
+  const category = resourceCategoryOf(current);
+  const group = relatedGroupOf(current.title);
+  const sameCat = pool
+    .filter((r) => !isGatedResource(r) && resourceCategoryOf(r) === category)
+    .sort(newestFirst);
+  const sameGroup = sameCat.filter((r) => relatedGroupOf(r.title) === group);
+  const fromCat = takeCircular(sameCat, current.id, min);
+  const extraSlots = Math.max(0, max - fromCat.length);
+  const fromGroup = takeCircular(sameGroup, current.id, extraSlots + fromCat.length)
+    .filter((r) => !fromCat.some((c) => c.id === r.id))
+    .slice(0, extraSlots);
+  return [...fromGroup, ...fromCat];
+}
+
+const SERVICE_RELATED: Record<string, { category: ResourceCategory; group: RelatedGroup; preferIds?: string[] }> = {
+  'jasoseo-consulting': { category: '고입', group: '자소서' },
+  'interview-consulting': { category: '고입', group: '면접' },
+  'saenggibu-consulting': {
+    category: '대입',
+    group: '생기부',
+    preferIds: ['62alsO0in0uYFuNrNjQN', 'KTZqADgBAJ42Z7YWQkQv', 'DjBHJ5aRQhu9x3jVUI1w', 'GeGjS8boY2SaCzBvkAa0', '3YGgD5IPpqfoWSemGLnE'],
+  },
+  'jinro-counseling': {
+    category: '대입',
+    group: '진로',
+    preferIds: ['OkcpEpVtFv2JSoQDNUOJ', '7zyVq7eH0mKJERIUTH3v', 'NpUEcClqvMilE8DAWqb0', '1wLNMmrNbjFTsY90IQcq'],
+  },
+};
+
+export function pickServiceRelated(slug: string, pool: ResourceLike[], count = 5): ResourceLike[] {
+  const spec = SERVICE_RELATED[slug];
+  if (!spec) return [];
+  const sameCat = pool.filter((r) => !isGatedResource(r) && resourceCategoryOf(r) === spec.category);
+  const preferred = (spec.preferIds || [])
+    .map((id) => sameCat.find((r) => r.id === id))
+    .filter((r): r is ResourceLike => !!r);
+  const sameGroup = sameCat
+    .filter((r) => relatedGroupOf(r.title) === spec.group && !preferred.some((p) => p.id === r.id))
+    .sort(newestFirst);
+  const fill = sameCat
+    .filter((r) => ![...preferred, ...sameGroup].some((p) => p.id === r.id))
+    .sort(newestFirst);
+  return [...preferred, ...sameGroup, ...fill].slice(0, count);
+}
+
+export function resourcesIndexHtml(resources: ResourceLike[]): string {
+  const publicOnes = resources.filter((r) => !isGatedResource(r)).sort(newestFirst);
+  const groups: { id: string; label: ResourceCategory }[] = [
+    { id: 'goip', label: '고입' },
+    { id: 'daeip', label: '대입' },
+    { id: 'study', label: '학습자료' },
+  ];
+  const sections = groups.map(({ id, label }) => {
+    const items = publicOnes.filter((r) => resourceCategoryOf(r) === label);
+    if (!items.length) return '';
+    return `
+    <h2 id="${id}">${label}</h2>
+    <div class="related">
+      ${items.map((r) => `<a href="/resources/${r.id}">${escapeHtml(r.title)}</a>`).join('\n      ')}
+    </div>`;
+  }).join('\n');
+
+  const url = `${DOMAIN}/resources/`;
+  const body = `
+    <div class="crumb"><a href="/">홈</a> › 자료실</div>
+    <h1>자료실</h1>
+${sections}`;
+
+  return pageShell({
+    title: '자료실 | 입시는세연쌤',
+    description: EXISTING_HOME_DESCRIPTION,
+    canonical: url,
+    ogType: 'website',
+    body,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: '자료실',
+        description: EXISTING_HOME_DESCRIPTION,
+        url,
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: '홈', item: `${DOMAIN}/` },
+          { '@type': 'ListItem', position: 2, name: '자료실', item: url },
+        ],
+      },
+    ],
+  });
+}
+
+export function resourcePageHtml(r: ResourceLike, relatedArticles: ResourceLike[] = []): string {
   const url = `${DOMAIN}/resources/${r.id}`;
   const category = r.category || '대입';
   const published = r.createdAt?.toDate ? r.createdAt.toDate() : (r.createdAt ? new Date(r.createdAt) : new Date());
@@ -437,7 +584,7 @@ export function resourcePageHtml(r: ResourceLike): string {
   }
 
   const body = `
-    <div class="crumb"><a href="/">홈</a> › <a href="${resourcesHref(category)}">자료실</a> › ${escapeHtml(category)}</div>
+    <div class="crumb"><a href="/">홈</a> › <a href="/resources/">자료실</a> › <a href="${resourcesHref(category)}">${escapeHtml(category)}</a></div>
     <div><span class="tag">${escapeHtml(category)}</span><span class="date">${escapeHtml(dateLabel)}</span></div>
     <h1>${escapeHtml(r.title)}</h1>
     <article>
@@ -445,6 +592,7 @@ ${content}
     </article>
 ${ctaBlock(category === '고입' ? '고입' : category === '대입' ? '대입' : undefined)}
     <div class="related">
+      ${relatedArticles.map((a) => `<a href="/resources/${a.id}">${escapeHtml(a.title)}</a>`).join('\n      ')}
       ${KEYWORD_LINKS.map(k => `<a href="/${k.slug}/">→ 입시는세연쌤 ${k.label} 안내</a>`).join('\n      ')}
     </div>`;
 

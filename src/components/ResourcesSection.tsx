@@ -1094,6 +1094,18 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                 </div>
 
                 <div className="flex items-center gap-4 w-full md:w-auto md:shrink-0 pt-6 md:pt-0 border-t md:border-transparent border-brand-light-gray">
+                  {item.fileType === 'article' && !item.locked && !item.membersOnly ? (
+                    <a
+                      href={`/resources/${item.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDownload(item);
+                      }}
+                      className="flex-1 md:flex-initial h-12 px-6 bg-brand-text text-brand-bg hover:bg-brand-accent transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer no-underline"
+                    >
+                      <BookOpen size={14} /> Read Article
+                    </a>
+                  ) : (
                   <button 
                     onClick={() => handleDownload(item)}
                     className="flex-1 md:flex-initial h-12 px-6 bg-brand-text text-brand-bg hover:bg-brand-accent transition-all text-xs font-black uppercase tracking-widest flex items-center justify-center gap-3 cursor-pointer"
@@ -1110,6 +1122,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
                       <><Download size={14} /> Download File</>
                     )}
                   </button>
+                  )}
                   {isAdmin && (
                     <>
                       <button 

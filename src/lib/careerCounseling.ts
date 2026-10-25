@@ -9,7 +9,14 @@ export const CAREER_COUNSELING_PRODUCT = '온라인 진로·선택과목 상담'
 /** Stored on the signed-in application record (owner/admin only). Not shown on public pages. */
 export const CAREER_COUNSELING_PRICE = 60000;
 export const COST_GUIDE = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
-export const RESOURCES_HREF = '/#resources';
+export const RESOURCES_HREF = '/resources/';
+
+export const JINRO_RELATED_ARTICLES: readonly { id: string; title: string }[] = [
+  { id: 'OkcpEpVtFv2JSoQDNUOJ', title: '진로가 아직 안 정해졌다면? 고교학점제 2학년 과목 선택법' },
+  { id: '7zyVq7eH0mKJERIUTH3v', title: '권장과목이 우리 학교에 없을 때 할 수 있는 것' },
+  { id: 'NpUEcClqvMilE8DAWqb0', title: '지역전형, 지방에 산다고 다 지원할 수 있는 건 아니에요' },
+  { id: '1wLNMmrNbjFTsY90IQcq', title: '고2에 진로가 바뀌었다면, 학종 방향은 어떻게 다시 잡을까' },
+];
 
 export const APPLY_DATE_MIN = '2026-11-10';
 export const APPLY_DATE_MAX = '2026-12-10';
