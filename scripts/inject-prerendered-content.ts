@@ -109,7 +109,12 @@ const homePageContent = `
       <div>
         <h3>${group.eyebrow} · ${group.title}</h3>
         <p>${group.intro}</p>
-        ${group.cards.map((card) => `<h4>${card.name}</h4><p>${card.period} · ${card.blurb}</p>${card.details.map((detail) => `<p>${detail.content}</p>`).join('')}`).join('\n        ')}
+        ${group.cards.map((card) => `<h4>${card.name}</h4><p>${card.period} · ${card.blurb}</p>${card.details.map((detail) => {
+          const guideHtml = detail.guideItems?.length
+            ? `<h5>${detail.title}</h5><dl>${detail.guideItems.map((item) => `<dt>${item.label}</dt><dd>${item.text}</dd>`).join('')}</dl>`
+            : `<h5>${detail.title}</h5><p>${detail.content}</p>`;
+          return guideHtml;
+        }).join('')}`).join('\n        ')}
       </div>`).join('\n      ')}
     </section>
 
