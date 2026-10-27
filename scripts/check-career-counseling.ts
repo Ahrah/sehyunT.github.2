@@ -31,7 +31,8 @@ const PUBLIC_PRICE_RE = /만원|60,?000\s*원|"price"\s*:/;
 assertNoSensitiveCopy(careerCounselingPrerenderHtml);
 assert.equal(careerCounselingPrerenderHtml.includes('경기도 성남시 수정구 창업로 43, 81호'), true);
 assert.equal(careerCounselingPrerenderHtml.includes(COST_GUIDE), true);
-assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('11월 10일부터 신청 가능합니다.'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), false);
 assert.equal(PUBLIC_PRICE_RE.test(careerCounselingPrerenderHtml), false);
 assert.equal(/농협|국민은행|우리은행|신한은행|\d{2,3}-\d{2}-\d{6}/.test(careerCounselingPrerenderHtml), false);
 
@@ -76,6 +77,7 @@ assert.equal(withFbPreload.includes('/assets/site-test.js'), true);
 
 for (const page of KEYWORD_PAGES) {
   const html = keywordPageHtml(page);
+  assert.equal(html.includes('>비수도권 진로 상담<'), true, `${page.slug} top nav missing renamed label`);
   assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);
   assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
   assert.equal(html.includes('자료실'), true);
@@ -248,6 +250,8 @@ for (const name of ['doc', 'getDoc', 'addDoc', 'collection', 'serverTimestamp'])
   assert.equal(firestoreApiSrc.includes(name), true, `firestoreApi missing ${name}`);
 }
 
+assert.equal(appSrc.includes("['비수도권 진로 상담', '/jinro-counseling/']"), true);
+assert.equal(appSrc.includes("['진로 상담', '/jinro-counseling/']"), false);
 assert.equal(appSrc.includes("aspectRatio: '4 / 5'"), true);
 assert.equal(appSrc.includes('aspect-[4/5]'), true);
 

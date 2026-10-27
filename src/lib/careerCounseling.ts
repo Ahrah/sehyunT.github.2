@@ -16,6 +16,14 @@ export const APPLY_DATE_MAX = '2026-12-10';
 export const CONSULT_DATE_MIN = '2026-11-25';
 export const CONSULT_DATE_MAX = '2026-12-25';
 
+/** 2026-11-10 00:00 KST. Compare Date.now() to this UTC instant; never the visitor's local timezone. */
+export const CAREER_COUNSELING_OPEN_AT_MS = Date.UTC(2026, 10, 9, 15, 0, 0);
+export const CAREER_COUNSELING_CLOSED_NOTICE = '11월 10일부터 신청 가능합니다.';
+
+export function isCareerCounselingOpen(nowMs: number = Date.now()): boolean {
+  return nowMs >= CAREER_COUNSELING_OPEN_AT_MS;
+}
+
 export const CONSULT_TIMES = [
   '15:00',
   '16:00',

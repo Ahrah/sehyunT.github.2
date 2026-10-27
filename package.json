@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx scripts/check-career-counseling.ts && tsx scripts/style-check.test.ts",
+    "test": "tsx scripts/check-career-counseling.ts && tsx scripts/style-check.test.ts && TZ=America/Los_Angeles tsx scripts/career-counseling-open.test.ts && TZ=Asia/Seoul tsx scripts/career-counseling-open.test.ts",
     "style:check": "tsx scripts/style-check.ts",
     "audit:site": "tsx scripts/site-audit.ts"
   },

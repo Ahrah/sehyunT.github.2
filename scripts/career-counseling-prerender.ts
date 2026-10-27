@@ -4,6 +4,10 @@
  */
 
 import { PRETENDARD_HEAD, SITE } from '../src/config/site';
+import {
+  CAREER_COUNSELING_CLOSED_NOTICE,
+  isCareerCounselingOpen,
+} from '../src/lib/careerCounseling';
 
 export const CAREER_COUNSELING_SLUG = 'jinro-counseling';
 export const CAREER_COUNSELING_TITLE = '온라인 진로·선택과목 상담 | 입시는세연쌤';
@@ -67,7 +71,28 @@ const JSON_LD = {
   ],
 };
 
-export const careerCounselingPrerenderHtml = `
+const APPLY_FORM_HTML = `<form class="apply" id="신청서">
+      <p class="f full pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내를 문자로 보내 드려요.</p>
+      <div class="f full refund"><b>환불 안내</b>
+        <ul>
+          <li>상담 2일 전까지 취소하면 전액 환불해 드려요.</li>
+          <li>상담 1일 전부터 당일까지 취소하면 환불하지 않아요.</li>
+          <li>자격이 맞지 않으면 전액 환불해 드려요.</li>
+        </ul>
+      </div>
+      <div class="f full">
+        <div class="elig-box" style="margin-top: 0px"><strong>신청 자격을 확인해 주세요</strong><p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p></div>
+        <button class="btn" type="button">로그인하고 신청하기</button>
+        <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
+      </div>
+    </form>`;
+
+export function buildCareerCounselingPrerenderHtml(nowMs: number = Date.now()): string {
+  const applyBlock = isCareerCounselingOpen(nowMs)
+    ? APPLY_FORM_HTML
+    : `<p>${CAREER_COUNSELING_CLOSED_NOTICE}</p>`;
+
+  return `
 <div class="cc-page">
   <div class="elig-bar" role="note"><b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)</div>
   <header class="top"><div class="wrap">
@@ -120,21 +145,7 @@ export const careerCounselingPrerenderHtml = `
     <p class="eyebrow">APPLY</p>
     <h2>신청하기</h2>
     <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
-    <form class="apply" id="신청서">
-      <p class="f full pay-guide">신청서를 제출하시면 문자로 상담 일정을 조율해 드려요. 비용은 회원가입 후 자료실에서 확인하실 수 있어요. 일정이 확정되면 입금 안내를 문자로 보내 드려요.</p>
-      <div class="f full refund"><b>환불 안내</b>
-        <ul>
-          <li>상담 2일 전까지 취소하면 전액 환불해 드려요.</li>
-          <li>상담 1일 전부터 당일까지 취소하면 환불하지 않아요.</li>
-          <li>자격이 맞지 않으면 전액 환불해 드려요.</li>
-        </ul>
-      </div>
-      <div class="f full">
-        <div class="elig-box" style="margin-top: 0px"><strong>신청 자격을 확인해 주세요</strong><p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p></div>
-        <button class="btn" type="button">로그인하고 신청하기</button>
-        <p class="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · 비용은 회원가입 후 자료실에서 확인하실 수 있어요.</p>
-      </div>
-    </form>
+    ${applyBlock}
   </div></section>
   <section id="faq"><div class="wrap">
     <p class="eyebrow">FAQ</p>
@@ -164,13 +175,20 @@ export const careerCounselingPrerenderHtml = `
   </div></footer>
 </div>
 `;
+}
+
+/** Default static HTML: notice so crawlers / no-JS see the closed state before the open instant. */
+export const careerCounselingPrerenderHtml = buildCareerCounselingPrerenderHtml(0);
 
 function replaceAttr(html: string, attr: string, value: string): string {
   const pattern = new RegExp(`(${attr}=")[^"]*(")`, 'g');
   return html.replace(pattern, `$1${value}$2`);
 }
 
-export function applyCareerCounselingSpaShell(html: string): string {
+export function applyCareerCounselingSpaShell(
+  html: string,
+  prerenderHtml: string = careerCounselingPrerenderHtml,
+): string {
   let out = html.replace(/<title>[^<]*<\/title>/, `<title>${CAREER_COUNSELING_TITLE}</title>`);
   out = replaceAttr(out, 'name="title" content', CAREER_COUNSELING_TITLE);
   out = replaceAttr(out, 'name="description" content', CAREER_COUNSELING_DESCRIPTION);
@@ -202,7 +220,7 @@ export function applyCareerCounselingSpaShell(html: string): string {
   if (bodyClose === -1) throw new Error('Could not find </body> in SPA shell');
   const rootClose = out.lastIndexOf('</div>', bodyClose);
   if (rootClose === -1 || rootClose < afterStart) throw new Error('Could not find #root closing tag');
-  return `${out.slice(0, afterStart)}\n${careerCounselingPrerenderHtml}\n    ${out.slice(rootClose)}`;
+  return `${out.slice(0, afterStart)}\n${prerenderHtml}\n    ${out.slice(rootClose)}`;
 }
 
 export function assertNoSensitiveCopy(html: string) {

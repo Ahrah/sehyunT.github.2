@@ -83,7 +83,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
   const links = [
     ['소개', '#about'],
     ['프로그램', '#programs'],
-    ['진로 상담', '/jinro-counseling/'],
+    ['비수도권 진로 상담', '/jinro-counseling/'],
     ['전략 지도', '#strategy'],
     ['자료실', '#resources'],
   ];
