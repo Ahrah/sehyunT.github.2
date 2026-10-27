@@ -10,6 +10,8 @@ import {
 } from '../lib/careerCounselingSession';
 import {
   BIZ_INFO,
+  CAREER_COUNSELING_CLOSED_NOTICE,
+  CAREER_COUNSELING_OPEN_AT_MS,
   CONSULT_DATE_MAX,
   CONSULT_DATE_MIN,
   CONSULT_TIMES,
@@ -24,6 +26,7 @@ import {
   SCHEDULE_CARDS,
   SCHOOL_REGIONS,
   formatPhone,
+  isCareerCounselingOpen,
   toCareerCounselingRecord,
   validateCareerCounselingForm,
 } from '../lib/careerCounseling';
@@ -46,7 +49,10 @@ const emptySlots = [
   { date: '', time: '' },
 ] as [{ date: string; time: string }, { date: string; time: string }, { date: string; time: string }];
 
+const SET_TIMEOUT_MAX_MS = 2_147_483_647;
+
 export const CareerCounselingPage = () => {
+  const [formOpen, setFormOpen] = useState(() => isCareerCounselingOpen());
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [childName, setChildName] = useState('');
   const [phone, setPhone] = useState('');
@@ -100,6 +106,18 @@ export const CareerCounselingPage = () => {
     document.body.style.overflow = authOpen ? 'hidden' : 'auto';
     return () => { document.body.style.overflow = 'auto'; };
   }, [authOpen]);
+
+  useEffect(() => {
+    if (formOpen) return undefined;
+    const remaining = CAREER_COUNSELING_OPEN_AT_MS - Date.now();
+    if (remaining <= 0) {
+      setFormOpen(true);
+      return undefined;
+    }
+    if (remaining > SET_TIMEOUT_MAX_MS) return undefined;
+    const id = window.setTimeout(() => setFormOpen(true), remaining);
+    return () => window.clearTimeout(id);
+  }, [formOpen]);
 
   const openApply = () => {
     if (!user) {
@@ -267,7 +285,9 @@ export const CareerCounselingPage = () => {
           <h2>신청하기</h2>
           <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. {COST_GUIDE}</p>
 
-          {submitted ? (
+          {!formOpen ? (
+            <p>{CAREER_COUNSELING_CLOSED_NOTICE}</p>
+          ) : submitted ? (
             <div className="form-success" role="status">
               <h3>신청이 접수되었어요</h3>
               <p>문자로 상담 일정을 조율해 드릴게요. 일정이 확정되면 입금 안내를 보내 드려요. 입금 계좌는 그때 문자에서만 안내합니다.</p>

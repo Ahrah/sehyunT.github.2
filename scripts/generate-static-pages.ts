@@ -17,7 +17,7 @@ import {
   CAREER_COUNSELING_SLUG,
   applyCareerCounselingSpaShell,
   assertNoSensitiveCopy,
-  careerCounselingPrerenderHtml,
+  buildCareerCounselingPrerenderHtml,
 } from './career-counseling-prerender';
 import { fetchResourcesPublic, type ResourceItem } from './fetch-public-resources';
 
@@ -179,13 +179,17 @@ async function main() {
 
     // SPA route + prerender for 온라인 진로·선택과목 상담
     console.log('🧭 Generating /jinro-counseling/ SPA shell with prerender...');
-    assertNoSensitiveCopy(careerCounselingPrerenderHtml);
+    const counselingPrerenderHtml = buildCareerCounselingPrerenderHtml(Date.now());
+    assertNoSensitiveCopy(counselingPrerenderHtml);
     const counselingDir = path.join(DIST_DIR, CAREER_COUNSELING_SLUG);
     const counselingBuilt = path.join(counselingDir, 'index.html');
     if (!fs.existsSync(counselingBuilt)) {
       throw new Error('Vite MPA output dist/jinro-counseling/index.html is required');
     }
-    let counselingHtml = applyCareerCounselingSpaShell(fs.readFileSync(counselingBuilt, 'utf-8'));
+    let counselingHtml = applyCareerCounselingSpaShell(
+      fs.readFileSync(counselingBuilt, 'utf-8'),
+      counselingPrerenderHtml,
+    );
     counselingHtml = inlineLocalStylesheets(counselingHtml, DIST_DIR);
     if (/IMG_1441/.test(counselingHtml)) {
       throw new Error('Counseling HTML still preloads the home hero image');
