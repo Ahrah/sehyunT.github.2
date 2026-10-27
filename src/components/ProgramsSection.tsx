@@ -42,37 +42,59 @@ function InquiryButton({ className = '' }: { className?: string }) {
 }
 
 function DetailBody({ detail }: { detail: ProgramDetail }) {
+  const hasGuideItems = Boolean(detail.guideItems?.length);
+  const hasFeatures = detail.features.length > 0;
+  const hasTarget = detail.target.length > 0;
+
   return (
     <div id={detail.id} className="scroll-mt-28 space-y-5">
       <div>
-        <h5 className="text-lg font-black tracking-[-0.03em]">{detail.title}</h5>
-        <p className="mt-2 text-sm leading-7 text-brand-ink/60">{detail.summary}</p>
+        <h5 className="text-lg font-black tracking-[-0.03em] sm:text-xl">{detail.title}</h5>
+        {detail.summary && <p className="mt-2 text-sm leading-7 text-brand-ink/60">{detail.summary}</p>}
       </div>
-      <p className="text-sm leading-7 text-brand-ink/70 sm:text-base sm:leading-8">{detail.content}</p>
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent">함께 하는 일</p>
-          <ul className="mt-3 space-y-2">
-            {detail.features.map((feature) => (
-              <li key={feature} className="flex gap-2.5 text-sm font-semibold leading-6">
-                <Check size={15} className="mt-1 shrink-0 text-brand-accent" />
-                {feature}
-              </li>
-            ))}
-          </ul>
+      {!hasGuideItems && detail.content && (
+        <p className="text-sm leading-7 text-brand-ink/70 sm:text-base sm:leading-8">{detail.content}</p>
+      )}
+      {hasGuideItems && (
+        <dl className="space-y-4">
+          {detail.guideItems!.map((item) => (
+            <div key={item.label} className="border-t border-brand-ink/10 pt-4 first:border-t-0 first:pt-0">
+              <dt className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent">{item.label}</dt>
+              <dd className="mt-2 text-sm leading-7 text-brand-ink/70 sm:text-base sm:leading-8">{item.text}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {(hasFeatures || hasTarget) && (
+        <div className={`grid gap-6 ${hasFeatures && hasTarget ? 'sm:grid-cols-2' : ''}`}>
+          {hasFeatures && (
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent">함께 하는 일</p>
+              <ul className="mt-3 space-y-2">
+                {detail.features.map((feature) => (
+                  <li key={feature} className="flex gap-2.5 text-sm font-semibold leading-6">
+                    <Check size={15} className="mt-1 shrink-0 text-brand-accent" />
+                    <span className="min-w-0 break-keep">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {hasTarget && (
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent">이런 학생에게</p>
+              <ul className="mt-3 space-y-2">
+                {detail.target.map((item) => (
+                  <li key={item} className="flex gap-2.5 text-sm leading-6 text-brand-ink/65">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-coral" />
+                    <span className="min-w-0 break-keep">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-accent">이런 학생에게</p>
-          <ul className="mt-3 space-y-2">
-            {detail.target.map((item) => (
-              <li key={item} className="flex gap-2.5 text-sm leading-6 text-brand-ink/65">
-                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-coral" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      )}
       {detail.landing && (
         <a href={detail.landing.href} className="inline-flex items-center gap-2 text-sm font-black text-brand-accent">
           {detail.landing.label} 안내 <ArrowRight size={14} />
