@@ -19,6 +19,8 @@ export const SITE = {
   kakaoChannelUrl: 'https://pf.kakao.com/_xbijSX',
   kakaoChannelUrlHttp: 'http://pf.kakao.com/_xbijSX',
   kakaoInterviewNoticeUrl: 'https://pf.kakao.com/_xbijSX/114866113',
+  /** 최상위권/특목고 학생부종합전형 질문/정보방 (카카오톡 오픈채팅). */
+  kakaoOpenChatUrl: 'https://open.kakao.com/o/gOsL2GUi',
   naverBlogUrl: 'https://blog.naver.com/ahrahsehyun',
   youtubeUrl: 'https://www.youtube.com/@%EC%9E%85%EC%8B%9C%EB%8A%94%EC%84%B8%EC%97%B0%EC%8C%A4',
   threadsUrl: 'https://www.threads.net/@ipsee.sehyunt',

@@ -902,9 +902,19 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
     <section id="resources" className="py-40 px-6 lg:px-8 bg-brand-secondary scroll-mt-20">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-24 pb-12 border-b-2 border-brand-text/10">
-          <div className="space-y-4">
-            <p className="text-[10px] uppercase tracking-[0.5em] text-brand-accent font-black">Strategic Library Database</p>
-            <h2 className="text-5xl md:text-6xl font-extrabold tracking-[-0.05em] uppercase leading-none">Resources</h2>
+          <div>
+            <div className="space-y-4">
+              <p className="text-[10px] uppercase tracking-[0.5em] text-brand-accent font-black">Strategic Library Database</p>
+              <h2 className="text-5xl md:text-6xl font-extrabold tracking-[-0.05em] uppercase leading-none">Resources</h2>
+            </div>
+            <a
+              href={SITE.kakaoOpenChatUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex min-h-12 max-w-full items-center justify-center bg-brand-text px-5 py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent sm:px-6"
+            >
+              학종 질문·정보방 들어가기
+            </a>
           </div>
           <div className="flex items-center gap-6 mt-8 md:mt-0 w-full md:w-auto">
             {/* Search Input Bar */}

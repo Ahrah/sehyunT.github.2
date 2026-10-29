@@ -297,10 +297,30 @@ assert.equal(programsPublic.includes('비수도권'), false);
 const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');
 assert.equal(resourcesSrc.includes('hover:bg-blue'), false);
 assert.equal(resourcesSrc.includes('SITE.kakaoChannelUrl'), true);
+assert.equal(resourcesSrc.includes('SITE.kakaoOpenChatUrl'), true);
+assert.equal(resourcesSrc.includes('학종 질문·정보방 들어가기'), true);
+const resourcesHeading = resourcesSrc.slice(
+  resourcesSrc.indexOf('id="resources"'),
+  resourcesSrc.indexOf('Category Tabs'),
+);
+assert.equal(resourcesHeading.includes('학종 질문·정보방 들어가기'), true);
+assert.equal(resourcesHeading.includes('target="_blank"'), true);
+assert.equal(resourcesHeading.includes('rel="noopener noreferrer"'), true);
 
 const siteSrc = fs.readFileSync(path.join(root, 'src/config/site.ts'), 'utf-8');
 assert.equal(siteSrc.includes('pf.kakao.com/_xbijSX'), true);
+assert.equal(siteSrc.includes("kakaoOpenChatUrl: 'https://open.kakao.com/o/gOsL2GUi'"), true);
 assert.equal(siteSrc.includes('sehyun@sehyunt.re.kr'), true);
+const footerSrc = appSrc.slice(appSrc.lastIndexOf('<footer'));
+assert.equal(footerSrc.includes('학종 질문·정보방 들어가기'), true);
+assert.equal(footerSrc.includes('SITE.kakaoOpenChatUrl'), true);
+assert.equal(footerSrc.includes('target="_blank"'), true);
+assert.equal(footerSrc.includes('rel="noopener noreferrer"'), true);
+const prerenderHomeSrc = fs.readFileSync(path.join(root, 'scripts/inject-prerendered-content.ts'), 'utf-8');
+const prerenderFooter = prerenderHomeSrc.slice(prerenderHomeSrc.lastIndexOf('<footer'));
+assert.equal(prerenderFooter.includes('학종 질문·정보방 들어가기'), true);
+assert.equal(prerenderFooter.includes('SITE.kakaoOpenChatUrl'), true);
+assert.equal(prerenderFooter.includes('target="_blank" rel="noopener noreferrer"'), true);
 assert.equal(siteSrc.includes("adminEmail: 'ahrah0365@gmail.com'"), true);
 assert.equal(indexHtml.includes('sehyun@sehyunt.re.kr'), true);
 assert.equal(careerCounselingPrerenderHtml.includes('sehyun@sehyunt.re.kr'), true);
