@@ -11,12 +11,32 @@ export const CAREER_COUNSELING_PRICE = 100000;
 export const COST_GUIDE = '비용은 1회 1시간 10만 원이에요.';
 export const RESOURCES_HREF = '/#resources';
 
-/**
- * 상담을 진행할 수 있는 날짜.
- * 신청 자체는 상시 열려 있고, 이 기간을 없앨지 새 기간을 둘지는 아직 정해지지 않았어요.
- */
-export const CONSULT_DATE_MIN = '2026-11-25';
-export const CONSULT_DATE_MAX = '2026-12-25';
+/** 입금 기한이 상담 이틀 전이라, 신청일(한국 시간) 기준 3일 뒤부터 고를 수 있어요. */
+export const CONSULT_LEAD_DAYS = 3;
+export const CONSULT_DATE_MAX = '2027-02-28';
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** Calendar date in Asia/Seoul. Does not use the visitor's or the server's local timezone. */
+export function kstDateString(nowMs: number = Date.now()): string {
+  return new Date(nowMs + KST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+export function addCalendarDays(isoDate: string, days: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return '';
+  const next = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days));
+  return next.toISOString().slice(0, 10);
+}
+
+export function consultDateMin(nowMs: number = Date.now()): string {
+  return addCalendarDays(kstDateString(nowMs), CONSULT_LEAD_DAYS);
+}
+
+export function msUntilNextKstMidnight(nowMs: number = Date.now()): number {
+  const kst = new Date(nowMs + KST_OFFSET_MS);
+  const nextMidnight = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() + 1) - KST_OFFSET_MS;
+  return Math.max(nextMidnight - nowMs, 0);
+}
 
 /** 신청은 시각과 관계없이 열려 있어요. 2026-11-10 00:00 KST 자동 오픈은 쓰지 않아요. */
 export function isCareerCounselingOpen(_nowMs: number = Date.now()): boolean {
@@ -110,8 +130,10 @@ export const SUBMIT_LABEL = '진로 컨설팅 신청하기';
 
 export const SCHOOL_PLACEHOLDER = '예: ○○중학교, ○○고등학교';
 export const QUESTION_PLACEHOLDER = '진로나 공부에서 고민되는 점을 편하게 적어 주세요';
-export const SLOT_HINT =
-  `상담 날짜는 ${CONSULT_DATE_MIN}부터 ${CONSULT_DATE_MAX}까지, 시작 시간은 오후 3시부터 밤 10시까지 선택할 수 있어요. 문자로 일정을 조율한 뒤, 진행 2일 전까지 학생 이름으로 입금해 주셔야 예약이 확정돼요.`;
+export function consultSlotHint(nowMs: number = Date.now()): string {
+  const min = consultDateMin(nowMs);
+  return `고르실 수 있는 상담 날짜는 ${min}부터 ${CONSULT_DATE_MAX}까지예요. 신청일(한국 시간) 기준 3일 뒤부터이고, 입금 기한이 상담 이틀 전이라 그보다 빠른 날은 받을 수 없어요. 시작 시간은 오후 3시부터 밤 10시까지예요. 문자로 일정을 조율한 뒤, 진행 2일 전까지 학생 이름으로 입금해 주셔야 예약이 확정돼요.`;
+}
 
 export const PROGRAM_STEPS = [
   {
@@ -207,15 +229,18 @@ export function isKnownSchoolRegion(region: string): boolean {
   return (SCHOOL_REGIONS as readonly string[]).includes(region);
 }
 
-export function isConsultDate(date: string): boolean {
-  return !!date && date >= CONSULT_DATE_MIN && date <= CONSULT_DATE_MAX;
+export function isConsultDate(date: string, nowMs: number = Date.now()): boolean {
+  return !!date && date >= consultDateMin(nowMs) && date <= CONSULT_DATE_MAX;
 }
 
 export function isConsultTime(time: string): boolean {
   return (CONSULT_TIMES as readonly string[]).includes(time);
 }
 
-export function validateCareerCounselingForm(input: CareerCounselingApplicationInput): string | null {
+export function validateCareerCounselingForm(
+  input: CareerCounselingApplicationInput,
+  nowMs: number = Date.now(),
+): string | null {
   if (!input.schoolName.trim()) return '재학 학교명을 적어 주세요.';
   if (!isKnownSchoolRegion(input.schoolRegion)) return '학교 소재 시·도를 선택해 주세요.';
   if (!(GRADES as readonly string[]).includes(input.grade)) return '학년을 선택해 주세요.';
@@ -223,10 +248,11 @@ export function validateCareerCounselingForm(input: CareerCounselingApplicationI
   if (!isValidMobile(input.phone)) return '문자 수신 가능한 휴대폰 번호를 확인해 주세요.';
   if (!input.privacyAgreed) return '개인정보 수집·이용에 동의해 주세요.';
 
+  const min = consultDateMin(nowMs);
   for (let i = 0; i < input.preferredSlots.length; i += 1) {
     const slot = input.preferredSlots[i];
-    if (!isConsultDate(slot.date) || !isConsultTime(slot.time)) {
-      return `희망 일정 ${i + 1}의 날짜와 시작 시간을 상담 기간(${CONSULT_DATE_MIN} ~ ${CONSULT_DATE_MAX}, 15:00~22:00) 안에서 선택해 주세요.`;
+    if (!isConsultDate(slot.date, nowMs) || !isConsultTime(slot.time)) {
+      return `희망 일정 ${i + 1}의 날짜와 시작 시간을 상담 기간(${min} ~ ${CONSULT_DATE_MAX}, 15:00~22:00) 안에서 선택해 주세요.`;
     }
   }
 

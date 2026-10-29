@@ -16,11 +16,15 @@ import {
   resourcePageHtml,
 } from './seo-pages';
 import {
+  CONSULT_DATE_MAX,
   CONSULT_TIMES,
   COST_GUIDE,
   GRADES,
   SCHOOL_REGIONS,
+  consultDateMin,
+  consultSlotHint,
   isCareerCounselingPath,
+  isConsultDate,
   isKnownSchoolRegion,
   isValidMobile,
   validateCareerCounselingForm,
@@ -142,6 +146,16 @@ assert.equal((CONSULT_TIMES as readonly string[]).includes('23:00'), false);
 assert.equal(isValidMobile('010-5308-6879'), true);
 assert.equal(isValidMobile('02-123-4567'), false);
 
+const appliedAt = Date.parse('2026-10-29T03:00:00.000Z');
+assert.equal(consultDateMin(appliedAt), '2026-11-01');
+assert.equal(consultSlotHint(appliedAt).includes('2026-11-01부터 2027-02-28까지'), true);
+assert.equal(consultSlotHint(appliedAt).includes('2026-11-25'), false);
+assert.equal(isConsultDate('2026-11-01', appliedAt), true);
+assert.equal(isConsultDate('2026-10-31', appliedAt), false);
+assert.equal(isConsultDate('2027-02-28', appliedAt), true);
+assert.equal(isConsultDate('2027-03-01', appliedAt), false);
+assert.equal(CONSULT_DATE_MAX, '2027-02-28');
+
 const slots = [
   { date: '2026-11-25', time: '15:00' },
   { date: '2026-12-01', time: '19:00' },
@@ -163,24 +177,31 @@ const sample = (overrides: Partial<CareerCounselingApplicationInput> = {}): Care
   ...overrides,
 });
 
-assert.equal(validateCareerCounselingForm(sample()), null);
-assert.equal(validateCareerCounselingForm(sample({ schoolRegion: '부산광역시', grade: '고1' })), null);
-assert.equal(typeof validateCareerCounselingForm(sample({ schoolRegion: '해외' })), 'string');
-assert.equal(typeof validateCareerCounselingForm(sample({ grade: '고2' as CareerCounselingApplicationInput['grade'] })), 'string');
+assert.equal(validateCareerCounselingForm(sample(), appliedAt), null);
+assert.equal(validateCareerCounselingForm(sample({ schoolRegion: '부산광역시', grade: '고1' }), appliedAt), null);
+assert.equal(typeof validateCareerCounselingForm(sample({ schoolRegion: '해외' }), appliedAt), 'string');
+assert.equal(typeof validateCareerCounselingForm(sample({ grade: '고2' as CareerCounselingApplicationInput['grade'] }), appliedAt), 'string');
 assert.equal(typeof validateCareerCounselingForm(sample({
   preferredSlots: [
     { date: '2026-11-25', time: '15:00' },
     { date: '2026-12-01', time: '19:00' },
     { date: '2026-12-25', time: '23:00' },
   ],
-})), 'string');
+}), appliedAt), 'string');
 assert.equal(typeof validateCareerCounselingForm(sample({
   preferredSlots: [
-    { date: '2026-11-24', time: '15:00' },
+    { date: '2026-10-31', time: '15:00' },
     { date: '2026-12-01', time: '19:00' },
     { date: '2026-12-25', time: '22:00' },
   ],
-})), 'string');
+}), appliedAt), 'string');
+assert.equal(validateCareerCounselingForm(sample({
+  preferredSlots: [
+    { date: '2026-11-01', time: '15:00' },
+    { date: '2027-01-15', time: '18:00' },
+    { date: '2027-02-28', time: '22:00' },
+  ],
+}), appliedAt), null);
 
 assert.equal(rules.includes('match /careerCounselingApplications/{applicationId}'), true);
 assert.equal(rules.includes('ahrah0365@gmail.com'), true);

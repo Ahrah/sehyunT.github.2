@@ -13,7 +13,6 @@ import {
   APPLY_SUCCESS_BODY,
   BIZ_INFO,
   CONSULT_DATE_MAX,
-  CONSULT_DATE_MIN,
   CONSULT_TIMES,
   COST_GUIDE,
   ELIGIBILITY_NOTE,
@@ -30,10 +29,12 @@ import {
   SCHEDULE_TITLE,
   SCHOOL_PLACEHOLDER,
   SCHOOL_REGIONS,
-  SLOT_HINT,
   SUBMIT_LABEL,
   WHY_COPY,
+  consultDateMin,
+  consultSlotHint,
   formatPhone,
+  msUntilNextKstMidnight,
   toCareerCounselingRecord,
   validateCareerCounselingForm,
 } from '../lib/careerCounseling';
@@ -65,6 +66,7 @@ export const CareerCounselingPage = () => {
   const [grade, setGrade] = useState('');
   const [careerGoal, setCareerGoal] = useState('');
   const [question, setQuestion] = useState('');
+  const [consultNow, setConsultNow] = useState(() => Date.now());
   const [slots, setSlots] = useState(emptySlots);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -103,6 +105,17 @@ export const CareerCounselingPage = () => {
       unsub();
       cancelIdle();
     };
+  }, []);
+
+  useEffect(() => {
+    let id = 0;
+    const arm = () => {
+      const now = Date.now();
+      setConsultNow(now);
+      id = window.setTimeout(arm, msUntilNextKstMidnight(now) + 50);
+    };
+    arm();
+    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {
@@ -328,7 +341,7 @@ export const CareerCounselingPage = () => {
                   </div>
                   <div className="f full">
                     <span className="lb">희망 일정 (편한 날짜와 시작 시간을 세 가지 적어 주세요)<span className="req">*</span></span>
-                    <p className="hint">{SLOT_HINT}</p>
+                    <p className="hint">{consultSlotHint(consultNow)}</p>
                   </div>
                   {slots.map((slot, index) => (
                     <Fragment key={`slot-${index}`}>
@@ -337,7 +350,7 @@ export const CareerCounselingPage = () => {
                         <input
                           id={`d${index + 1}`}
                           type="date"
-                          min={CONSULT_DATE_MIN}
+                          min={consultDateMin(consultNow)}
                           max={CONSULT_DATE_MAX}
                           value={slot.date}
                           onChange={(e) => updateSlot(index, 'date', e.target.value)}

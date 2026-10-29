@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isCareerCounselingOpen } from '../src/lib/careerCounseling';
+import { consultDateMin, isCareerCounselingOpen, isConsultDate } from '../src/lib/careerCounseling';
 import {
   buildCareerCounselingPrerenderHtml,
   careerCounselingPrerenderHtml,
@@ -26,6 +26,15 @@ for (const now of times) {
   assert.equal(html.includes('59.5'), false);
   assert.equal(html.includes('진로 컨설팅'), true);
 }
+
+const beforeKstMidnight = Date.parse('2026-10-29T14:59:59.999Z');
+const atKstMidnight = Date.parse('2026-10-29T15:00:00.000Z');
+assert.equal(consultDateMin(beforeKstMidnight), '2026-11-01');
+assert.equal(consultDateMin(atKstMidnight), '2026-11-02');
+assert.equal(isConsultDate('2026-11-01', beforeKstMidnight), true);
+assert.equal(isConsultDate('2026-11-01', atKstMidnight), false);
+assert.equal(isConsultDate('2027-02-28', atKstMidnight), true);
+assert.equal(isConsultDate('2027-03-01', atKstMidnight), false);
 
 assert.equal(careerCounselingPrerenderHtml, buildCareerCounselingPrerenderHtml(0));
 assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);
