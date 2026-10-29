@@ -16,11 +16,15 @@ import {
   resourcePageHtml,
 } from './seo-pages';
 import {
+  CONSULT_TIMES,
   COST_GUIDE,
-  isAllowedRegion,
+  GRADES,
+  SCHOOL_REGIONS,
   isCareerCounselingPath,
+  isKnownSchoolRegion,
   isValidMobile,
   validateCareerCounselingForm,
+  type CareerCounselingApplicationInput,
 } from '../src/lib/careerCounseling';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,8 +35,13 @@ const PUBLIC_PRICE_RE = /만원|60,?000\s*원|"price"\s*:/;
 assertNoSensitiveCopy(careerCounselingPrerenderHtml);
 assert.equal(careerCounselingPrerenderHtml.includes('경기도 성남시 수정구 창업로 43, 81호'), true);
 assert.equal(careerCounselingPrerenderHtml.includes(COST_GUIDE), true);
-assert.equal(careerCounselingPrerenderHtml.includes('11월 10일부터 신청 가능합니다.'), true);
-assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('11월 10일부터 신청 가능합니다.'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('40분'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('비수도권'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('59.5'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('23:00'), false);
+assert.equal(careerCounselingPrerenderHtml.includes('진로 컨설팅'), true);
 assert.equal(PUBLIC_PRICE_RE.test(careerCounselingPrerenderHtml), false);
 assert.equal(/농협|국민은행|우리은행|신한은행|\d{2,3}-\d{2}-\d{6}/.test(careerCounselingPrerenderHtml), false);
 
@@ -49,7 +58,8 @@ const shell = `<!doctype html><html><head>
 const applied = applyCareerCounselingSpaShell(shell);
 assert.equal(applied.includes(CAREER_COUNSELING_TITLE), true);
 assert.equal(applied.includes(CAREER_COUNSELING_CANONICAL), true);
-assert.equal(applied.includes('온라인 진로·선택과목 상담'), true);
+assert.equal(applied.includes('진로 컨설팅'), true);
+assert.equal(applied.includes('온라인 진로·선택과목 상담'), false);
 assert.equal(applied.includes('<div>home</div>'), false);
 assert.equal(PUBLIC_PRICE_RE.test(applied), false);
 assert.equal(applied.includes('top-auth'), true);
@@ -77,7 +87,8 @@ assert.equal(withFbPreload.includes('/assets/site-test.js'), true);
 
 for (const page of KEYWORD_PAGES) {
   const html = keywordPageHtml(page);
-  assert.equal(html.includes('>비수도권 진로 상담<'), true, `${page.slug} top nav missing renamed label`);
+  assert.equal(html.includes('>진로 컨설팅<'), true, `${page.slug} top nav missing renamed label`);
+  assert.equal(html.includes('>비수도권 진로 상담<'), false, `${page.slug} still uses the old nav label`);
   assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);
   assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
   assert.equal(html.includes('자료실'), true);
@@ -117,50 +128,59 @@ assert.equal(membersOnlyHtml.includes('한 학기 200만원 이내. 자소서 �
 assert.equal(isCareerCounselingPath('/jinro-counseling/'), true);
 assert.equal(isCareerCounselingPath('/jinro-counseling'), true);
 assert.equal(isCareerCounselingPath('/'), false);
-assert.equal(isAllowedRegion('부산광역시'), true);
-assert.equal(isAllowedRegion('서울특별시'), false);
+assert.equal(SCHOOL_REGIONS.length, 17);
+assert.equal(isKnownSchoolRegion('부산광역시'), true);
+assert.equal(isKnownSchoolRegion('서울특별시'), true);
+assert.equal(isKnownSchoolRegion('경기도'), true);
+assert.equal(isKnownSchoolRegion('인천광역시'), true);
+assert.equal(isKnownSchoolRegion('제주특별자치도'), true);
+assert.equal(isKnownSchoolRegion('해외'), false);
+assert.equal(GRADES.includes('중3') && GRADES.includes('고1'), true);
+assert.equal((GRADES as readonly string[]).includes('고2'), false);
+assert.equal(CONSULT_TIMES.at(-1), '22:00');
+assert.equal((CONSULT_TIMES as readonly string[]).includes('23:00'), false);
 assert.equal(isValidMobile('010-5308-6879'), true);
 assert.equal(isValidMobile('02-123-4567'), false);
 
-const valid = validateCareerCounselingForm({
-  userId: 'u1',
-  email: 'a@b.c',
-  childName: '학생',
-  schoolName: '부산고등학교',
-  schoolRegion: '부산광역시',
-  grade: '고1',
-  careerGoal: '컴퓨터공학',
-  preferredSlots: [
-    { date: '2026-11-25', time: '15:00' },
-    { date: '2026-12-01', time: '19:00' },
-    { date: '2026-12-25', time: '23:00' },
-  ],
-  phone: '01012345678',
-  question: '',
-  eligibilityConfirmed: true,
-  privacyAgreed: true,
-});
-assert.equal(valid, null);
+const slots = [
+  { date: '2026-11-25', time: '15:00' },
+  { date: '2026-12-01', time: '19:00' },
+  { date: '2026-12-25', time: '22:00' },
+] as CareerCounselingApplicationInput['preferredSlots'];
 
-const blocked = validateCareerCounselingForm({
+const sample = (overrides: Partial<CareerCounselingApplicationInput> = {}): CareerCounselingApplicationInput => ({
   userId: 'u1',
   email: 'a@b.c',
   childName: '학생',
-  schoolName: '서울고등학교',
+  schoolName: '서울중학교',
   schoolRegion: '서울특별시',
-  grade: '고1',
+  grade: '중3',
   careerGoal: '컴퓨터공학',
+  preferredSlots: slots,
+  phone: '01012345678',
+  question: '',
+  privacyAgreed: true,
+  ...overrides,
+});
+
+assert.equal(validateCareerCounselingForm(sample()), null);
+assert.equal(validateCareerCounselingForm(sample({ schoolRegion: '부산광역시', grade: '고1' })), null);
+assert.equal(typeof validateCareerCounselingForm(sample({ schoolRegion: '해외' })), 'string');
+assert.equal(typeof validateCareerCounselingForm(sample({ grade: '고2' as CareerCounselingApplicationInput['grade'] })), 'string');
+assert.equal(typeof validateCareerCounselingForm(sample({
   preferredSlots: [
     { date: '2026-11-25', time: '15:00' },
     { date: '2026-12-01', time: '19:00' },
     { date: '2026-12-25', time: '23:00' },
   ],
-  phone: '01012345678',
-  question: '',
-  eligibilityConfirmed: true,
-  privacyAgreed: true,
-});
-assert.equal(typeof blocked, 'string');
+})), 'string');
+assert.equal(typeof validateCareerCounselingForm(sample({
+  preferredSlots: [
+    { date: '2026-11-24', time: '15:00' },
+    { date: '2026-12-01', time: '19:00' },
+    { date: '2026-12-25', time: '22:00' },
+  ],
+})), 'string');
 
 assert.equal(rules.includes('match /careerCounselingApplications/{applicationId}'), true);
 assert.equal(rules.includes('ahrah0365@gmail.com'), true);
@@ -201,6 +221,9 @@ assert.equal(programsPublic.includes('김포외고'), true);
 assert.equal(programsPublic.includes('미확정(학교 요강 확인 전)'), false);
 assert.equal(programsPublic.includes('12.4~12.10 17:00(인터넷)'), true);
 assert.equal(programsPublic.includes('3:1 모의면접'), true);
+assert.equal(programsPublic.includes('온라인 1회 1시간 · 10만 원'), true);
+assert.equal(programsPublic.includes('40분'), false);
+assert.equal(programsPublic.includes('비수도권'), false);
 
 const resourcesSrc = fs.readFileSync(path.join(root, 'src/components/ResourcesSection.tsx'), 'utf-8');
 assert.equal(resourcesSrc.includes('hover:bg-blue'), false);
@@ -225,6 +248,11 @@ assert.equal(counselingHtmlSrc.includes('IMG_1441'), false);
 assert.equal(counselingHtmlSrc.includes('Noto+Sans+KR'), false);
 assert.equal(counselingHtmlSrc.includes('counseling-main.tsx'), true);
 assert.equal(counselingHtmlSrc.includes('pretendard-dynamic-subset.min.css'), true);
+assert.equal(counselingHtmlSrc.includes('진로 컨설팅 (중3~고1 온라인) | 입시는세연쌤'), true);
+assert.equal(counselingHtmlSrc.includes('"name":"진로 컨설팅"'), true);
+assert.equal(counselingHtmlSrc.includes('온라인 진로·선택과목 상담'), false);
+assert.equal(counselingHtmlSrc.includes('40분'), false);
+assert.equal(counselingHtmlSrc.includes('비수도권'), false);
 
 const counselingMain = fs.readFileSync(path.join(root, 'src/counseling-main.tsx'), 'utf-8');
 assert.equal(counselingMain.includes('CareerCounselingPage'), true);
@@ -250,7 +278,8 @@ for (const name of ['doc', 'getDoc', 'addDoc', 'collection', 'serverTimestamp'])
   assert.equal(firestoreApiSrc.includes(name), true, `firestoreApi missing ${name}`);
 }
 
-assert.equal(appSrc.includes("['비수도권 진로 상담', '/jinro-counseling/']"), true);
+assert.equal(appSrc.includes("['진로 컨설팅', '/jinro-counseling/']"), true);
+assert.equal(appSrc.includes("['비수도권 진로 상담', '/jinro-counseling/']"), false);
 assert.equal(appSrc.includes("['진로 상담', '/jinro-counseling/']"), false);
 assert.equal(appSrc.includes("aspectRatio: '4 / 5'"), true);
 assert.equal(appSrc.includes('aspect-[4/5]'), true);
@@ -260,5 +289,13 @@ assert.equal(ccPageSrc.includes("from 'motion/react'"), false);
 assert.equal(ccPageSrc.includes("from '../components/AuthModal'"), false);
 assert.equal(ccPageSrc.includes("from '../lib/firebase'"), false);
 assert.equal(ccPageSrc.includes('CareerCounselingAuthGate'), true);
+assert.equal(ccPageSrc.includes('eligibilityConfirmed'), false);
+assert.equal(ccPageSrc.includes('59.5'), false);
+assert.equal(ccPageSrc.includes('40분'), false);
+
+const deployYml = fs.readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf-8');
+assert.equal(deployYml.includes("cron: '17 18 * * *'"), true);
+assert.equal(deployYml.includes('5 15 9 11'), false);
+assert.equal(deployYml.includes('CAREER_COUNSELING_OPEN_AT'), false);
 
 console.log('✅ career counseling checks passed');

@@ -83,7 +83,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
   const links = [
     ['소개', '#about'],
     ['프로그램', '#programs'],
-    ['비수도권 진로 상담', '/jinro-counseling/'],
+    ['진로 컨설팅', '/jinro-counseling/'],
     ['전략 지도', '#strategy'],
     ['자료실', '#resources'],
   ];
@@ -413,7 +413,7 @@ export default function App() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-12 border-b border-white/12 pb-12 lg:grid-cols-[1.3fr_0.7fr_0.7fr]">
             <div><div className="flex items-center gap-3"><img src="/logo-mark-white.svg" alt="" className="h-11 w-11 object-contain" width={44} height={44} loading="lazy" /><strong className="text-2xl tracking-[-0.04em]">{SITE.name}</strong></div><p className="mt-5 max-w-md text-sm leading-7 text-white/52">특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤</p></div>
-            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/jinro-counseling/">진로·선택과목 상담</a><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
+            <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Consulting</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60"><a href="/jinro-counseling/">진로 컨설팅</a><a href="/saenggibu-consulting/">생기부 컨설팅</a><a href="/jasoseo-consulting/">자소서 컨설팅</a><a href="/interview-consulting/">면접 컨설팅</a></nav></div>
             <div><h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-coral">Channels</h3><nav className="mt-5 flex flex-col gap-3 text-sm text-white/60">{SITE.blogs.map((blog) => <a key={blog.name} href={blog.url} target="_blank" rel="noopener noreferrer">{blog.name}</a>)}</nav></div>
           </div>
           <div className="grid gap-7 pt-9 text-xs leading-6 text-white/45 lg:grid-cols-[1fr_auto] lg:items-end">

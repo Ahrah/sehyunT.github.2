@@ -6,11 +6,11 @@ on:
   push:
     branches: ["main"]
 
-  # Runs daily at 03:17 KST (18:17 UTC)
-  # Rebuilds prerendered HTML shortly after the counseling form opens (2026-11-09 15:00 UTC)
+  # Runs daily at 03:17 KST (18:17 UTC).
+  # 진로 컨설팅 신청은 코드에서 항상 열려 있어, 배포 시각이 신청서를 바꾸지 않습니다.
+  # 2026-11-10 00:05 KST에 옛 상담 신청서를 열던 1회 예약은 제거했습니다.
   schedule:
     - cron: '17 18 * * *'
-    - cron: '5 15 9 11 *'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

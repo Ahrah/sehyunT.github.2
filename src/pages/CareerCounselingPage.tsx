@@ -9,24 +9,31 @@ import {
   watchCareerAuth,
 } from '../lib/careerCounselingSession';
 import {
+  APPLY_INTRO,
+  APPLY_SUCCESS_BODY,
   BIZ_INFO,
-  CAREER_COUNSELING_CLOSED_NOTICE,
-  CAREER_COUNSELING_OPEN_AT_MS,
   CONSULT_DATE_MAX,
   CONSULT_DATE_MIN,
   CONSULT_TIMES,
   COST_GUIDE,
+  ELIGIBILITY_NOTE,
   FAQS,
   GRADES,
+  HERO_COPY,
   PAGE_META,
   PAY_GUIDE,
+  PROGRAM_INTRO,
   PROGRAM_STEPS,
+  QUESTION_PLACEHOLDER,
   REFUND_ITEMS,
-  RESOURCES_HREF,
   SCHEDULE_CARDS,
+  SCHEDULE_TITLE,
+  SCHOOL_PLACEHOLDER,
   SCHOOL_REGIONS,
+  SLOT_HINT,
+  SUBMIT_LABEL,
+  WHY_COPY,
   formatPhone,
-  isCareerCounselingOpen,
   toCareerCounselingRecord,
   validateCareerCounselingForm,
 } from '../lib/careerCounseling';
@@ -49,10 +56,7 @@ const emptySlots = [
   { date: '', time: '' },
 ] as [{ date: string; time: string }, { date: string; time: string }, { date: string; time: string }];
 
-const SET_TIMEOUT_MAX_MS = 2_147_483_647;
-
 export const CareerCounselingPage = () => {
-  const [formOpen, setFormOpen] = useState(() => isCareerCounselingOpen());
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [childName, setChildName] = useState('');
   const [phone, setPhone] = useState('');
@@ -62,7 +66,6 @@ export const CareerCounselingPage = () => {
   const [careerGoal, setCareerGoal] = useState('');
   const [question, setQuestion] = useState('');
   const [slots, setSlots] = useState(emptySlots);
-  const [eligibilityConfirmed, setEligibilityConfirmed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -107,18 +110,6 @@ export const CareerCounselingPage = () => {
     return () => { document.body.style.overflow = 'auto'; };
   }, [authOpen]);
 
-  useEffect(() => {
-    if (formOpen) return undefined;
-    const remaining = CAREER_COUNSELING_OPEN_AT_MS - Date.now();
-    if (remaining <= 0) {
-      setFormOpen(true);
-      return undefined;
-    }
-    if (remaining > SET_TIMEOUT_MAX_MS) return undefined;
-    const id = window.setTimeout(() => setFormOpen(true), remaining);
-    return () => window.clearTimeout(id);
-  }, [formOpen]);
-
   const openApply = () => {
     if (!user) {
       pendingApply.current = true;
@@ -157,7 +148,6 @@ export const CareerCounselingPage = () => {
       preferredSlots: slots,
       phone,
       question,
-      eligibilityConfirmed,
       privacyAgreed,
     };
 
@@ -193,7 +183,7 @@ export const CareerCounselingPage = () => {
         : null}
 
       <div className="elig-bar" role="note">
-        <b>신청 자격</b>서울·경기·인천 외 지역 고등학교 재학생만 신청할 수 있어요 (재학 학교 소재지 기준)
+        <b>{ELIGIBILITY_NOTE.label}</b>{ELIGIBILITY_NOTE.text}
       </div>
 
       <header className="top">
@@ -215,13 +205,11 @@ export const CareerCounselingPage = () => {
 
       <div className="hero">
         <div className="wrap">
-          <span className="tag">비수도권 학생 전용 · 시즌 한정</span>
-          <h1>희망 전공에서 거꾸로 짜는<br /><em>온라인 진로·선택과목 상담</em></h1>
-          <p className="lead">고1·고2 학생의 희망 전공을 먼저 듣고, 앞으로 들을 과목의 이수 경로를 함께 설계해요. 상담이 끝나면 1장짜리 과목 이수 로드맵을 드려요.</p>
+          <span className="tag">{HERO_COPY.tag}</span>
+          <h1>{HERO_COPY.titleBefore}<br /><em>{HERO_COPY.titleEm}</em></h1>
+          <p className="lead">{HERO_COPY.lead}</p>
           <div className="meta">
-            <span>40분 온라인 화상 상담</span>
-            <span>과목 이수 로드맵 1장</span>
-            <a href={RESOURCES_HREF}>비용은 자료실에서 확인</a>
+            {HERO_COPY.chips.map((chip) => <span key={chip}>{chip}</span>)}
           </div>
           <p className="slogan">DESIGN YOUR SUCCESS.</p>
         </div>
@@ -230,20 +218,16 @@ export const CareerCounselingPage = () => {
       <section className="alt">
         <div className="wrap">
           <p className="eyebrow">WHY</p>
-          <h2>지역과 상관없이 받는 과목 선택 상담</h2>
-          <p>과목 선택은 학교 안에서 정해지지만, 필요한 정보는 학교 밖에 흩어져 있는 경우가 많아요. 사는 지역 때문에 상담 기회가 적었다면 온라인으로 차근차근 짚어 드릴게요.</p>
-          <div className="stat">
-            <div className="num">59.5<small>%</small></div>
-            <p>비수도권 수시 지원자의 59.5%가 정보 격차를 느꼈다고 답했어요.<span className="src">출처: 진학사 2025 조사, 응답자 기준</span></p>
-          </div>
+          <h2>{WHY_COPY.title}</h2>
+          {WHY_COPY.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
         </div>
       </section>
 
       <section id="구성">
         <div className="wrap">
           <p className="eyebrow">PROGRAM</p>
-          <h2>상담 구성</h2>
-          <p>제출 자료를 미리 읽고 들어가서, 40분을 학생 이야기에 집중해서 써요.</p>
+          <h2>{PROGRAM_INTRO.title}</h2>
+          <p>{PROGRAM_INTRO.text}</p>
           <div className="steps">
             {PROGRAM_STEPS.map((step) => (
               <div className={`step${step.main ? ' main' : ''}`} key={step.title}>
@@ -261,18 +245,13 @@ export const CareerCounselingPage = () => {
       <section className="gb" id="일정">
         <div className="wrap">
           <p className="eyebrow">SCHEDULE</p>
-          <h2>일정 안내</h2>
-          <p>이번 시즌에만 운영하는 상담이에요.</p>
+          <h2>{SCHEDULE_TITLE}</h2>
           <div className="info">
             {SCHEDULE_CARDS.map((card) => (
               <div className="card" key={card.h}>
                 <h3>{card.h}</h3>
                 <div className={`big${card.red ? ' red' : ''}`}>{card.big}</div>
-                <p>
-                  {card.h === '비용'
-                    ? <>회원가입 후 <a href={RESOURCES_HREF}>자료실</a>에서 확인하실 수 있어요.</>
-                    : card.p}
-                </p>
+                <p>{card.p}</p>
               </div>
             ))}
           </div>
@@ -283,14 +262,12 @@ export const CareerCounselingPage = () => {
         <div className="wrap">
           <p className="eyebrow">APPLY</p>
           <h2>신청하기</h2>
-          <p>아래 항목을 신청서에 적어 주시면, 문자로 상담 일정을 조율해 드려요. {COST_GUIDE}</p>
+          <p>{APPLY_INTRO} {COST_GUIDE}</p>
 
-          {!formOpen ? (
-            <p>{CAREER_COUNSELING_CLOSED_NOTICE}</p>
-          ) : submitted ? (
+          {submitted ? (
             <div className="form-success" role="status">
               <h3>신청이 접수되었어요</h3>
-              <p>문자로 상담 일정을 조율해 드릴게요. 일정이 확정되면 입금 안내를 보내 드려요. 입금 계좌는 그때 문자에서만 안내합니다.</p>
+              <p>{APPLY_SUCCESS_BODY}</p>
             </div>
           ) : (
             <form className="apply" id="신청서" onSubmit={onSubmit}>
@@ -321,7 +298,7 @@ export const CareerCounselingPage = () => {
                   </div>
                   <div className="f">
                     <label htmlFor="school">재학 학교명<span className="req">*</span></label>
-                    <input id="school" type="text" placeholder="예: ○○고등학교" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required />
+                    <input id="school" type="text" placeholder={SCHOOL_PLACEHOLDER} value={schoolName} onChange={(e) => setSchoolName(e.target.value)} required />
                   </div>
                   <div className="f">
                     <label htmlFor="sido">학교 소재 시·도<span className="req">*</span></label>
@@ -347,11 +324,11 @@ export const CareerCounselingPage = () => {
                   </div>
                   <div className="f full">
                     <label htmlFor="worry">질문(고민)</label>
-                    <textarea id="worry" placeholder="과목 선택에서 걱정되는 점을 편하게 적어 주세요" value={question} onChange={(e) => setQuestion(e.target.value)} />
+                    <textarea id="worry" placeholder={QUESTION_PLACEHOLDER} value={question} onChange={(e) => setQuestion(e.target.value)} />
                   </div>
                   <div className="f full">
                     <span className="lb">희망 일정 (편한 날짜와 시작 시간을 세 가지 적어 주세요)<span className="req">*</span></span>
-                    <p className="hint">상담은 오후 3시 시작부터 밤 11시 시작까지 가능해요. 문자로 일정을 조율한 뒤, 확정될 때 입금해 주세요.</p>
+                    <p className="hint">{SLOT_HINT}</p>
                   </div>
                   {slots.map((slot, index) => (
                     <Fragment key={`slot-${index}`}>
@@ -378,12 +355,6 @@ export const CareerCounselingPage = () => {
                   ))}
                   <div className="f full check">
                     <label>
-                      <input type="checkbox" checked={eligibilityConfirmed} onChange={(e) => setEligibilityConfirmed(e.target.checked)} required />
-                      <span><b>자격 확인</b><span className="req">*</span> 학생은 서울·경기·인천 외 지역에 있는 고등학교에 재학 중이에요.</span>
-                    </label>
-                  </div>
-                  <div className="f full check">
-                    <label>
                       <input type="checkbox" checked={privacyAgreed} onChange={(e) => setPrivacyAgreed(e.target.checked)} required />
                       <span><b>개인정보 수집·이용 동의</b><span className="req">*</span> 상담 신청 확인과 일정 안내를 위해 위 정보를 수집·이용하는 데 동의해요.</span>
                     </label>
@@ -400,18 +371,14 @@ export const CareerCounselingPage = () => {
               </div>
               {error ? <p className="f full form-error" role="alert">{error}</p> : null}
               <div className="f full">
-                <div className="elig-box" style={{ marginTop: 0 }}>
-                  <strong>신청 자격을 확인해 주세요</strong>
-                  <p>서울·경기·인천 외 지역 고등학교 재학생(고1·고2)만 신청할 수 있어요. 기준은 거주지가 아니라 재학 중인 학교의 소재지예요.</p>
-                </div>
                 {user ? (
                   <button className="btn" type="submit" disabled={submitting}>
-                    {submitting ? '신청서를 저장하는 중…' : '온라인 진로·선택과목 상담 신청하기'}
+                    {submitting ? '신청서를 저장하는 중…' : SUBMIT_LABEL}
                   </button>
                 ) : (
                   <button className="btn" type="button" onClick={openApply}>로그인하고 신청하기</button>
                 )}
-                <p className="btn-note">신청 기간 2026. 11. 10 ~ 12. 10 · {COST_GUIDE}</p>
+                <p className="btn-note">{COST_GUIDE}</p>
               </div>
             </form>
           )}

@@ -47,7 +47,7 @@ export const KEYWORD_LINKS = [
   { slug: 'saenggibu-consulting', label: '생기부 컨설팅' },
   { slug: 'jasoseo-consulting', label: '자소서 컨설팅' },
   { slug: 'interview-consulting', label: '면접 컨설팅' },
-  { slug: 'jinro-counseling', label: '진로·선택과목 상담' },
+  { slug: 'jinro-counseling', label: '진로 컨설팅' },
 ];
 
 const STYLE = `
@@ -128,7 +128,7 @@ export function pageShell(o: PageShellOpts): string {
   <header class="site"><div class="in">
     <a class="brand" href="/"><img src="/logo-pic.png" alt="입시는세연쌤 로고" width="37" height="32">입시는세연쌤</a>
     <nav class="top">
-      <a href="/jinro-counseling/">비수도권 진로 상담</a>
+      <a href="/jinro-counseling/">진로 컨설팅</a>
       <a href="/saenggibu-consulting/">생기부</a>
       <a href="/jasoseo-consulting/">자소서</a>
       <a href="/interview-consulting/">면접</a>

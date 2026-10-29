@@ -36,7 +36,7 @@ const homePageContent = `
           학생이 자신의 힘으로 성장할 수 있도록, 관심사를 질문으로 바꾸고 여러 관점에서 탐구하며 스스로 연구하는 힘을 기릅니다. 그 생각의 깊이가 학생부 기록에 남고, 면접에서는 짧은 시간 안에도 분명하게 드러나도록 훈련합니다.
         </p>
         <nav aria-label="컨설팅 바로가기" class="flex flex-wrap gap-3">
-          <a href="/jinro-counseling/">진로·선택과목 상담</a>
+          <a href="/jinro-counseling/">진로 컨설팅</a>
           <a href="/saenggibu-consulting/">생기부 컨설팅</a>
           <a href="/jasoseo-consulting/">자소서 컨설팅</a>
           <a href="/interview-consulting/">면접 컨설팅</a>
@@ -172,7 +172,7 @@ const homePageContent = `
         </p>
       </div>
       <nav aria-label="컨설팅 안내" class="mt-16 flex flex-wrap gap-x-6 gap-y-3 text-sm font-black">
-        <a href="/jinro-counseling/">진로·선택과목 상담</a>
+        <a href="/jinro-counseling/">진로 컨설팅</a>
         <a href="/saenggibu-consulting/">생기부 컨설팅</a>
         <a href="/jasoseo-consulting/">자소서 컨설팅</a>
         <a href="/interview-consulting/">면접 컨설팅</a>
