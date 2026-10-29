@@ -26,7 +26,6 @@ import {
   consultDateMin,
   consultSlotHint,
   formatKstDateTime,
-  formatPreferredSlots,
   isCareerCounselingPath,
   isConsultDate,
   isKnownSchoolRegion,
@@ -35,7 +34,13 @@ import {
   validateCareerCounselingForm,
   type CareerCounselingApplicationInput,
 } from '../src/lib/careerCounseling';
-import { buildCareerCounselingNotifyPayload } from '../src/lib/careerCounselingNotify';
+import {
+  buildCareerCounselingNotifyPayload,
+  careerCounselingNotifyUrl,
+  FORMSUBMIT_ALIAS,
+  isFormSubmitAliasReady,
+  notifyCareerCounselingApplication,
+} from '../src/lib/careerCounselingNotify';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rules = fs.readFileSync(path.join(__dirname, '../firestore.rules'), 'utf-8');
@@ -335,52 +340,109 @@ assert.equal(sessionSrc.slice(addDocAt, tryAt).includes('catch'), false);
 assert.equal(sessionSrc.slice(notifyAt).includes('catch (err)'), true);
 assert.equal(sessionSrc.slice(notifyAt).includes('notifyFailed: true'), true);
 assert.equal(sessionSrc.slice(notifyAt).includes('throw'), false);
+assert.equal(sessionSrc.includes('notifyCareerCounselingApplication(created.id)'), true);
+assert.equal(sessionSrc.includes('notifyCareerCounselingApplication(record'), false);
 
 const notifySrc = fs.readFileSync(path.join(root, 'src/lib/careerCounselingNotify.ts'), 'utf-8');
-assert.equal(notifySrc.includes('https://formsubmit.co/ajax/${CAREER_COUNSELING_NOTIFY_EMAIL}'), true);
-assert.equal(notifySrc.includes("CAREER_COUNSELING_NOTIFY_EMAIL = 'consultantsyssam@gmail.com'"), true);
-assert.equal(notifySrc.includes('[입시는세연쌤] 새 진로 컨설팅 신청 -'), true);
+assert.equal(notifySrc.includes('FORMSUBMIT_ALIAS'), true);
+assert.equal(notifySrc.includes('https://formsubmit.co/ajax/${alias.trim()}'), true);
+assert.equal(notifySrc.includes('CAREER_COUNSELING_NOTIFY_EMAIL'), false);
+assert.equal(notifySrc.includes('consultantsyssam@gmail.com'), false);
+assert.equal(notifySrc.includes('_replyto'), false);
+assert.equal(notifySrc.includes('_honey'), true);
+assert.equal(sessionSrc.includes('consultantsyssam@gmail.com'), false);
 assert.equal(fs.readFileSync(path.join(root, 'src/lib/careerCounseling.ts'), 'utf-8').includes('consultantsyssam@gmail.com'), false);
 assert.equal(fs.readFileSync(path.join(root, 'scripts/career-counseling-prerender.ts'), 'utf-8').includes('careerCounselingNotify'), false);
 
-const notifyPayload = buildCareerCounselingNotifyPayload({
-  userId: 'uid-1',
-  email: 'parent@example.com',
-  childName: '김세연',
-  schoolName: '○○고등학교',
-  schoolRegion: '경기도',
-  grade: '고1',
-  careerGoal: '생명과학',
-  preferredSlots: [
-    { date: '2026-11-20', time: '15:00' },
-    { date: '2026-11-21', time: '19:00' },
-    { date: '2026-11-22', time: '22:00' },
-  ],
-  phone: '010-5308-6879',
-  question: '과목 선택이 고민이에요',
-  privacyAgreed: true,
-  productName: '진로 컨설팅',
-  price: 100000,
-  status: 'submitted',
-}, new Date('2026-10-29T04:52:07.000Z'), 'app-1');
-assert.equal(notifyPayload._subject, '[입시는세연쌤] 새 진로 컨설팅 신청 - 김세연');
-assert.equal(notifyPayload._replyto, 'parent@example.com');
-assert.equal(notifyPayload.학생_이름, '김세연');
-assert.equal(notifyPayload.학년, '고1');
-assert.equal(notifyPayload.재학_학교, '○○고등학교');
-assert.equal(notifyPayload.학교_소재, '경기도');
-assert.equal(notifyPayload.휴대폰, '010-5308-6879');
-assert.equal(notifyPayload.희망_진로, '생명과학');
-assert.equal(notifyPayload.질문, '과목 선택이 고민이에요');
-assert.equal(notifyPayload.희망_일정, formatPreferredSlots([
-  { date: '2026-11-20', time: '15:00' },
-  { date: '2026-11-21', time: '19:00' },
-  { date: '2026-11-22', time: '22:00' },
-]));
-assert.equal(notifyPayload.신청_시각_KST, '2026-10-29 13:52:07 KST');
-assert.equal(notifyPayload.상태, '신규');
-assert.equal(notifyPayload.신청_ID, 'app-1');
-assert.equal(notifyPayload.금액, '100,000원');
+assert.equal(FORMSUBMIT_ALIAS, 'PENDING_FORMSUBMIT_ALIAS');
+assert.equal(isFormSubmitAliasReady(), false);
+assert.equal(isFormSubmitAliasReady('PENDING_FORMSUBMIT_ALIAS'), false);
+assert.equal(isFormSubmitAliasReady(''), false);
+assert.equal(isFormSubmitAliasReady('consultantsyssam@gmail.com'), false);
+assert.equal(isFormSubmitAliasReady('c277d8d5f1ett209149848e390b9b5cc'), true);
+assert.equal(careerCounselingNotifyUrl(), null);
+assert.equal(careerCounselingNotifyUrl('consultantsyssam@gmail.com'), null);
+assert.equal(
+  careerCounselingNotifyUrl('c277d8d5f1ett209149848e390b9b5cc'),
+  'https://formsubmit.co/ajax/c277d8d5f1ett209149848e390b9b5cc',
+);
+assert.equal((careerCounselingNotifyUrl('c277d8d5f1ett209149848e390b9b5cc') || '').includes('consultantsyssam@gmail.com'), false);
+assert.equal((careerCounselingNotifyUrl() || '').includes('@'), false);
+
+const notifyPayload = buildCareerCounselingNotifyPayload('app-1');
+assert.deepEqual(notifyPayload, {
+  _subject: '새 진로 컨설팅 신청 1건',
+  _template: 'table',
+  _captcha: 'false',
+  _honey: '',
+  신청_ID: 'app-1',
+  안내: '관리자 화면에서 확인해 주세요',
+});
+assert.equal('_replyto' in notifyPayload, false);
+assert.equal(notifyPayload._honey, '');
+const personalKeys = [
+  'name', '학생_이름', '계정_이메일', 'email', '_replyto', '휴대폰', 'phone',
+  '학년', 'grade', '재학_학교', 'schoolName', '학교_소재', 'schoolRegion',
+  '희망_진로', 'careerGoal', '질문', 'question', '희망_일정', 'preferredSlots',
+  '회원_ID', 'userId', '상품', 'productName', '금액', 'price', '상태', 'status',
+  '개인정보_동의', 'privacyAgreed', '신청_시각_KST',
+];
+for (const key of personalKeys) {
+  assert.equal(key in notifyPayload, false, `payload still has personal field ${key}`);
+}
+const payloadText = JSON.stringify(notifyPayload);
+assert.equal(payloadText.includes('parent@example.com'), false);
+assert.equal(payloadText.includes('김세연'), false);
+assert.equal(payloadText.includes('010-5308-6879'), false);
+assert.equal(payloadText.includes('○○고등학교'), false);
+assert.equal(payloadText.includes('생명과학'), false);
+assert.equal(payloadText.includes('consultantsyssam@gmail.com'), false);
+
+function assertNoRawNotifyEmail(dir: string) {
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    if (fs.statSync(full).isDirectory()) {
+      assertNoRawNotifyEmail(full);
+      continue;
+    }
+    if (!/\.(ts|tsx|js|css|html)$/.test(name)) continue;
+    const text = fs.readFileSync(full, 'utf-8');
+    assert.equal(text.includes('consultantsyssam@gmail.com'), false, `${full} still has the raw notify email`);
+  }
+}
+assertNoRawNotifyEmail(path.join(root, 'src'));
+
+const originalFetch = globalThis.fetch;
+const fetchCalls: { url: string; init?: RequestInit }[] = [];
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  fetchCalls.push({ url: String(input), init });
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}) as typeof fetch;
+try {
+  await notifyCareerCounselingApplication('app-1');
+  assert.equal(fetchCalls.length, 0, 'placeholder alias must skip the network call');
+  await notifyCareerCounselingApplication('app-1', 'consultantsyssam@gmail.com');
+  assert.equal(fetchCalls.length, 0, 'raw email must not be used as the endpoint');
+  await notifyCareerCounselingApplication('app-1', 'c277d8d5f1ett209149848e390b9b5cc');
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(fetchCalls[0].url, 'https://formsubmit.co/ajax/c277d8d5f1ett209149848e390b9b5cc');
+  assert.equal(fetchCalls[0].url.includes('@'), false);
+  assert.equal(fetchCalls[0].url.includes('consultantsyssam@gmail.com'), false);
+  const sent = JSON.parse(String(fetchCalls[0].init?.body));
+  assert.equal('_replyto' in sent, false);
+  assert.equal(sent._honey, '');
+  assert.equal(sent._subject, '새 진로 컨설팅 신청 1건');
+  assert.equal(sent.신청_ID, 'app-1');
+  assert.equal(sent.안내, '관리자 화면에서 확인해 주세요');
+  for (const key of personalKeys) {
+    assert.equal(key in sent, false, `posted payload still has personal field ${key}`);
+  }
+} finally {
+  globalThis.fetch = originalFetch;
+}
 assert.equal(careerCounselingStatusLabel('contacted'), '연락함');
 assert.equal(nextCareerCounselingStatus('submitted'), 'contacted');
 assert.equal(nextCareerCounselingStatus('contacted'), 'submitted');
