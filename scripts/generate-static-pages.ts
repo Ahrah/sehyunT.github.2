@@ -177,7 +177,7 @@ async function main() {
     });
     console.log(`✅ Generated ${KEYWORD_PAGES.length} keyword pages`);
 
-    // SPA route + prerender for 온라인 진로·선택과목 상담
+    // SPA route + prerender for 진로 컨설팅
     console.log('🧭 Generating /jinro-counseling/ SPA shell with prerender...');
     const counselingPrerenderHtml = buildCareerCounselingPrerenderHtml(Date.now());
     assertNoSensitiveCopy(counselingPrerenderHtml);

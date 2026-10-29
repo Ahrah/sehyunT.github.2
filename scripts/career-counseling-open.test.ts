@@ -1,39 +1,43 @@
 import assert from 'node:assert/strict';
-import {
-  CAREER_COUNSELING_CLOSED_NOTICE,
-  CAREER_COUNSELING_OPEN_AT_MS,
-  isCareerCounselingOpen,
-} from '../src/lib/careerCounseling';
+import { consultDateMin, isCareerCounselingOpen, isConsultDate } from '../src/lib/careerCounseling';
 import {
   buildCareerCounselingPrerenderHtml,
   careerCounselingPrerenderHtml,
 } from './career-counseling-prerender';
 
-assert.equal(CAREER_COUNSELING_OPEN_AT_MS, Date.UTC(2026, 10, 9, 15, 0, 0));
-assert.equal(new Date(CAREER_COUNSELING_OPEN_AT_MS).toISOString(), '2026-11-09T15:00:00.000Z');
-assert.equal(CAREER_COUNSELING_OPEN_AT_MS, Date.parse('2026-11-09T15:00:00.000Z'));
+const times = [
+  0,
+  Date.parse('2026-11-09T14:59:59.999Z'),
+  Date.parse('2026-11-09T15:00:00.000Z'),
+  Date.parse('2026-11-09T15:00:00.001Z'),
+  Date.UTC(2026, 10, 9, 15, 0, 0),
+  Date.now(),
+];
 
-const before = Date.parse('2026-11-09T14:59:59.999Z');
-const at = Date.parse('2026-11-09T15:00:00.000Z');
-const after = Date.parse('2026-11-09T15:00:00.001Z');
+for (const now of times) {
+  assert.equal(isCareerCounselingOpen(now), true);
+  const html = buildCareerCounselingPrerenderHtml(now);
+  assert.equal(html.includes('class="apply"'), true);
+  assert.equal(html.includes('<form'), true);
+  assert.equal(html.includes('11월 10일부터 신청 가능합니다.'), false);
+  assert.equal(html.includes('온라인 진로·선택과목 상담'), false);
+  assert.equal(html.includes('40분'), false);
+  assert.equal(html.includes('비수도권'), false);
+  assert.equal(html.includes('59.5'), false);
+  assert.equal(html.includes('진로 컨설팅'), true);
+}
 
-assert.equal(isCareerCounselingOpen(before), false);
-assert.equal(isCareerCounselingOpen(at), true);
-assert.equal(isCareerCounselingOpen(after), true);
-assert.equal(isCareerCounselingOpen(CAREER_COUNSELING_OPEN_AT_MS - 1), false);
-assert.equal(isCareerCounselingOpen(CAREER_COUNSELING_OPEN_AT_MS), true);
+const beforeKstMidnight = Date.parse('2026-10-29T14:59:59.999Z');
+const atKstMidnight = Date.parse('2026-10-29T15:00:00.000Z');
+assert.equal(consultDateMin(beforeKstMidnight), '2026-11-01');
+assert.equal(consultDateMin(atKstMidnight), '2026-11-02');
+assert.equal(isConsultDate('2026-11-01', beforeKstMidnight), true);
+assert.equal(isConsultDate('2026-11-01', atKstMidnight), false);
+assert.equal(isConsultDate('2027-02-28', atKstMidnight), true);
+assert.equal(isConsultDate('2027-03-01', atKstMidnight), false);
 
-assert.equal(careerCounselingPrerenderHtml.includes(CAREER_COUNSELING_CLOSED_NOTICE), true);
-assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), false);
+assert.equal(careerCounselingPrerenderHtml, buildCareerCounselingPrerenderHtml(0));
+assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);
+assert.equal(careerCounselingPrerenderHtml.includes('11월 10일부터 신청 가능합니다.'), false);
 
-const closedHtml = buildCareerCounselingPrerenderHtml(before);
-assert.equal(closedHtml.includes(CAREER_COUNSELING_CLOSED_NOTICE), true);
-assert.equal(closedHtml.includes('<form'), false);
-assert.equal(closedHtml.includes('class="apply"'), false);
-
-const openHtml = buildCareerCounselingPrerenderHtml(at);
-assert.equal(openHtml.includes('class="apply"'), true);
-assert.equal(openHtml.includes('<form'), true);
-assert.equal(openHtml.includes(CAREER_COUNSELING_CLOSED_NOTICE), false);
-
-console.log(`✅ career counseling date gate passed (TZ=${process.env.TZ || 'unset'})`);
+console.log(`✅ career counseling form stays open (TZ=${process.env.TZ || 'unset'})`);
