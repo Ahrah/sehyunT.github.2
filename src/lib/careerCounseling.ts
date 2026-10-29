@@ -95,7 +95,7 @@ export const CONSULT_TIMES = [
   '22:00',
 ] as const;
 
-export const GRADES = ['중3', '고1'] as const;
+export const GRADES = ['중1', '중2', '중3', '고1'] as const;
 
 export const SCHOOL_REGIONS = [
   '서울특별시',
@@ -128,22 +128,22 @@ export const BIZ_INFO = {
 } as const;
 
 export const PAGE_META = {
-  title: '진로 컨설팅 (중3~고1 온라인) | 입시는세연쌤',
+  title: '진로 컨설팅 (중1~고1 온라인) | 입시는세연쌤',
   description:
-    '중3~고1 진로 컨설팅. 학생이 오래 붙잡는 질문과 관심 주제를 살펴 학교 선택, 과목 선택, 탐구 주제까지 방향을 정해요. 온라인 1시간, 전국 어디서나 신청할 수 있어요.',
+    '중1~고1 진로 컨설팅. 학생이 오래 붙잡는 질문과 관심 주제를 살펴 학교 선택, 과목 선택, 탐구 주제까지 방향을 정해요. 온라인 1시간, 전국 어디서나 신청할 수 있어요.',
   canonical: `${SITE.domain}${CAREER_COUNSELING_PATH}`,
 };
 
 export const ELIGIBILITY_NOTE = {
   label: '대상',
-  text: '중3~고1 학생이라면 사는 지역과 상관없이 신청할 수 있어요',
+  text: '중1~고1 학생이라면 사는 지역과 상관없이 신청할 수 있어요',
 } as const;
 
 export const HERO_COPY = {
-  tag: '중3~고1 · 전국 온라인',
+  tag: '중1~고1 · 전국 온라인',
   titleBefore: '좋아하는 분야를 오래 탐구할 질문으로',
   titleEm: '진로 컨설팅',
-  lead: '중3~고1이면 사는 곳과 상관없이 신청할 수 있어요. 온라인으로 1시간, 10만 원이에요.',
+  lead: '중1~고1이면 사는 곳과 상관없이 신청할 수 있어요. 온라인으로 1시간, 10만 원이에요.',
   chips: ['온라인 1회 1시간', '10만 원', '진행 2일 전까지 입금'],
 } as const;
 
@@ -202,7 +202,7 @@ export const PROGRAM_STEPS = [
 ] as const;
 
 export const SCHEDULE_CARDS = [
-  { h: '대상', big: '중3~고1', p: '전국 어디서나', red: false },
+  { h: '대상', big: '중1~고1', p: '전국 어디서나', red: false },
   { h: '진행', big: '온라인 1시간', p: '문자로 일정 조율', red: false },
   { h: '비용', big: '10만 원', p: '진행 2일 전까지 입금', red: true },
   { h: '입금자명', big: '학생 이름', p: '입금 계좌는 문자로 따로 안내드려요', red: false },

@@ -31,6 +31,7 @@ interface CareerApplicationRow {
   question: string;
   preferredSlots: { date?: string; time?: string }[];
   status: string;
+  notifyFailed: boolean;
   createdAt: any;
 }
 
@@ -89,6 +90,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
             question: data.question || '',
             preferredSlots: Array.isArray(data.preferredSlots) ? data.preferredSlots : [],
             status: data.status || 'submitted',
+            notifyFailed: data.notifyFailed === true,
             createdAt: data.createdAt ?? null,
           });
         };
@@ -348,6 +350,9 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                           >
                             {saving ? '저장 중' : careerCounselingStatusLabel(row.status)}
                           </button>
+                          {row.notifyFailed ? (
+                            <span className="mt-2 inline-block bg-brand-accent px-2 py-1 text-[10px] font-black tracking-wider text-white">메일 실패</span>
+                          ) : null}
                         </td>
                       </tr>
                     );

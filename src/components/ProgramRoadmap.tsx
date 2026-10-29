@@ -146,7 +146,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
           <Block
             tone="enter"
             long
-            period="중3~고1"
+            period="중1~고1"
             name="진로 컨설팅"
             desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다."
             targetId="program-career"
@@ -280,7 +280,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
             <p className="program-map-stack-grade">중3 · 여름방학</p>
             <LaneTag>학습·진로</LaneTag>
             <Block tone="study" period="중1~중3" name="자기주도학습 컨설팅" desc="학생에게 맞는 공부 방식을 찾습니다." targetId="program-self-study" onSelect={onSelect} />
-            <Block tone="enter" period="중3~고1" name="진로 컨설팅" desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다." targetId="program-career" onSelect={onSelect} />
+            <Block tone="enter" period="중1~고1" name="진로 컨설팅" desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다." targetId="program-career" onSelect={onSelect} />
             <LaneTag>고입 · 특목·자사고</LaneTag>
             <Block tone="enter" period="중3 여름방학" name="자기소개서 집중 컨설팅" desc="학생이 왜 그 활동을 했고 무엇을 생각했는지 문장에 담습니다." targetId="program-essay" onSelect={onSelect} />
           </div>
@@ -314,7 +314,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
           <div className="program-map-stack-row">
             <p className="program-map-stack-grade">고1 · 고2</p>
             <LaneTag>학습·진로</LaneTag>
-            <Block tone="enter" period="중3~고1" name="진로 컨설팅" desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다." targetId="program-career" onSelect={onSelect} />
+            <Block tone="enter" period="중1~고1" name="진로 컨설팅" desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다." targetId="program-career" onSelect={onSelect} />
             <Block tone="college" period="고1~고2" name="진로선택과목 상담" desc="희망 전공에 맞춰 들을 과목 순서를 정합니다." targetId="program-subject" onSelect={onSelect} />
             <LaneTag>생기부·대입</LaneTag>
             <button type="button" className="program-map-block program-map-block--college program-map-block--rec" onClick={() => onSelect('program-record')}>

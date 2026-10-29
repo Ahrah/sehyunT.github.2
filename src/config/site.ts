@@ -14,6 +14,8 @@ export const SITE = {
   instagramHandle: '@consultant.sy',
   instagramUrl: 'https://instagram.com/consultant.sy',
   instagramBrandUrl: 'https://www.instagram.com/ipsee.sehyunt/',
+  /** 학원·기관 입시 지도·출강·협업 문의 (카카오 예약, 전화상담 학원용). */
+  collabInquiryUrl: 'https://booking.kakao.com/short/s-yFjEtAaK',
   kakaoChannelUrl: 'https://pf.kakao.com/_xbijSX',
   kakaoChannelUrlHttp: 'http://pf.kakao.com/_xbijSX',
   kakaoInterviewNoticeUrl: 'https://pf.kakao.com/_xbijSX/114866113',

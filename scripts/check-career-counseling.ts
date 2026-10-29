@@ -11,6 +11,7 @@ import {
 } from './career-counseling-prerender';
 import {
   COST_GUIDE_PLAIN,
+  JASOSEO_COST_PLAIN,
   KEYWORD_PAGES,
   keywordPageHtml,
   resourcePageHtml,
@@ -98,8 +99,20 @@ for (const page of KEYWORD_PAGES) {
   const html = keywordPageHtml(page);
   assert.equal(html.includes('>진로 컨설팅<'), true, `${page.slug} top nav missing renamed label`);
   assert.equal(html.includes('>비수도권 진로 상담<'), false, `${page.slug} still uses the old nav label`);
+  assert.equal(html.includes('>협업 문의<'), true, `${page.slug} top nav missing collab inquiry`);
+  assert.equal(html.includes('href="https://booking.kakao.com/short/s-yFjEtAaK"'), true);
+  assert.equal(html.includes('class="quiet" href="https://booking.kakao.com/short/s-yFjEtAaK" target="_blank" rel="noopener"'), true);
   assert.equal(PUBLIC_PRICE_RE.test(html), false, `${page.slug} still has a public price`);
-  assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
+  if (page.slug === 'jasoseo-consulting') {
+    assert.equal(html.includes(COST_GUIDE_PLAIN), false, 'jasoseo page still points parents to the members archive for the price');
+    assert.equal(html.includes(JASOSEO_COST_PLAIN), true);
+    assert.equal(html.includes('진로 상담'), false);
+    assert.equal(html.includes('진로 컨설팅부터'), true);
+    assert.equal(html.includes('진로 컨설팅에서는 무엇을 하나요?'), true);
+    assert.equal(html.includes('진학 상담부터 합니다.'), true);
+  } else {
+    assert.equal(html.includes(COST_GUIDE_PLAIN), true, `${page.slug} is missing the cost guide`);
+  }
   assert.equal(html.includes('자료실'), true);
   assert.equal(html.includes('sehyun@sehyunt.re.kr'), true, `${page.slug} is missing the public contact email`);
   assert.equal(html.includes('consultantsyssam@gmail.com'), false, `${page.slug} still has the old contact email`);
@@ -144,7 +157,7 @@ assert.equal(isKnownSchoolRegion('경기도'), true);
 assert.equal(isKnownSchoolRegion('인천광역시'), true);
 assert.equal(isKnownSchoolRegion('제주특별자치도'), true);
 assert.equal(isKnownSchoolRegion('해외'), false);
-assert.equal(GRADES.includes('중3') && GRADES.includes('고1'), true);
+assert.deepEqual([...GRADES], ['중1', '중2', '중3', '고1']);
 assert.equal((GRADES as readonly string[]).includes('고2'), false);
 assert.equal(CONSULT_TIMES.at(-1), '22:00');
 assert.equal((CONSULT_TIMES as readonly string[]).includes('23:00'), false);
@@ -183,6 +196,8 @@ const sample = (overrides: Partial<CareerCounselingApplicationInput> = {}): Care
 });
 
 assert.equal(validateCareerCounselingForm(sample(), appliedAt), null);
+assert.equal(validateCareerCounselingForm(sample({ grade: '중1' }), appliedAt), null);
+assert.equal(validateCareerCounselingForm(sample({ grade: '중2' }), appliedAt), null);
 assert.equal(validateCareerCounselingForm(sample({ schoolRegion: '부산광역시', grade: '고1' }), appliedAt), null);
 assert.equal(typeof validateCareerCounselingForm(sample({ schoolRegion: '해외' }), appliedAt), 'string');
 assert.equal(typeof validateCareerCounselingForm(sample({ grade: '고2' as CareerCounselingApplicationInput['grade'] }), appliedAt), 'string');
@@ -217,6 +232,10 @@ assert.equal(counselingRules.includes('allow list: if isAdmin();'), true);
 assert.equal(counselingRules.includes("request.resource.data.status == 'submitted'"), true);
 assert.equal(counselingRules.includes("hasOnly(['status', 'updatedAt'])"), true);
 assert.equal(counselingRules.includes("request.resource.data.status in ['submitted', 'contacted']"), true);
+assert.equal(counselingRules.includes("!('notifyFailed' in request.resource.data)"), true);
+assert.equal(counselingRules.includes("hasOnly(['notifyFailed'])"), true);
+assert.equal(counselingRules.includes('request.resource.data.notifyFailed == true'), true);
+assert.equal(counselingRules.includes("!('notifyFailed' in resource.data)"), true);
 
 const root = path.join(__dirname, '..');
 const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf-8');
@@ -254,6 +273,9 @@ assert.equal(programsPublic.includes('미확정(학교 요강 확인 전)'), fal
 assert.equal(programsPublic.includes('12.4~12.10 17:00(인터넷)'), true);
 assert.equal(programsPublic.includes('3:1 모의면접'), true);
 assert.equal(programsPublic.includes('온라인 1회 1시간 · 10만 원'), true);
+assert.equal(programsPublic.includes("period: '중1~고1'"), true);
+assert.equal(programsPublic.includes('period="중1~고1"'), true);
+assert.equal(programsPublic.includes('중3~고1'), false);
 assert.equal(programsPublic.includes('40분'), false);
 assert.equal(programsPublic.includes('비수도권'), false);
 
@@ -280,7 +302,9 @@ assert.equal(counselingHtmlSrc.includes('IMG_1441'), false);
 assert.equal(counselingHtmlSrc.includes('Noto+Sans+KR'), false);
 assert.equal(counselingHtmlSrc.includes('counseling-main.tsx'), true);
 assert.equal(counselingHtmlSrc.includes('pretendard-dynamic-subset.min.css'), true);
-assert.equal(counselingHtmlSrc.includes('진로 컨설팅 (중3~고1 온라인) | 입시는세연쌤'), true);
+assert.equal(counselingHtmlSrc.includes('진로 컨설팅 (중1~고1 온라인) | 입시는세연쌤'), true);
+assert.equal(counselingHtmlSrc.includes('중3~고1'), false);
+assert.equal(counselingHtmlSrc.includes('중1~고1 진로 컨설팅.'), true);
 assert.equal(counselingHtmlSrc.includes('"name":"진로 컨설팅"'), true);
 assert.equal(counselingHtmlSrc.includes('온라인 진로·선택과목 상담'), false);
 assert.equal(counselingHtmlSrc.includes('40분'), false);
@@ -309,6 +333,8 @@ const notifyAt = sessionSrc.indexOf('await notifyCareerCounselingApplication');
 assert.equal(addDocAt !== -1 && tryAt > addDocAt && notifyAt > tryAt, true);
 assert.equal(sessionSrc.slice(addDocAt, tryAt).includes('catch'), false);
 assert.equal(sessionSrc.slice(notifyAt).includes('catch (err)'), true);
+assert.equal(sessionSrc.slice(notifyAt).includes('notifyFailed: true'), true);
+assert.equal(sessionSrc.slice(notifyAt).includes('throw'), false);
 
 const notifySrc = fs.readFileSync(path.join(root, 'src/lib/careerCounselingNotify.ts'), 'utf-8');
 assert.equal(notifySrc.includes('https://formsubmit.co/ajax/${CAREER_COUNSELING_NOTIFY_EMAIL}'), true);
@@ -362,11 +388,23 @@ assert.equal(formatKstDateTime(new Date('2026-10-29T15:00:00.000Z')), '2026-10-3
 
 const firestoreApiSrc = fs.readFileSync(path.join(root, 'src/lib/firestoreApi.ts'), 'utf-8');
 assert.equal(firestoreApiSrc.includes("from 'firebase/firestore'"), true);
-for (const name of ['doc', 'getDoc', 'addDoc', 'collection', 'serverTimestamp']) {
+for (const name of ['doc', 'getDoc', 'addDoc', 'collection', 'serverTimestamp', 'updateDoc']) {
   assert.equal(firestoreApiSrc.includes(name), true, `firestoreApi missing ${name}`);
 }
 
 assert.equal(appSrc.includes("['진로 컨설팅', '/jinro-counseling/']"), true);
+assert.equal(appSrc.includes('협업 문의'), true);
+assert.equal(appSrc.includes('SITE.collabInquiryUrl'), true);
+assert.equal(appSrc.includes('rel="noopener"'), true);
+const siteSrcForCollab = fs.readFileSync(path.join(root, 'src/config/site.ts'), 'utf-8');
+assert.equal(siteSrcForCollab.includes("collabInquiryUrl: 'https://booking.kakao.com/short/s-yFjEtAaK'"), true);
+const adminSrc = fs.readFileSync(path.join(root, 'src/components/AdminDashboard.tsx'), 'utf-8');
+assert.equal(adminSrc.includes('메일 실패'), true);
+assert.equal(adminSrc.includes('notifyFailed'), true);
+const careerCopy = fs.readFileSync(path.join(root, 'src/lib/careerCounseling.ts'), 'utf-8');
+assert.equal(careerCopy.includes('중3~고1'), false);
+assert.equal(careerCopy.includes('중1~고1'), true);
+assert.equal(careerCopy.includes('10만 원'), true);
 assert.equal(appSrc.includes("['비수도권 진로 상담', '/jinro-counseling/']"), false);
 assert.equal(appSrc.includes("['진로 상담', '/jinro-counseling/']"), false);
 assert.equal(appSrc.includes("aspectRatio: '4 / 5'"), true);
