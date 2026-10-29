@@ -692,20 +692,26 @@ export function linksPageHtml(): string {
     </div>
     
     <div class="links">
+      <a href="${SITE.consultUrl}" class="link-btn primary" target="_blank" rel="noopener">
+        <span>📝 1:1 상담 신청하기</span>
+      </a>
       <a href="${SITE.kakaoChannelUrlHttp}" class="link-btn primary" target="_blank" rel="noopener">
         <span>💬 카톡 채널 추가시 15분 무료 전화상담</span>
       </a>
-      <a href="${SITE.kakaoInterviewNoticeUrl}" class="link-btn" target="_blank" rel="noopener">
+      <a href="${DOMAIN}/#program-mock" class="link-btn" target="_blank" rel="noopener">
         <span>📢 12월 특목고 3:1 모의면접 안내</span>
       </a>
       <a href="https://sehyunt.re.kr/" class="link-btn" target="_blank" rel="noopener">
         <span>SehyunT | 프로그램 소개 및 신청</span>
       </a>
-      <a href="https://sehyunt-logic.tistory.com/" class="link-btn" target="_blank" rel="noopener">
-        <span>시사·토론·면접 팁</span>
+      <a href="${DOMAIN}/#resources" class="link-btn" target="_blank" rel="noopener">
+        <span>SehyunT Resources</span>
       </a>
-      <a href="https://sehyunt-study.tistory.com/" class="link-btn" target="_blank" rel="noopener">
-        <span>면접 연습 문제</span>
+      <a href="https://sehyunt-logic.tistory.com/" class="link-btn" target="_blank" rel="noopener">
+        <span>시사·토론 팁</span>
+      </a>
+      <a href="${SITE.naverBlogUrl}" class="link-btn" target="_blank" rel="noopener">
+        <span>네이버 블로그</span>
       </a>
     </div>
     
