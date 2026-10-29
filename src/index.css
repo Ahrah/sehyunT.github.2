@@ -548,7 +548,7 @@ p { text-wrap: pretty; }
   .program-map-cell .program-map-block { flex: 1; margin: 0.35rem; }
 
   .program-map-cell--study { grid-column: a1; grid-row: r1 / r6; }
-  .program-map-cell--career { grid-column: b1; grid-row: r3 / r7; }
+  .program-map-cell--career { grid-column: b1; grid-row: r1 / r7; }
   .program-map-cell--subject { grid-column: a1; grid-row: r6 / r8; }
   .program-map-cell--essay { grid-column: l2; grid-row: r3; }
   .program-map-ivg { grid-column: l2; grid-row: r4; display: flex; flex-direction: column; margin: 0.2rem 0.35rem; }

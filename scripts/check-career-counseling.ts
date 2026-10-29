@@ -276,6 +276,21 @@ assert.equal(programsPublic.includes('온라인 1회 1시간 · 10만 원'), tru
 assert.equal(programsPublic.includes("period: '중1~고1'"), true);
 assert.equal(programsPublic.includes('period="중1~고1"'), true);
 assert.equal(programsPublic.includes('중3~고1'), false);
+
+const roadmapCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf-8');
+assert.match(
+  roadmapCss,
+  /\.program-map-cell--career \{\s*grid-column: b1;\s*grid-row: r1 \/ r7;\s*\}/,
+);
+assert.equal(roadmapCss.includes('.program-map-cell--career { grid-column: b1; grid-row: r3 / r7; }'), false);
+
+const roadmapSrc = fs.readFileSync(path.join(root, 'src/components/ProgramRoadmap.tsx'), 'utf-8');
+const stackSrc = roadmapSrc.slice(roadmapSrc.indexOf('className="program-map-stack"'));
+const middle12Start = stackSrc.indexOf('중1 · 중2');
+const middle12NextPhase = stackSrc.indexOf('program-map-stack-phase', middle12Start);
+const middle12Row = stackSrc.slice(middle12Start, middle12NextPhase === -1 ? undefined : middle12NextPhase);
+assert.equal(middle12Row.includes('진로 컨설팅'), true);
+assert.equal(middle12Row.includes('period="중1~고1"'), true);
 assert.equal(programsPublic.includes('40분'), false);
 assert.equal(programsPublic.includes('비수도권'), false);
 
