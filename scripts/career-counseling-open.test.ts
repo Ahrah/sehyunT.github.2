@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { consultDateMin, isCareerCounselingOpen, isConsultDate } from '../src/lib/careerCounseling';
+import { consultDateMin, formatKstDateTime, isCareerCounselingOpen, isConsultDate } from '../src/lib/careerCounseling';
 import {
   buildCareerCounselingPrerenderHtml,
   careerCounselingPrerenderHtml,
@@ -35,6 +35,8 @@ assert.equal(isConsultDate('2026-11-01', beforeKstMidnight), true);
 assert.equal(isConsultDate('2026-11-01', atKstMidnight), false);
 assert.equal(isConsultDate('2027-02-28', atKstMidnight), true);
 assert.equal(isConsultDate('2027-03-01', atKstMidnight), false);
+assert.equal(formatKstDateTime(new Date(beforeKstMidnight), true), '2026-10-29 23:59:59 KST');
+assert.equal(formatKstDateTime(new Date(atKstMidnight), true), '2026-10-30 00:00:00 KST');
 
 assert.equal(careerCounselingPrerenderHtml, buildCareerCounselingPrerenderHtml(0));
 assert.equal(careerCounselingPrerenderHtml.includes('class="apply"'), true);

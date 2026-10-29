@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Users, Clock, MousePointer2, ArrowLeft, ShieldCheck, Download } from 'lucide-react';
-import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import {
+  CAREER_COUNSELING_COLLECTION,
+  careerCounselingStatusLabel,
+  formatKstDateTime,
+  formatPreferredSlots,
+  nextCareerCounselingStatus,
+} from '../lib/careerCounseling';
 
 interface UserData {
   email: string;
@@ -12,9 +19,39 @@ interface UserData {
   createdAt: any;
 }
 
+interface CareerApplicationRow {
+  id: string;
+  childName: string;
+  email: string;
+  phone: string;
+  schoolName: string;
+  schoolRegion: string;
+  grade: string;
+  careerGoal: string;
+  question: string;
+  preferredSlots: { date?: string; time?: string }[];
+  status: string;
+  createdAt: any;
+}
+
+function applicationTime(value: any): string {
+  if (value?.toDate) return formatKstDateTime(value.toDate());
+  return '시각 없음';
+}
+
+function applicationMillis(value: any): number {
+  if (value?.toMillis) return value.toMillis();
+  if (value?.toDate) return value.toDate().getTime();
+  return 0;
+}
+
 export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState<CareerApplicationRow[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [applicationsError, setApplicationsError] = useState<string | null>(null);
+  const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -35,8 +72,68 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
       }
     };
 
+    const fetchApplications = async () => {
+      try {
+        let fetched: CareerApplicationRow[] = [];
+        const mapSnap = (snap: { id: string; data: () => any }) => {
+          const data = snap.data();
+          fetched.push({
+            id: snap.id,
+            childName: data.childName || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            schoolName: data.schoolName || '',
+            schoolRegion: data.schoolRegion || '',
+            grade: data.grade || '',
+            careerGoal: data.careerGoal || '',
+            question: data.question || '',
+            preferredSlots: Array.isArray(data.preferredSlots) ? data.preferredSlots : [],
+            status: data.status || 'submitted',
+            createdAt: data.createdAt ?? null,
+          });
+        };
+        try {
+          const q = query(collection(db, CAREER_COUNSELING_COLLECTION), orderBy('createdAt', 'desc'), limit(200));
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach((snap) => mapSnap(snap));
+        } catch (orderErr) {
+          console.warn('진로 컨설팅 신청 정렬 조회에 실패해 받은 뒤 정렬합니다.', orderErr);
+          fetched = [];
+          const querySnapshot = await getDocs(collection(db, CAREER_COUNSELING_COLLECTION));
+          querySnapshot.forEach((snap) => mapSnap(snap));
+          fetched.sort((a, b) => applicationMillis(b.createdAt) - applicationMillis(a.createdAt));
+          fetched = fetched.slice(0, 200);
+        }
+        setApplications(fetched);
+        setApplicationsError(null);
+      } catch (err) {
+        console.error('진로 컨설팅 신청 목록을 불러오지 못했어요.', err);
+        setApplicationsError('신청 목록을 불러오지 못했어요. 관리자 계정인지, Firestore 규칙이 배포됐는지 확인해 주세요.');
+      } finally {
+        setApplicationsLoading(false);
+      }
+    };
+
     fetchUsers();
+    fetchApplications();
   }, []);
+
+  const toggleApplicationStatus = async (row: CareerApplicationRow) => {
+    const next = nextCareerCounselingStatus(row.status);
+    setStatusSavingId(row.id);
+    try {
+      await updateDoc(doc(db, CAREER_COUNSELING_COLLECTION, row.id), {
+        status: next,
+        updatedAt: serverTimestamp(),
+      });
+      setApplications((prev) => prev.map((item) => (item.id === row.id ? { ...item, status: next } : item)));
+    } catch (err) {
+      console.error(err);
+      alert('상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setStatusSavingId(null);
+    }
+  };
 
   const handleExportCSV = () => {
     if (users.length === 0) {
@@ -171,6 +268,90 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                       </td>
                     </tr>
                   ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-brand-secondary border border-brand-light-gray overflow-hidden mt-12">
+          <div className="p-8 border-b border-brand-light-gray flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+            <div>
+              <h3 className="font-black tracking-widest text-sm">진로 컨설팅 신청</h3>
+              <p className="mt-2 text-[10px] font-bold text-brand-gray">최신 신청이 위에 보여요. 상태를 누르면 신규와 연락함으로 바뀌어요.</p>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gray">{applications.length}건</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-brand-light-gray bg-brand-bg/50">
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">신청 시각 (KST)</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">학생 이름</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">학년 · 학교</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">연락처</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">희망 일정</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">관심 · 메시지</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">상태</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-light-gray">
+                {applicationsLoading ? (
+                  Array(3).fill(0).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={7} className="p-6 h-16 bg-brand-bg/20"></td>
+                    </tr>
+                  ))
+                ) : applicationsError ? (
+                  <tr>
+                    <td colSpan={7} className="p-12 text-center text-brand-gray font-bold text-xs">{applicationsError}</td>
+                  </tr>
+                ) : applications.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-12 text-center text-brand-gray font-bold text-xs">아직 접수된 신청이 없어요.</td>
+                  </tr>
+                ) : (
+                  applications.map((row) => {
+                    const contacted = row.status === 'contacted';
+                    const saving = statusSavingId === row.id;
+                    return (
+                      <tr key={row.id} className="hover:bg-brand-bg transition-colors align-top">
+                        <td className="p-6 text-brand-gray text-xs whitespace-nowrap">{applicationTime(row.createdAt)}</td>
+                        <td className="p-6">
+                          <p className="font-black text-sm">{row.childName || '이름 없음'}</p>
+                        </td>
+                        <td className="p-6">
+                          <p className="text-xs font-bold">{row.grade || '학년 없음'} · {row.schoolName || '학교 없음'}</p>
+                          <p className="text-[10px] text-brand-gray">{row.schoolRegion}</p>
+                        </td>
+                        <td className="p-6">
+                          <p className="text-xs font-bold">{row.phone || '번호 없음'}</p>
+                          <p className="text-[10px] text-brand-gray">{row.email}</p>
+                        </td>
+                        <td className="p-6 text-xs whitespace-pre-line">{formatPreferredSlots(row.preferredSlots)}</td>
+                        <td className="p-6 max-w-xs">
+                          <p className="text-xs font-bold">{row.careerGoal || '희망 진로 없음'}</p>
+                          {row.question ? <p className="mt-2 text-[10px] text-brand-gray whitespace-pre-wrap">{row.question}</p> : null}
+                        </td>
+                        <td className="p-6">
+                          <button
+                            type="button"
+                            onClick={() => void toggleApplicationStatus(row)}
+                            disabled={saving}
+                            aria-label={contacted ? '상태를 신규로 바꾸기' : '상태를 연락함으로 바꾸기'}
+                            className={`px-3 py-1 text-[10px] font-black tracking-wider cursor-pointer disabled:opacity-50 ${
+                              contacted
+                                ? 'bg-brand-secondary text-brand-text border border-brand-light-gray'
+                                : 'bg-brand-text text-brand-bg'
+                            }`}
+                          >
+                            {saving ? '저장 중' : careerCounselingStatusLabel(row.status)}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

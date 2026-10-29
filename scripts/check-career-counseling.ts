@@ -21,15 +21,20 @@ import {
   COST_GUIDE,
   GRADES,
   SCHOOL_REGIONS,
+  careerCounselingStatusLabel,
   consultDateMin,
   consultSlotHint,
+  formatKstDateTime,
+  formatPreferredSlots,
   isCareerCounselingPath,
   isConsultDate,
   isKnownSchoolRegion,
   isValidMobile,
+  nextCareerCounselingStatus,
   validateCareerCounselingForm,
   type CareerCounselingApplicationInput,
 } from '../src/lib/careerCounseling';
+import { buildCareerCounselingNotifyPayload } from '../src/lib/careerCounselingNotify';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rules = fs.readFileSync(path.join(__dirname, '../firestore.rules'), 'utf-8');
@@ -206,6 +211,12 @@ assert.equal(validateCareerCounselingForm(sample({
 assert.equal(rules.includes('match /careerCounselingApplications/{applicationId}'), true);
 assert.equal(rules.includes('ahrah0365@gmail.com'), true);
 assert.equal(/match \/resourceBodies\/\{itemId\}[\s\S]*?allow read: if isSignedIn\(\);/.test(rules), true);
+const counselingRules = rules.slice(rules.indexOf('match /careerCounselingApplications/{applicationId}'));
+assert.equal(counselingRules.includes('allow read:'), false);
+assert.equal(counselingRules.includes('allow list: if isAdmin();'), true);
+assert.equal(counselingRules.includes("request.resource.data.status == 'submitted'"), true);
+assert.equal(counselingRules.includes("hasOnly(['status', 'updatedAt'])"), true);
+assert.equal(counselingRules.includes("request.resource.data.status in ['submitted', 'contacted']"), true);
 
 const root = path.join(__dirname, '..');
 const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf-8');
@@ -292,6 +303,62 @@ assert.equal(mainSrc.includes("import App from './App.tsx'"), true);
 const sessionSrc = fs.readFileSync(path.join(root, 'src/lib/careerCounselingSession.ts'), 'utf-8');
 assert.equal(sessionSrc.includes("import('firebase/firestore')"), false);
 assert.equal(sessionSrc.includes("import('./firestoreApi')"), true);
+const addDocAt = sessionSrc.indexOf('await addDoc');
+const tryAt = sessionSrc.indexOf('try {', addDocAt);
+const notifyAt = sessionSrc.indexOf('await notifyCareerCounselingApplication');
+assert.equal(addDocAt !== -1 && tryAt > addDocAt && notifyAt > tryAt, true);
+assert.equal(sessionSrc.slice(addDocAt, tryAt).includes('catch'), false);
+assert.equal(sessionSrc.slice(notifyAt).includes('catch (err)'), true);
+
+const notifySrc = fs.readFileSync(path.join(root, 'src/lib/careerCounselingNotify.ts'), 'utf-8');
+assert.equal(notifySrc.includes('https://formsubmit.co/ajax/${CAREER_COUNSELING_NOTIFY_EMAIL}'), true);
+assert.equal(notifySrc.includes("CAREER_COUNSELING_NOTIFY_EMAIL = 'consultantsyssam@gmail.com'"), true);
+assert.equal(notifySrc.includes('[입시는세연쌤] 새 진로 컨설팅 신청 -'), true);
+assert.equal(fs.readFileSync(path.join(root, 'src/lib/careerCounseling.ts'), 'utf-8').includes('consultantsyssam@gmail.com'), false);
+assert.equal(fs.readFileSync(path.join(root, 'scripts/career-counseling-prerender.ts'), 'utf-8').includes('careerCounselingNotify'), false);
+
+const notifyPayload = buildCareerCounselingNotifyPayload({
+  userId: 'uid-1',
+  email: 'parent@example.com',
+  childName: '김세연',
+  schoolName: '○○고등학교',
+  schoolRegion: '경기도',
+  grade: '고1',
+  careerGoal: '생명과학',
+  preferredSlots: [
+    { date: '2026-11-20', time: '15:00' },
+    { date: '2026-11-21', time: '19:00' },
+    { date: '2026-11-22', time: '22:00' },
+  ],
+  phone: '010-5308-6879',
+  question: '과목 선택이 고민이에요',
+  privacyAgreed: true,
+  productName: '진로 컨설팅',
+  price: 100000,
+  status: 'submitted',
+}, new Date('2026-10-29T04:52:07.000Z'), 'app-1');
+assert.equal(notifyPayload._subject, '[입시는세연쌤] 새 진로 컨설팅 신청 - 김세연');
+assert.equal(notifyPayload._replyto, 'parent@example.com');
+assert.equal(notifyPayload.학생_이름, '김세연');
+assert.equal(notifyPayload.학년, '고1');
+assert.equal(notifyPayload.재학_학교, '○○고등학교');
+assert.equal(notifyPayload.학교_소재, '경기도');
+assert.equal(notifyPayload.휴대폰, '010-5308-6879');
+assert.equal(notifyPayload.희망_진로, '생명과학');
+assert.equal(notifyPayload.질문, '과목 선택이 고민이에요');
+assert.equal(notifyPayload.희망_일정, formatPreferredSlots([
+  { date: '2026-11-20', time: '15:00' },
+  { date: '2026-11-21', time: '19:00' },
+  { date: '2026-11-22', time: '22:00' },
+]));
+assert.equal(notifyPayload.신청_시각_KST, '2026-10-29 13:52:07 KST');
+assert.equal(notifyPayload.상태, '신규');
+assert.equal(notifyPayload.신청_ID, 'app-1');
+assert.equal(notifyPayload.금액, '100,000원');
+assert.equal(careerCounselingStatusLabel('contacted'), '연락함');
+assert.equal(nextCareerCounselingStatus('submitted'), 'contacted');
+assert.equal(nextCareerCounselingStatus('contacted'), 'submitted');
+assert.equal(formatKstDateTime(new Date('2026-10-29T15:00:00.000Z')), '2026-10-30 00:00 KST');
 
 const firestoreApiSrc = fs.readFileSync(path.join(root, 'src/lib/firestoreApi.ts'), 'utf-8');
 assert.equal(firestoreApiSrc.includes("from 'firebase/firestore'"), true);

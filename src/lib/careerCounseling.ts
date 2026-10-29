@@ -21,6 +21,47 @@ export function kstDateString(nowMs: number = Date.now()): string {
   return new Date(nowMs + KST_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** Wall clock in Asia/Seoul. Independent of the browser or server timezone. */
+export function formatKstDateTime(value: Date, withSeconds = false): string {
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  };
+  if (withSeconds) options.second = '2-digit';
+  const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(value);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  const clock = withSeconds ? `${hour}:${get('minute')}:${get('second')}` : `${hour}:${get('minute')}`;
+  return `${get('year')}-${get('month')}-${get('day')} ${clock} KST`;
+}
+
+export function formatPreferredSlots(
+  slots: readonly { date?: string; time?: string }[] | null | undefined,
+): string {
+  if (!slots?.length) return '없음';
+  return slots
+    .map((slot, index) => `${index + 1}. ${slot?.date || '날짜 없음'} ${slot?.time || '시간 없음'}`)
+    .join('\n');
+}
+
+export const CAREER_COUNSELING_STATUS_NEW = 'submitted';
+export const CAREER_COUNSELING_STATUS_CONTACTED = 'contacted';
+
+export function careerCounselingStatusLabel(status: string | null | undefined): string {
+  return status === CAREER_COUNSELING_STATUS_CONTACTED ? '연락함' : '신규';
+}
+
+export function nextCareerCounselingStatus(status: string | null | undefined): 'submitted' | 'contacted' {
+  return status === CAREER_COUNSELING_STATUS_CONTACTED
+    ? CAREER_COUNSELING_STATUS_NEW
+    : CAREER_COUNSELING_STATUS_CONTACTED;
+}
+
 export function addCalendarDays(isoDate: string, days: number): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
   if (!match) return '';

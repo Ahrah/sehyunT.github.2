@@ -1,5 +1,6 @@
 import type { User as FirebaseUser } from 'firebase/auth';
 import { CAREER_COUNSELING_COLLECTION, formatPhone } from './careerCounseling';
+import type { CareerCounselingNotifyInput } from './careerCounselingNotify';
 
 export type CareerAuthProfile = { childName: string; phone: string };
 export type CareerAuthListener = (user: FirebaseUser | null, profile: CareerAuthProfile) => void;
@@ -65,16 +66,22 @@ export async function signOutCareer() {
   await signOut(auth);
 }
 
-export async function submitCareerApplication(record: object) {
+export async function submitCareerApplication(record: CareerCounselingNotifyInput) {
   await ensureCareerAuth();
   const [{ db }, { addDoc, collection, serverTimestamp }] = await Promise.all([
     import('./firebase'),
     import('./firestoreApi'),
   ]);
-  await addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
+  const created = await addDoc(collection(db, CAREER_COUNSELING_COLLECTION), {
     ...record,
     createdAt: serverTimestamp(),
   });
+  try {
+    const { notifyCareerCounselingApplication } = await import('./careerCounselingNotify');
+    await notifyCareerCounselingApplication(record, new Date(), created.id);
+  } catch (err) {
+    console.error('진로 컨설팅 알림 메일을 보내지 못했어요. 신청 저장은 유지됩니다.', err);
+  }
 }
 
 export function stopCareerAuth() {
