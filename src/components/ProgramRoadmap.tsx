@@ -267,6 +267,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
             <p className="program-map-stack-grade">중1 · 중2</p>
             <LaneTag>학습·진로</LaneTag>
             <Block tone="study" period="중1~중3" name="자기주도학습 컨설팅" desc="학생에게 맞는 공부 방식을 찾습니다." targetId="program-self-study" onSelect={onSelect} />
+            <Block tone="enter" period="중1~고1" name="진로 컨설팅" desc="막연한 관심사를 구체적인 탐구 질문으로 바꿉니다." targetId="program-career" onSelect={onSelect} />
           </div>
         </section>
 
