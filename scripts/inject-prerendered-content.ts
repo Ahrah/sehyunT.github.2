@@ -170,6 +170,7 @@ const homePageContent = `
           Premium Admissions Strategy & Self-Directed Learning Lab. 
           특목고 입시와 학생부종합전형, 1:1 전략 컨설팅 입시는세연쌤
         </p>
+        <a href="${SITE.kakaoOpenChatUrl}" target="_blank" rel="noopener noreferrer" class="mt-6 inline-flex h-12 items-center justify-center bg-brand-text px-6 text-sm font-bold text-brand-bg hover:bg-brand-accent transition-colors">학종 질문·정보방 들어가기</a>
       </div>
       <nav aria-label="컨설팅 안내" class="mt-16 flex flex-wrap gap-x-6 gap-y-3 text-sm font-black">
         <a href="/jinro-counseling/">진로 컨설팅</a>
