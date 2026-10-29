@@ -39,13 +39,23 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // 진로 컨설팅 신청 — 본인과 관리자만 읽기
+    // 진로 컨설팅 신청.
+    // 목록(list)은 관리자만. 신청자는 본인 문서(get)만 읽을 수 있다.
+    // 관리자는 상태(submitted 신규 / contacted 연락함)와 updatedAt 만 바꿀 수 있다.
+    // 이 규칙은 앱이 쓰는 이름 있는 데이터베이스에 배포해야 한다.
+    // database: ai-studio-d952e7b8-7279-465e-ace8-9b4ca51fec63
+    // project: gen-lang-client-0337316086
     match /careerCounselingApplications/{applicationId} {
       allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid;
-      allow read: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'submitted';
+      allow get: if isSignedIn()
         && (resource.data.userId == request.auth.uid || isAdmin());
-      allow update, delete: if isAdmin();
+      allow list: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.status in ['submitted', 'contacted'];
+      allow delete: if isAdmin();
     }
   }
 }
