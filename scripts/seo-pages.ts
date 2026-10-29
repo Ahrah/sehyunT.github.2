@@ -692,20 +692,33 @@ export function linksPageHtml(): string {
     </div>
     
     <div class="links">
+      <a href="${SITE.consultUrl}" class="link-btn primary" target="_blank" rel="noopener">
+        <span>📝 1:1 상담 신청하기</span>
+      </a>
       <a href="${SITE.kakaoChannelUrlHttp}" class="link-btn primary" target="_blank" rel="noopener">
         <span>💬 카톡 채널 추가시 15분 무료 전화상담</span>
       </a>
+      <!-- TODO: 12월 특목고 3:1 모의면접 안내 링크.
+           소유자가 https://pf.kakao.com/_xbijSX/114866113 이 잘못된 주소라고 했으나,
+           저장소와 공개 검색에서 다른 카카오 포스트 URL은 찾지 못했다.
+           온사이트 후보는 두 곳이다.
+           - ${DOMAIN}/#program-mock (홈 프로그램 카드, 제목은 '3:1 모의면접'. 중3 11~12월과 고3 2학기를 함께 다룸)
+           - ${DOMAIN}/interview-consulting/ (면접 컨설팅 페이지. '12월 모의 면접' 절이 있으나 페이지 주제는 면접 컨설팅)
+           '안내' 공지의 올바른 대상으로 하나를 확정하지 못해 기존 링크를 유지한다. -->
       <a href="${SITE.kakaoInterviewNoticeUrl}" class="link-btn" target="_blank" rel="noopener">
         <span>📢 12월 특목고 3:1 모의면접 안내</span>
       </a>
       <a href="https://sehyunt.re.kr/" class="link-btn" target="_blank" rel="noopener">
         <span>SehyunT | 프로그램 소개 및 신청</span>
       </a>
-      <a href="https://sehyunt-logic.tistory.com/" class="link-btn" target="_blank" rel="noopener">
-        <span>시사·토론·면접 팁</span>
+      <a href="${DOMAIN}/#resources" class="link-btn" target="_blank" rel="noopener">
+        <span>SehyunT Resources</span>
       </a>
-      <a href="https://sehyunt-study.tistory.com/" class="link-btn" target="_blank" rel="noopener">
-        <span>면접 연습 문제</span>
+      <a href="https://sehyunt-logic.tistory.com/" class="link-btn" target="_blank" rel="noopener">
+        <span>시사·토론 팁</span>
+      </a>
+      <a href="${SITE.naverBlogUrl}" class="link-btn" target="_blank" rel="noopener">
+        <span>네이버 블로그</span>
       </a>
     </div>
     
