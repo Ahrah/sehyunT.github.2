@@ -68,7 +68,7 @@ export async function signOutCareer() {
 
 export async function submitCareerApplication(record: CareerCounselingNotifyInput) {
   await ensureCareerAuth();
-  const [{ db }, { addDoc, collection, serverTimestamp }] = await Promise.all([
+  const [{ db }, { addDoc, collection, doc, serverTimestamp, updateDoc }] = await Promise.all([
     import('./firebase'),
     import('./firestoreApi'),
   ]);
@@ -80,7 +80,13 @@ export async function submitCareerApplication(record: CareerCounselingNotifyInpu
     const { notifyCareerCounselingApplication } = await import('./careerCounselingNotify');
     await notifyCareerCounselingApplication(record, new Date(), created.id);
   } catch (err) {
+    // 신청 저장은 성공으로 둔다. 메일만 실패하면 관리자 목록에서 보이도록 표시한다.
     console.error('진로 컨설팅 알림 메일을 보내지 못했어요. 신청 저장은 유지됩니다.', err);
+    try {
+      await updateDoc(doc(db, CAREER_COUNSELING_COLLECTION, created.id), { notifyFailed: true });
+    } catch (markErr) {
+      console.error('알림 실패 표시를 저장하지 못했어요.', markErr);
+    }
   }
 }
 

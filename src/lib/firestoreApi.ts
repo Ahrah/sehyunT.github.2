@@ -4,4 +4,5 @@ export {
   doc,
   getDoc,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';

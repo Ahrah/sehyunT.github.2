@@ -62,6 +62,7 @@ const STYLE = `
   .brand img { height:32px; width:auto; }
   nav.top a { font-size:13px; font-weight:700; text-decoration:none; color:var(--gray); margin-left:14px; }
   nav.top a:hover { color:var(--accent); }
+  nav.top a.quiet { font-size:12px; font-weight:600; color:#71717A; }
   main { padding-top:40px; padding-bottom:64px; }
   .crumb { font-size:13px; color:var(--gray); margin-bottom:12px; }
   .crumb a { text-decoration:none; }
@@ -89,7 +90,14 @@ const STYLE = `
   footer.site { border-top:1px solid var(--light); padding:32px 0 48px; font-size:13px; color:#71717A; }
   footer.site p { font-size:13px; color:#71717A; margin:4px 0; }
   footer.site nav a { margin-right:14px; font-weight:700; text-decoration:none; color:var(--gray); }
-  @media (max-width: 520px) { nav.top a.hide-sm { display:none; } th { width:38%; } }
+  @media (max-width: 520px) {
+    header.site .in { height:auto; min-height:64px; padding-top:8px; padding-bottom:8px; align-items:flex-start; }
+    nav.top { display:flex; flex-wrap:wrap; justify-content:flex-end; max-width:62%; padding-top:6px; }
+    nav.top a { margin-left:10px; line-height:1.45; }
+    nav.top a.hide-sm { display:none; }
+    nav.top a.quiet { font-size:11px; }
+    th { width:38%; }
+  }
 `;
 
 interface PageShellOpts {
@@ -133,6 +141,7 @@ export function pageShell(o: PageShellOpts): string {
       <a href="/jasoseo-consulting/">자소서</a>
       <a href="/interview-consulting/">면접</a>
       <a class="hide-sm" href="/#resources">자료실</a>
+      <a class="quiet" href="${SITE.collabInquiryUrl}" target="_blank" rel="noopener">협업 문의</a>
     </nav>
   </div></header>
   <main>
@@ -154,8 +163,16 @@ export const resourcesHref = (category?: '대입' | '고입' | '학습자료') =
 
 export const COST_GUIDE_PLAIN = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
 
+/** 자소서 상품 금액은 저장소 데이터에 없다. 상담 뒤 문자로 안내하고, 첫 수업 2일 전 입금으로 확정한다. */
+export const JASOSEO_COST_PLAIN = '비용은 상담 신청 뒤 문자로 안내드려요. 첫 수업 2일 전까지 입금해 주셔야 수업이 확정돼요.';
+
 export function costGuideHtml(category?: '대입' | '고입' | '학습자료') {
   return `비용은 회원가입 후 <a href="${resourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.`;
+}
+
+function pageCostHtml(slug: string, category?: '대입' | '고입' | '학습자료') {
+  if (slug === 'jasoseo-consulting') return escapeHtml(JASOSEO_COST_PLAIN);
+  return costGuideHtml(category);
 }
 
 function keywordPageCategory(slug: string): '대입' | '고입' {
@@ -260,7 +277,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
     lead: '입시는세연쌤의 자소서 컨설팅은 외고·국제고 같은 특목고와 자사고 진학을 준비하는 중학생의 자기소개서를 완성하는 컨설팅입니다. 문장을 다듬기 전에, 면접에서 보여 줄 서사를 구조화하는 데 초점을 둡니다.',
     summary: [
       ['대상 학생', '외고·국제고 같은 특목고와 자사고 진학을 준비하는 중학생'],
-      ['비용', COST_GUIDE_PLAIN],
+      ['비용', JASOSEO_COST_PLAIN],
       ['진행 방식', '대부분 4~6회 수업 동안 자기소개서 작성 · 자기소개서 작성은 중3 여름방학부터'],
       ['마친 뒤', '자기소개서 수업이 끝날 때 예상 질문을 드리고, 면접 준비로 이어집니다'],
     ],
@@ -274,7 +291,7 @@ export const KEYWORD_PAGES: KeywordPage[] = [
       {
         h: '진행 순서',
         paras: ['학년과 관계없이 아래 순서로 진행하고, 그중 학생에게 필요한 단계부터 시작합니다.'],
-        list: ['진로 상담', '진학 상담', '자기소개서 작성 (중3 여름방학부터)', '면접 (모의 면접은 12월)'],
+        list: ['진로 컨설팅', '진학 상담', '자기소개서 작성 (중3 여름방학부터)', '면접 (모의 면접은 12월)'],
       },
       {
         h: '자기주도학습은 무엇을 말하나요?',
@@ -284,9 +301,9 @@ export const KEYWORD_PAGES: KeywordPage[] = [
       },
     ],
     faqs: [
-      { q: '자소서 컨설팅 비용은 얼마인가요?', a: COST_GUIDE_PLAIN },
-      { q: '중3인데 아직 진로나 학교를 못 정했어요. 바로 자소서를 써도 되나요?', a: '앞 단계가 정해지지 않았다면 앞 단계부터 시작합니다. 진로가 없으면 진로 상담부터, 진로는 있는데 학교를 못 정했다면 진학 상담부터 합니다. 어디로, 왜 가고 싶은지가 서야 자소서에 어떤 경험을 쓸지 고를 수 있습니다.' },
-      { q: '진로 상담에서는 무엇을 하나요?', a: '여러 진로 분야를 보여 주고, 학생이 흥미를 느끼는 쪽으로 진로를 정하도록 돕습니다. 특목고나 자사고에 가고 싶다는 마음이 있다면, 그 진로에 맞춰 스스로 알아볼 탐구 주제를 함께 정합니다.' },
+      { q: '자소서 컨설팅 비용은 얼마인가요?', a: JASOSEO_COST_PLAIN },
+      { q: '중3인데 아직 진로나 학교를 못 정했어요. 바로 자소서를 써도 되나요?', a: '앞 단계가 정해지지 않았다면 앞 단계부터 시작합니다. 진로가 없으면 진로 컨설팅부터, 진로는 있는데 학교를 못 정했다면 진학 상담부터 합니다. 어디로, 왜 가고 싶은지가 서야 자소서에 어떤 경험을 쓸지 고를 수 있습니다.' },
+      { q: '진로 컨설팅에서는 무엇을 하나요?', a: '여러 진로 분야를 보여 주고, 학생이 흥미를 느끼는 쪽으로 진로를 정하도록 돕습니다. 특목고나 자사고에 가고 싶다는 마음이 있다면, 그 진로에 맞춰 스스로 알아볼 탐구 주제를 함께 정합니다.' },
     ],
     relatedArticle: { id: 'VYDKTGZbmQ3ItIWOeHiF', title: '[2026년] 세연쌤 외고·국제고·자사고 자소서·면접 컨설팅, 비용과 진행 방식 FAQ' },
   },
@@ -331,7 +348,7 @@ export function keywordPageHtml(p: KeywordPage): string {
   const url = `${DOMAIN}/${p.slug}/`;
   const category = keywordPageCategory(p.slug);
   const summaryRows = p.summary.map(([k, v]) => {
-    const cell = k === '비용' ? costGuideHtml(category) : escapeHtml(v);
+    const cell = k === '비용' ? pageCostHtml(p.slug, category) : escapeHtml(v);
     return `<tr><th>${escapeHtml(k)}</th><td>${cell}</td></tr>`;
   }).join('');
   const sections = p.sections.map(s => `
@@ -340,7 +357,7 @@ export function keywordPageHtml(p: KeywordPage): string {
     ${(s.paras || []).map(x => `<p>${escapeHtml(x)}</p>`).join('\n    ')}
     ${s.list ? `<ul class="steps">${s.list.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>` : ''}`).join('\n');
   const faqs = p.faqs.map(f => {
-    const answer = /비용은 얼마/.test(f.q) ? costGuideHtml(category) : escapeHtml(f.a);
+    const answer = /비용은 얼마/.test(f.q) ? pageCostHtml(p.slug, category) : escapeHtml(f.a);
     return `
     <h2>${escapeHtml(f.q)}</h2>
     <p>${answer}</p>`;

@@ -99,8 +99,9 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
           </div>
         </a>
 
-        <div className="hidden items-center gap-8 lg:flex">
+        <div className="hidden items-center gap-6 xl:gap-8 lg:flex">
           {links.map(([label, href]) => <a key={href} href={href} className="text-sm font-semibold text-brand-ink/70 hover:text-brand-ink">{label}</a>)}
+          <a href={SITE.collabInquiryUrl} target="_blank" rel="noopener" className="text-xs font-medium text-brand-ink/45 hover:text-brand-ink/70">협업 문의</a>
           {user ? (
             <div className="flex items-center gap-4 border-l border-brand-ink/10 pl-6">
               <button onClick={onOpenMyPage} className="flex items-center gap-2 text-sm font-bold hover:text-brand-accent">
@@ -125,6 +126,7 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
             </div>
             <div className="flex min-h-[80vh] flex-col justify-center gap-7">
               {links.map(([label, href], index) => <a key={href} href={href} onClick={() => closeAnd()} className="flex items-center gap-4 text-4xl font-black tracking-[-0.05em]"><span className="text-xs text-brand-coral">0{index + 1}</span>{label}</a>)}
+              <a href={SITE.collabInquiryUrl} target="_blank" rel="noopener" onClick={() => closeAnd()} className="text-sm font-medium text-white/45">협업 문의</a>
               <div className="mt-5 border-t border-white/15 pt-7">
                 {user ? <button onClick={() => closeAnd(onOpenMyPage)} className="mr-6 text-base font-bold">마이페이지</button> : <button onClick={() => closeAnd(onOpenAuth)} className="mr-6 text-base font-bold">로그인</button>}
                 {isAdmin && <button onClick={() => closeAnd(onOpenAdmin)} className="text-base font-bold text-brand-coral">관리자</button>}
