@@ -354,13 +354,13 @@ assert.equal(sessionSrc.includes('consultantsyssam@gmail.com'), false);
 assert.equal(fs.readFileSync(path.join(root, 'src/lib/careerCounseling.ts'), 'utf-8').includes('consultantsyssam@gmail.com'), false);
 assert.equal(fs.readFileSync(path.join(root, 'scripts/career-counseling-prerender.ts'), 'utf-8').includes('careerCounselingNotify'), false);
 
-assert.equal(FORMSUBMIT_ALIAS, 'PENDING_FORMSUBMIT_ALIAS');
-assert.equal(isFormSubmitAliasReady(), false);
+assert.equal(FORMSUBMIT_ALIAS, '98ced276c2a162b675682e1867a91498');
+assert.equal(isFormSubmitAliasReady(), true);
 assert.equal(isFormSubmitAliasReady('PENDING_FORMSUBMIT_ALIAS'), false);
 assert.equal(isFormSubmitAliasReady(''), false);
 assert.equal(isFormSubmitAliasReady('consultantsyssam@gmail.com'), false);
 assert.equal(isFormSubmitAliasReady('c277d8d5f1ett209149848e390b9b5cc'), true);
-assert.equal(careerCounselingNotifyUrl(), null);
+assert.equal(careerCounselingNotifyUrl(), 'https://formsubmit.co/ajax/98ced276c2a162b675682e1867a91498');
 assert.equal(careerCounselingNotifyUrl('consultantsyssam@gmail.com'), null);
 assert.equal(
   careerCounselingNotifyUrl('c277d8d5f1ett209149848e390b9b5cc'),
@@ -422,7 +422,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   });
 }) as typeof fetch;
 try {
-  await notifyCareerCounselingApplication('app-1');
+  await notifyCareerCounselingApplication('app-1', 'PENDING_FORMSUBMIT_ALIAS');
   assert.equal(fetchCalls.length, 0, 'placeholder alias must skip the network call');
   await notifyCareerCounselingApplication('app-1', 'consultantsyssam@gmail.com');
   assert.equal(fetchCalls.length, 0, 'raw email must not be used as the endpoint');

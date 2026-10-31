@@ -5,7 +5,7 @@
  * 활성화 전이면 FORMSUBMIT_ALIAS 가 placeholder 라 네트워크 호출을 건너뜁니다.
  * 활성화 메일의 랜덤 alias 로 이 값만 바꾸면 알림이 나갑니다.
  */
-export const FORMSUBMIT_ALIAS = 'PENDING_FORMSUBMIT_ALIAS';
+export const FORMSUBMIT_ALIAS = '98ced276c2a162b675682e1867a91498';
 
 const NOTIFY_TIMEOUT_MS = 8000;
 
