@@ -402,7 +402,7 @@ export default function App() {
           <motion.div {...reveal} className="relative mx-auto max-w-5xl text-center">
             <p className="section-label">Start Here</p>
             <h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.065em] sm:text-7xl lg:text-8xl">1:1 상담 신청하기</h2>
-            <p className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-brand-ink/65">학생이 지금 어디에서 막혀 있는지 알려주시면, 무엇부터 확인하고 어떤 방식으로 준비하면 좋을지 안내드립니다.</p>
+            <p className="mx-auto mt-7 max-w-2xl text-lg font-medium leading-8 text-brand-ink/65">학생이 지금 어떤 부분에서 어려움을 겪고 있는지 알려주시면, 무엇부터 확인하고 어떤 방식으로 준비하면 좋을지 안내드립니다.</p>
             <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
               <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="w-full sm:w-auto">상담 신청하기 <ArrowUpRight size={18} /></Button></a>
               <a href={SITE.naverBlogUrl} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full sm:w-auto">블로그에서 더 알아보기</Button></a>
