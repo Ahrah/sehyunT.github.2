@@ -78,7 +78,7 @@ export async function submitCareerApplication(record: CareerCounselingNotifyInpu
   });
   try {
     const { notifyCareerCounselingApplication } = await import('./careerCounselingNotify');
-    await notifyCareerCounselingApplication(record, new Date(), created.id);
+    await notifyCareerCounselingApplication(created.id);
   } catch (err) {
     // 신청 저장은 성공으로 둔다. 메일만 실패하면 관리자 목록에서 보이도록 표시한다.
     console.error('진로 컨설팅 알림 메일을 보내지 못했어요. 신청 저장은 유지됩니다.', err);

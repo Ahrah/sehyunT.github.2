@@ -1,18 +1,12 @@
-import {
-  careerCounselingStatusLabel,
-  formatKstDateTime,
-  formatPreferredSlots,
-} from './careerCounseling';
-
 /**
  * 정적 사이트(GitHub Pages)에서 쓰는 신청 알림.
  * Cloud Functions / Trigger Email 은 이 프로젝트에 없고, Blaze 플랜이 필요합니다.
- * FormSubmit.co 는 API 키 없이 받는 주소로 메일을 보냅니다.
- * 처음 한 번은 consultantsyssam@gmail.com 으로 활성화 메일이 가고, 링크를 눌러야 신청 메일이 도착합니다.
+ * FormSubmit.co AJAX 로 보내는 주소는 활성화 후 받은 랜덤 alias 입니다.
+ * 활성화 전이면 FORMSUBMIT_ALIAS 가 placeholder 라 네트워크 호출을 건너뜁니다.
+ * 활성화 메일의 랜덤 alias 로 이 값만 바꾸면 알림이 나갑니다.
  */
-export const CAREER_COUNSELING_NOTIFY_EMAIL = 'consultantsyssam@gmail.com';
+export const FORMSUBMIT_ALIAS = '98ced276c2a162b675682e1867a91498';
 
-const NOTIFY_URL = `https://formsubmit.co/ajax/${CAREER_COUNSELING_NOTIFY_EMAIL}`;
 const NOTIFY_TIMEOUT_MS = 8000;
 
 export type CareerCounselingNotifyInput = {
@@ -32,51 +26,40 @@ export type CareerCounselingNotifyInput = {
   status: string;
 };
 
-export function buildCareerCounselingNotifyPayload(
-  record: CareerCounselingNotifyInput,
-  submittedAt: Date = new Date(),
-  applicationId?: string,
-): Record<string, string> {
-  const name = record.childName.trim() || '이름 없음';
-  const submittedAtKst = formatKstDateTime(submittedAt, true);
-  const fields: Record<string, string> = {
-    _subject: `[입시는세연쌤] 새 진로 컨설팅 신청 - ${name}`,
+export function isFormSubmitAliasReady(alias: string = FORMSUBMIT_ALIAS): boolean {
+  const trimmed = alias.trim();
+  return trimmed.length > 0 && trimmed !== 'PENDING_FORMSUBMIT_ALIAS' && !trimmed.includes('@');
+}
+
+export function careerCounselingNotifyUrl(alias: string = FORMSUBMIT_ALIAS): string | null {
+  if (!isFormSubmitAliasReady(alias)) return null;
+  return `https://formsubmit.co/ajax/${alias.trim()}`;
+}
+
+export function buildCareerCounselingNotifyPayload(applicationId: string): Record<string, string> {
+  return {
+    _subject: '새 진로 컨설팅 신청 1건',
     _template: 'table',
     _captcha: 'false',
-    _replyto: record.email,
-    name,
-    학생_이름: name,
-    계정_이메일: record.email,
-    휴대폰: record.phone,
-    학년: record.grade,
-    재학_학교: record.schoolName,
-    학교_소재: record.schoolRegion,
-    희망_진로: record.careerGoal,
-    질문: record.question?.trim() || '(없음)',
-    희망_일정: formatPreferredSlots(record.preferredSlots),
-    상품: record.productName,
-    금액: `${record.price.toLocaleString('ko-KR')}원`,
-    상태: careerCounselingStatusLabel(record.status),
-    개인정보_동의: record.privacyAgreed ? '동의' : '미동의',
-    회원_ID: record.userId,
-    신청_시각_KST: submittedAtKst,
+    _honey: '',
+    신청_ID: applicationId,
+    안내: '관리자 화면에서 확인해 주세요',
   };
-  if (applicationId) fields.신청_ID = applicationId;
-  return fields;
 }
 
 export async function notifyCareerCounselingApplication(
-  record: CareerCounselingNotifyInput,
-  submittedAt: Date = new Date(),
-  applicationId?: string,
+  applicationId: string,
+  alias: string = FORMSUBMIT_ALIAS,
 ): Promise<void> {
-  const response = await fetch(NOTIFY_URL, {
+  const url = careerCounselingNotifyUrl(alias);
+  if (!url) return;
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify(buildCareerCounselingNotifyPayload(record, submittedAt, applicationId)),
+    body: JSON.stringify(buildCareerCounselingNotifyPayload(applicationId)),
     signal: AbortSignal.timeout(NOTIFY_TIMEOUT_MS),
   });
   const body = await response.json().catch(() => null) as { success?: string | boolean; message?: string } | null;
