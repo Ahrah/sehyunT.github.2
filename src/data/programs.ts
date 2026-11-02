@@ -234,6 +234,7 @@ export const programGroups: ProgramGroup[] = [
               '특목·자사고 면접과 대입 면접 모두 진행',
             ],
             target: ['특목·자사고 면접을 앞둔 중3', '대입 면접을 앞두고 실전 연습이 한 번도 없는 고3 2학기 학생'],
+            landing: { href: '/mock-interview/', label: '12월 모의면접 신청' },
           },
         ],
       },

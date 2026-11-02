@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Stale-page guard: after a redeploy, a cached copy of this page can point to
+      // a JS/CSS bundle that no longer exists (404). Reload once with a fresh URL.
+      (function () {
+        var KEY = 'st-asset-reload';
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          var url = t && (t.src || t.href);
+          if (!url || url.indexOf('/assets/') === -1) return;
+          try {
+            var last = Number(sessionStorage.getItem(KEY) || 0);
+            if (Date.now() - last < 300000) return; // at most once per 5 minutes
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (_) { return; }
+          var u = new URL(location.href);
+          u.searchParams.set('r', Date.now().toString());
+          location.replace(u.toString());
+        }, true);
+        window.addEventListener('load', function () {
+          var u = new URL(location.href);
+          if (u.searchParams.has('r')) { u.searchParams.delete('r'); history.replaceState(null, '', u.toString()); }
+        });
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+    <style>
+      html,body,#root{margin:0;background:#f7f5f2;color:#111}
+      body{font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo",ui-sans-serif,system-ui,sans-serif}
+    </style>
+
+    <!-- Primary Meta Tags -->
+    <title>12월 3:1 모의면접 신청 | 입시는세연쌤</title>
+    <meta name="title" content="12월 3:1 모의면접 신청 | 입시는세연쌤" />
+    <meta name="description" content="특목·자사고 면접을 앞둔 학생을 위한 12월 3:1 모의면접. 12/12·12/13·12/19·12/20, 1회 80,000원, 타임마다 4명. 11/9(월) 밤 9시 신청 오픈." />
+    <meta name="author" content="조세연" />
+    <link rel="canonical" href="https://sehyunt.re.kr/mock-interview/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sehyunt.re.kr/mock-interview/" />
+    <meta property="og:title" content="12월 3:1 모의면접 신청 | 입시는세연쌤" />
+    <meta property="og:description" content="특목·자사고 면접을 앞둔 학생을 위한 12월 3:1 모의면접. 12/12·12/13·12/19·12/20, 1회 80,000원, 타임마다 4명. 11/9(월) 밤 9시 신청 오픈." />
+    <meta property="og:image" content="https://sehyunt.re.kr/logo-pic.png" />
+    <meta property="og:site_name" content="입시는세연쌤" />
+    <meta property="og:locale" content="ko_KR" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/mock-interview-main.tsx"></script>
+  </body>
+</html>
