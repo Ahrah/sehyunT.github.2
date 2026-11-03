@@ -64,7 +64,9 @@ assert.deepEqual(configured.allowedOrigins, ['https://sehyunt.re.kr', 'https://w
   const pre = await handleRequest(req({ method: 'OPTIONS', authorization: undefined }), configured, deps);
   assert.equal(pre.status, 204);
   assert.equal(pre.headers['Access-Control-Allow-Origin'], SITE_ORIGIN);
-  assert.equal(pre.headers['Access-Control-Allow-Headers'], 'Authorization');
+  // fetch(cache:'no-store')에서 사파리 등이 Cache-Control·Pragma를 붙여도 사전 요청이 통과해야 합니다.
+  const allowed = String(pre.headers['Access-Control-Allow-Headers']).split(',').map((s) => s.trim().toLowerCase());
+  for (const h of ['authorization', 'cache-control', 'pragma']) assert.ok(allowed.includes(h), `허용 헤더에 ${h}가 없습니다`);
   const preview = await handleRequest(req({ origin: 'https://sehyunt-preview.vercel.app' }), configured, deps);
   assert.equal(preview.headers['Access-Control-Allow-Origin'], 'https://sehyunt-preview.vercel.app');
 }

@@ -57,7 +57,7 @@ function corsHeaders(origin, allowedOrigins) {
   if (origin && allowedOrigins.includes(origin)) {
     h['Access-Control-Allow-Origin'] = origin;
     h['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
-    h['Access-Control-Allow-Headers'] = 'Authorization';
+    h['Access-Control-Allow-Headers'] = 'Authorization, Cache-Control, Pragma';
     h['Access-Control-Max-Age'] = '600';
   }
   return h;
