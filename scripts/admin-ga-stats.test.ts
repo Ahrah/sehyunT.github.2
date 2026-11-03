@@ -202,3 +202,32 @@ assert.equal(render({ kind: 'error', reason: 'server' }).includes('연결 안 �
 }
 
 console.log('✅ admin GA stats API and cards');
+
+// 서비스 계정 키: 붙여 넣을 때 생기는 모양 차이를 받아 주고, 오류에는 키 내용을 넣지 않습니다.
+{
+  const { parseServiceAccountKey, describeKeyShape } = await import('../admin-api/lib/sa-key.js');
+  const pem = '-----BEGIN PRIVATE KEY-----\nMIIEabc\nxyz\n-----END PRIVATE KEY-----\n';
+  const obj = { type: 'service_account', client_email: 'reader@p.iam.gserviceaccount.com', private_key: pem };
+  const pretty = JSON.stringify(obj, null, 2);
+  const variants = {
+    plain: JSON.stringify(obj),
+    pretty,
+    bom: '\uFEFF ' + pretty + '\n',
+    realNewlinesInKey: pretty.replace(/\\n/g, '\n'),
+    quoted: JSON.stringify(JSON.stringify(obj)),
+    singleQuoted: `'${JSON.stringify(obj)}'`,
+    base64: Buffer.from(pretty).toString('base64'),
+    doubleEscapedKey: JSON.stringify({ ...obj, private_key: pem.replace(/\n/g, '\\n') }),
+  };
+  for (const [name, raw] of Object.entries(variants)) {
+    const k = parseServiceAccountKey(raw);
+    assert.equal(k.client_email, obj.client_email, name);
+    assert.equal(k.private_key, pem, name);
+  }
+  assert.throws(() => parseServiceAccountKey('not a key'), (e: any) => e.code === 'SA_KEY_NOT_JSON' && !String(e.message).includes('not a key'));
+  assert.throws(() => parseServiceAccountKey('{"client_email":"x"}'), (e: any) => e.code === 'SA_KEY_MISSING_FIELDS');
+  const shape = describeKeyShape('{"private_key":"SECRETVALUE"');
+  assert.equal(JSON.stringify(shape).includes('SECRETVALUE'), false);
+  assert.equal(shape.endsWithBrace, false);
+}
+console.log('sa-key ok');

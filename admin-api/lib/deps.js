@@ -1,6 +1,7 @@
 // 실제 배포에서 쓰는 의존성입니다. (테스트에서는 가짜로 바꿉니다.)
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { JWT } from 'google-auth-library';
+import { parseServiceAccountKey, describeKeyShape } from './sa-key.js';
 
 const JWKS = createRemoteJWKSet(
   new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'),
@@ -24,7 +25,14 @@ let jwtClient = null;
 /** 이 API 전용 서비스 계정 키(GA4_SA_KEY_JSON)로 GA4 Data API를 부릅니다. */
 export async function runBatchReport(config, body) {
   if (!jwtClient) {
-    const key = JSON.parse(config.saKey);
+    let key;
+    try {
+      key = parseServiceAccountKey(config.saKey);
+    } catch (e) {
+      // 키 내용 없이 모양만 덧붙입니다.
+      e.message = `${e.message} shape=${JSON.stringify(describeKeyShape(config.saKey))}`;
+      throw e;
+    }
     jwtClient = new JWT({
       email: key.client_email,
       key: key.private_key,
