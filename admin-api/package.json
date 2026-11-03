@@ -1,0 +1,12 @@
+{
+  "name": "sehyunt-admin-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "관리자 화면용 GA4 방문 통계 API (Vercel 함수). 관리자 Firebase 로그인만 응답합니다.",
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "google-auth-library": "^10.0.0",
+    "jose": "^4.15.9"
+  }
+}
