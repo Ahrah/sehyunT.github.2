@@ -52,6 +52,22 @@ export function parseBatchResponse(body) {
   return { today: metricRow(reports[0]), last7Days: metricRow(reports[1]) };
 }
 
+/** 오류 원인만 짧게 설명합니다. 키·토큰·응답 본문 전체는 넣지 않습니다. */
+export function describeGaError(err) {
+  const parts = [err?.name || 'Error'];
+  if (err?.code) parts.push(String(err.code));
+  const status = err?.response?.status;
+  if (status) parts.push(`http ${status}`);
+  const g = err?.response?.data?.error;
+  if (g?.status) parts.push(String(g.status));
+  if (typeof g?.message === 'string') parts.push(g.message.slice(0, 200));
+  if (typeof g === 'string') parts.push(g); // 토큰 발급 오류(invalid_grant 등)
+  const desc = err?.response?.data?.error_description;
+  if (typeof desc === 'string') parts.push(desc.slice(0, 200));
+  if (String(err?.code || '').startsWith('SA_KEY_')) parts.push(String(err.message).slice(0, 400));
+  return parts.join(' | ');
+}
+
 function corsHeaders(origin, allowedOrigins) {
   const h = { Vary: 'Origin' };
   if (origin && allowedOrigins.includes(origin)) {
@@ -113,7 +129,7 @@ export async function handleRequest({ method, origin, authorization }, config, d
     return json(200, { ...value, cached: false });
   } catch (err) {
     // 원인만 짧게 남기고 키나 토큰은 남기지 않습니다.
-    deps.log?.(`ga-stats: GA call failed: ${err?.code || err?.response?.status || err?.name || 'error'}`);
+    deps.log?.(`ga-stats: GA call failed: ${describeGaError(err)}`);
     return json(502, { status: 'error' });
   }
 }
