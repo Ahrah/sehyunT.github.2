@@ -25,6 +25,8 @@ export const SITE = {
   youtubeUrl: 'https://www.youtube.com/@%EC%9E%85%EC%8B%9C%EB%8A%94%EC%84%B8%EC%97%B0%EC%8C%A4',
   threadsUrl: 'https://www.threads.net/@ipsee.sehyunt',
   gaId: 'G-BTG5X3NHL5',
+  /** 관리자 화면 GA4 방문 통계 API (Vercel 프로젝트 sehyunt-admin-api). */
+  adminStatsApiUrl: 'https://sehyunt-admin-api.vercel.app/api/ga-stats',
   blogs: [
     { name: '입시 전략 인사이트', url: 'https://blog.naver.com/ahrahsehyun' },
     { name: '논리·시사 탐구 기록', url: 'https://sehyunt-logic.tistory.com/' },

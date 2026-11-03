@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, Clock, MousePointer2, ArrowLeft, ShieldCheck, Download } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Download } from 'lucide-react';
+import { AdminStatsCards, useGaStats } from './AdminGaStats';
 import { collection, query, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
@@ -172,11 +173,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
     document.body.removeChild(link);
   };
 
-  const stats = [
-    { label: "Total Members", value: users.length.toString(), icon: Users, color: "text-brand-accent" },
-    { label: "Avg. Session", value: "8m 42s", icon: Clock, color: "text-emerald-500" },
-    { label: "Daily Visits", value: "124", icon: MousePointer2, color: "text-amber-500" },
-  ];
+  const gaStats = useGaStats();
 
   return (
     <motion.div 
@@ -209,20 +206,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {stats.map((stat) => (
-            <div key={stat.label} className="bg-brand-secondary border border-brand-light-gray p-8 flex flex-col justify-between h-48 group hover:border-brand-text transition-all">
-              <div className="flex justify-between items-start">
-                <stat.icon className={stat.color} size={24} />
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-gray">Status: Active</span>
-              </div>
-              <div>
-                <p className="text-4xl font-black mb-1">{stat.value}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gray">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <AdminStatsCards memberCount={users.length} state={gaStats} />
 
         <div className="bg-brand-secondary border border-brand-light-gray overflow-hidden">
           <div className="p-8 border-b border-brand-light-gray flex justify-between items-center">
