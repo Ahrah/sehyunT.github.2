@@ -128,7 +128,7 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   };
 
   const shown: UserData[] = optInOnly ? optInUsers ?? [] : users;
-  const shownLoading = optInOnly ? optInLoading || optInUsers == null : loading;
+  const shownLoading = optInOnly ? optInLoading || (optInUsers == null && !listError) : loading;
 
   useEffect(() => {
     window.scrollTo(0, 0);
