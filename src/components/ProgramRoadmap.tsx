@@ -249,7 +249,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
             badge
             period="고3 2학기"
             name="3:1 모의면접"
-            desc="면접 직후 피드백, 1일 뒤 보고서 전달"
+            desc="면접 직후 피드백, 그날 저녁 피드백지 전달"
             targetId="program-mock"
             onSelect={onSelect}
           />
@@ -335,7 +335,7 @@ export function ProgramRoadmap({ onSelect }: { onSelect: (targetId: string) => v
           <div className="program-map-stack-row">
             <p className="program-map-stack-grade">고3 · 2학기</p>
             <LaneTag>생기부·대입</LaneTag>
-            <Block tone="mock" badge period="고3 2학기" name="3:1 모의면접" desc="면접 직후 피드백, 1일 뒤 보고서 전달" targetId="program-mock" onSelect={onSelect} />
+            <Block tone="mock" badge period="고3 2학기" name="3:1 모의면접" desc="면접 직후 피드백, 그날 저녁 피드백지 전달" targetId="program-mock" onSelect={onSelect} />
           </div>
         </section>
       </div>
