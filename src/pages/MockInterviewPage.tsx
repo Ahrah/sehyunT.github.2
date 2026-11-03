@@ -39,7 +39,11 @@ import {
   submitApplication,
   submitExtraRequest,
 } from '../lib/mockInterviewApi';
+import { type MemberProfile, type PrefillMap, applyMemberPrefill, loadMemberProfile } from '../lib/memberPrefill';
 import './mock-interview.css';
+
+/** 회원 프로필 → 신청서 칸: 학생 이름(childName) → 학생이름(입금자명), 휴대폰 → 휴대폰 */
+const MI_PREFILL: PrefillMap<MiForm> = { name: 'studentName', phone: 'phone' };
 
 /** 01012345678 → 010-1234-5678. 모양이 다르면 적은 그대로 보여 줍니다. */
 function displayPhone(phone: string): string {
@@ -189,7 +193,31 @@ export function MockInterviewPage() {
     void refresh();
   }, [refresh]);
 
-  const set = <K extends keyof MiForm>(key: K, value: MiForm[K]) => setForm((f) => ({ ...f, [key]: value }));
+  // 로그인한 회원이면 이름·휴대폰을 미리 채웁니다. 이미 적은 칸은 그대로 두고, 채운 칸도 고칠 수 있습니다.
+  const touched = useRef(new Set<keyof MiForm>());
+  const member = useRef<MemberProfile | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadMemberProfile({ allowPreviewMember: isTestMode() }).then((profile) => {
+      if (!alive || !profile) return;
+      member.current = profile;
+      setForm((f) => applyMemberPrefill(f, profile, MI_PREFILL, touched.current));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /** 신청을 보낸 뒤 빈 신청서로 돌립니다. 회원이면 이름·휴대폰은 다시 채워 둡니다. */
+  const resetForm = () => {
+    touched.current = new Set();
+    setForm(applyMemberPrefill(EMPTY_FORM, member.current, MI_PREFILL));
+  };
+
+  const set = <K extends keyof MiForm>(key: K, value: MiForm[K]) => {
+    touched.current.add(key);
+    setForm((f) => ({ ...f, [key]: value }));
+  };
 
   // 누르면 고르고, 다시 누르면 뺍니다. 여러 타임을 고를 수 있으므로 화면을 옮기지 않습니다.
   const pickSlot = (s: PublicSlot) => {
@@ -240,7 +268,7 @@ export function MockInterviewPage() {
     // 추가 오픈 신청만 하면 신청완료 화면에서 원하는 날짜·시간을 고른 뒤 한 번에 보냅니다.
     if (!booking) {
       showDone({ res: null, form });
-      setForm(EMPTY_FORM);
+      resetForm();
       return;
     }
     setSending(true);
@@ -251,7 +279,7 @@ export function MockInterviewPage() {
       } else {
         saveDone(res);
         showDone({ res, form: res.duplicate ? null : form });
-        setForm(EMPTY_FORM);
+        resetForm();
         void refresh();
       }
     } catch {
