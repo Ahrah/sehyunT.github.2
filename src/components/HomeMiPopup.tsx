@@ -26,12 +26,25 @@ export function HomeMiPopup({ onOpenChange }: HomeMiPopupProps) {
   };
 
   useEffect(() => {
-    if (!shouldShowHomeMiPopupNow()) return;
-    const id = window.setTimeout(() => {
+    let id: number | undefined;
+    const schedule = () => {
       if (!shouldShowHomeMiPopupNow()) return;
-      setVisible(true);
-    }, OPEN_DELAY_MS);
-    return () => window.clearTimeout(id);
+      id = window.setTimeout(() => {
+        if (!shouldShowHomeMiPopupNow()) return;
+        setVisible(true);
+      }, OPEN_DELAY_MS);
+    };
+    // Chrome 이 홈을 미리 그려 둔(prerender) 경우, 실제로 화면에 열릴 때 다시 판단합니다.
+    const prerendering = (document as Document & { prerendering?: boolean }).prerendering;
+    if (prerendering) {
+      document.addEventListener('prerenderingchange', schedule, { once: true });
+    } else {
+      schedule();
+    }
+    return () => {
+      document.removeEventListener('prerenderingchange', schedule);
+      if (id !== undefined) window.clearTimeout(id);
+    };
   }, []);
 
   useEffect(() => {

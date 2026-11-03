@@ -829,7 +829,13 @@ function doPost(e) {
     })[0];
     if (dup) return mi_json_({ ok: false, error: '같은 휴대폰 번호로 이미 신청한 타임입니다(' + dup.date + ' ' + dup.time + ').' });
 
-    var groupId = 'MI-' + Utilities.formatDate(new Date(now), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
+    // 묶음 번호는 잠금 안에서 만들고, 시트에 이미 있는 번호와 겹치면 다시 뽑습니다(11/9 21:00 같은 초 동시 신청 대비).
+    var taken = {};
+    data.rows.forEach(function (r) { taken[r.groupId || r.id] = true; });
+    var groupId;
+    do {
+      groupId = 'MI-' + Utilities.formatDate(new Date(), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
+    } while (taken[groupId]);
     var stamp = new Date(now);
     var token = Utilities.getUuid().replace(/-/g, '');
     picks.forEach(function (x, i) {
@@ -913,6 +919,7 @@ function mi_admin_(f, now) {
     cache.put('mi_admin_fail', String(fails + 1), MI.ADMIN_FAIL_WINDOW_S);
     return { ok: false, error: '관리자 키가 맞지 않습니다.' };
   }
+  if (fails) cache.remove('mi_admin_fail'); // 맞는 키가 오면 틀린 횟수를 지웁니다.
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return { ok: false, error: '다른 처리가 진행 중입니다. 잠시 뒤 다시 눌러 주세요.' };
   try {

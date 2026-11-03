@@ -288,8 +288,10 @@ export function mockSubmit(form: MiForm, now: number): SubmitResponse {
     };
     rows.push(row);
   });
-  saveRows(rows);
-  return viewOf(rows, groupId)!;
+  // Code.gs doPost 처럼 넣은 뒤에도 한 번 더 정리합니다(오픈 때부터 대기 타임에 2명이 모이면 입금 대기로).
+  const swept = mockSweep(rows, now);
+  saveRows(swept);
+  return viewOf(swept, groupId)!;
 }
 
 export function mockExtraRequest(f: MiExtraRequest, now: number): ExtraRequestResponse {
