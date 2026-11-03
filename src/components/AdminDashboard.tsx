@@ -1,9 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ShieldCheck, Download } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Download, CalendarCheck } from 'lucide-react';
 import { AdminStatsCards, useGaStats } from './AdminGaStats';
-import { collection, query, getDocs, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  getDocs,
+  orderBy,
+  limit,
+  startAfter,
+  where,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  type QueryDocumentSnapshot,
+} from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { MEMBER_CSV_HEADERS, formatKstMinute, memberCsvRows, sortOptedIn, toCsv } from '../lib/adminMembers';
 import {
   CAREER_COUNSELING_COLLECTION,
   careerCounselingStatusLabel,
@@ -18,7 +31,13 @@ interface UserData {
   phone: string;
   interestService: string;
   createdAt: any;
+  /** 새 글 알림(주간 메일) 동의. 가입할 때 고릅니다(AuthModal). */
+  emailWeeklyOptIn?: boolean;
+  emailWeeklyOptInAt?: any;
 }
+
+/** 전체 회원 목록은 가입 최신순으로 50명씩 읽고 '더 보기'로 이어 읽습니다. */
+const PAGE_SIZE = 50;
 
 interface CareerApplicationRow {
   id: string;
@@ -54,21 +73,72 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   const [applicationsLoading, setApplicationsLoading] = useState(true);
   const [applicationsError, setApplicationsError] = useState<string | null>(null);
   const [statusSavingId, setStatusSavingId] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // '동의한 회원만 보기': 50명 제한 없이 동의한 회원 전체를 따로 읽습니다.
+  const [optInOnly, setOptInOnly] = useState(false);
+  const [optInUsers, setOptInUsers] = useState<UserData[] | null>(null);
+  const [optInLoading, setOptInLoading] = useState(false);
+  const [listError, setListError] = useState('');
+
+  const fetchPage = useCallback(async (after: QueryDocumentSnapshot | null) => {
+    const base = collection(db, 'users');
+    const q = after
+      ? query(base, orderBy('createdAt', 'desc'), startAfter(after), limit(PAGE_SIZE))
+      : query(base, orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const page = snap.docs.map((d) => d.data() as UserData);
+    setUsers((prev) => (after ? [...prev, ...page] : page));
+    setCursor(snap.docs.length ? snap.docs[snap.docs.length - 1] : after);
+    setHasMore(snap.docs.length === PAGE_SIZE);
+  }, []);
+
+  const loadMore = async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      await fetchPage(cursor);
+    } catch (err) {
+      console.error("Error fetching more users:", err);
+      setListError('회원 목록을 더 불러오지 못했습니다.');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // 동의자는 단일 필드 조건(where)만 써서 자동 색인으로 읽습니다. 정렬은 화면에서 합니다(복합 색인 불필요).
+  const loadOptIn = useCallback(async () => {
+    setOptInLoading(true);
+    setListError('');
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), where('emailWeeklyOptIn', '==', true)));
+      setOptInUsers(sortOptedIn(snap.docs.map((d) => d.data() as UserData)) as UserData[]);
+    } catch (err) {
+      console.error("Error fetching opt-in users:", err);
+      setListError('알림에 동의한 회원을 불러오지 못했습니다.');
+    } finally {
+      setOptInLoading(false);
+    }
+  }, []);
+
+  const toggleOptIn = (on: boolean) => {
+    setOptInOnly(on);
+    if (on && optInUsers == null && !optInLoading) void loadOptIn();
+  };
+
+  const shown: UserData[] = optInOnly ? optInUsers ?? [] : users;
+  const shownLoading = optInOnly ? optInLoading || optInUsers == null : loading;
 
   useEffect(() => {
     window.scrollTo(0, 0);
     
     const fetchUsers = async () => {
       try {
-        const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
-        const querySnapshot = await getDocs(q);
-        const fetchedUsers: UserData[] = [];
-        querySnapshot.forEach((doc) => {
-          fetchedUsers.push(doc.data() as UserData);
-        });
-        setUsers(fetchedUsers);
+        await fetchPage(null);
       } catch (err) {
         console.error("Error fetching users:", err);
+        setListError('회원 목록을 불러오지 못했습니다.');
       } finally {
         setLoading(false);
       }
@@ -139,35 +209,18 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
   };
 
   const handleExportCSV = () => {
-    if (users.length === 0) {
+    if (shown.length === 0) {
       alert("내보낼 데이터가 없습니다.");
       return;
     }
-    
-    // CSV Headers
-    const headers = ["아이디(순번)", "자녀이름", "이메일(아이디)", "연락처", "관심서비스", "가입일"];
-    
-    // CSV Rows
-    const rows = users.map((u, i) => [
-      (users.length - i).toString(),
-      u.childName || '',
-      u.email || '',
-      u.phone || '',
-      u.interestService || '',
-      u.createdAt?.toDate ? u.createdAt.toDate().toLocaleString() : 'N/A'
-    ]);
-    
-    // UTF-8 BOM for Excel compatibility with Korean characters
-    const csvContent = "\uFEFF" + [
-      headers.join(","),
-      ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(","))
-    ].join("\n");
+    // 지금 보고 있는 목록(동의자만 보기면 동의자 전체, 아니면 불러온 회원)을 내려받습니다.
+    const csvContent = toCsv(MEMBER_CSV_HEADERS, memberCsvRows(shown));
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `sehyunt_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `sehyunt_users${optInOnly ? '_optin' : ''}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -198,21 +251,39 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
             <p className="text-brand-gray text-xs uppercase tracking-widest font-black">실시간 사용자 가입 및 분석 현황</p>
           </div>
 
-          <button 
-            onClick={handleExportCSV}
-            className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3 cursor-pointer"
-          >
-            <Download size={16} /> Export Data
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* 같은 사이트 상대경로: 실사이트는 sehyunt.re.kr, 미리보기는 미리보기 주소로 갑니다. */}
+            <a
+              href="/mock-interview/?admin"
+              className="h-14 px-8 border-2 border-brand-text text-brand-text text-[12px] font-black tracking-widest hover:bg-brand-text hover:text-brand-bg transition-colors flex items-center gap-3"
+            >
+              <CalendarCheck size={16} /> 모의면접 관리
+            </a>
+            <button 
+              onClick={handleExportCSV}
+              className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3 cursor-pointer"
+            >
+              <Download size={16} /> Export Data
+            </button>
+          </div>
         </div>
 
         <AdminStatsCards memberCount={users.length} state={gaStats} />
 
         <div className="bg-brand-secondary border border-brand-light-gray overflow-hidden">
-          <div className="p-8 border-b border-brand-light-gray flex justify-between items-center">
-            <h3 className="font-black uppercase tracking-widest text-sm">Recent Registrations</h3>
-            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gray">{users.length} Records found</span>
+          <div className="p-8 border-b border-brand-light-gray flex flex-wrap gap-4 justify-between items-center">
+            <h3 className="font-black uppercase tracking-widest text-sm">{optInOnly ? '새 글 알림에 동의한 회원' : 'Recent Registrations'}</h3>
+            <div className="flex flex-wrap items-center gap-6">
+              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer select-none">
+                <input type="checkbox" checked={optInOnly} onChange={(e) => toggleOptIn(e.target.checked)} className="w-4 h-4" />
+                동의한 회원만 보기
+              </label>
+              <span className="text-[10px] font-black uppercase tracking-widest text-brand-gray">
+                {optInOnly ? (optInUsers ? `동의 ${optInUsers.length}명(전체)` : '불러오는 중') : `${users.length} Records found`}
+              </span>
+            </div>
           </div>
+          {listError && <p className="px-8 pt-4 text-xs font-bold text-red-600">{listError}</p>}
           
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -222,21 +293,24 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                   <th className="p-6 text-[10px] font-black uppercase tracking-widest text-brand-gray">Contact (Email/Phone)</th>
                   <th className="p-6 text-[10px] font-black uppercase tracking-widest text-brand-gray">Interest Service</th>
                   <th className="p-6 text-[10px] font-black uppercase tracking-widest text-brand-gray">Joined Date</th>
+                  <th className="p-6 text-[10px] font-black tracking-widest text-brand-gray">새 글 알림 동의</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-light-gray">
-                {loading ? (
+                {shownLoading ? (
                   Array(5).fill(0).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={4} className="p-6 h-16 bg-brand-bg/20"></td>
+                      <td colSpan={5} className="p-6 h-16 bg-brand-bg/20"></td>
                     </tr>
                   ))
-                ) : users.length === 0 ? (
+                ) : shown.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-12 text-center text-brand-gray font-black uppercase tracking-widest text-xs">No users found yet.</td>
+                    <td colSpan={5} className="p-12 text-center text-brand-gray font-black uppercase tracking-widest text-xs">
+                      {optInOnly ? '새 글 알림에 동의한 회원이 아직 없습니다.' : 'No users found yet.'}
+                    </td>
                   </tr>
                 ) : (
-                  users.map((u, i) => (
+                  shown.map((u, i) => (
                     <tr key={i} className="hover:bg-brand-bg transition-colors group">
                       <td className="p-6">
                         <p className="font-black text-sm">{u.childName}</p>
@@ -252,12 +326,34 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
                       <td className="p-6 text-brand-gray text-xs">
                         {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : 'N/A'}
                       </td>
+                      <td className="p-6 text-xs">
+                        {u.emailWeeklyOptIn === true ? (
+                          <>
+                            <span className="inline-block px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-black">동의</span>
+                            <p className="text-[10px] text-brand-gray mt-1">{formatKstMinute(u.emailWeeklyOptInAt) || '동의 시각 없음'}</p>
+                          </>
+                        ) : (
+                          <span className="text-brand-gray">미동의</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
+          {!optInOnly && hasMore && !loading && (
+            <div className="p-6 border-t border-brand-light-gray text-center">
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                className="h-10 px-6 border border-brand-text text-xs font-black hover:bg-brand-text hover:text-brand-bg transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? '불러오는 중…' : `회원 ${PAGE_SIZE}명 더 보기`}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-brand-secondary border border-brand-light-gray overflow-hidden mt-12">

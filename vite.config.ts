@@ -35,6 +35,7 @@ export default defineConfig(({mode}) => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           counseling: path.resolve(__dirname, 'jinro-counseling/index.html'),
+          mockInterview: path.resolve(__dirname, 'mock-interview/index.html'),
         },
         output: {
           hoistTransitiveImports: false,
