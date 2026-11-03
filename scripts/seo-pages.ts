@@ -127,14 +127,14 @@ export function pageShell(o: PageShellOpts): string {
   <meta property="og:description" content="${escapeHtml(o.description)}">
   <meta property="og:url" content="${o.canonical}">
   <meta property="og:site_name" content="입시는세연쌤">
-  <meta property="og:image" content="${DOMAIN}/logo-pic.png">
+  <meta property="og:image" content="${DOMAIN}/og-image.png">
   <meta name="twitter:card" content="summary">
   ${ld}
   <style>${STYLE}</style>
 </head>
 <body>
   <header class="site"><div class="in">
-    <a class="brand" href="/"><img src="/logo-pic.png" alt="입시는세연쌤 로고" width="37" height="32">입시는세연쌤</a>
+    <a class="brand" href="/"><img src="/logo-mark.svg" alt="입시는세연쌤 로고" width="38" height="32">입시는세연쌤</a>
     <nav class="top">
       <a href="/jinro-counseling/">진로 컨설팅</a>
       <a href="/saenggibu-consulting/">생기부</a>
@@ -478,7 +478,7 @@ ${ctaBlock(category === '고입' ? '고입' : category === '대입' ? '대입' :
         headline: r.title,
         description,
         author: { '@type': 'Person', name: '조세연' },
-        publisher: { '@type': 'Organization', name: '입시는세연쌤', logo: { '@type': 'ImageObject', url: `${DOMAIN}/logo-pic.png` } },
+        publisher: { '@type': 'Organization', name: '입시는세연쌤', logo: { '@type': 'ImageObject', url: `${DOMAIN}/logo-square.png` } },
         datePublished: publishedIso,
         mainEntityOfPage: { '@type': 'WebPage', '@id': url },
       },
