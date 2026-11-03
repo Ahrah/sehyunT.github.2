@@ -12,6 +12,7 @@ import {
   normalizePhone,
   slotBookingClosesAt,
   summarize,
+  sortSlots,
   sweep,
   validateForm,
   validateExtraRequest,
@@ -22,12 +23,24 @@ import {
 
 export type StatusResponse = { ok: boolean; open: boolean; now: number; slots: SlotSummary[]; error?: string };
 export type ExtraRequestResponse = { ok: boolean; id?: string; error?: string };
+/** 한 번에 신청한 타임 하나의 결과 */
+export type SubmitItem = {
+  id: string;
+  date: string;
+  time: string;
+  status: MiStatus;
+  payDeadline: number | null;
+  waitlistPosition: number | null;
+};
 export type SubmitResponse = {
   ok: boolean;
+  /** 묶음 번호(신청번호). 타임마다 '신청번호-1'처럼 줄이 따로 생깁니다. */
   id?: string;
-  status?: MiStatus;
+  items?: SubmitItem[];
+  /** 지금 입금할 타임(입금 대기)의 입금 기한. 모두 대기면 null */
   payDeadline?: number | null;
-  waitlistPosition?: number | null;
+  /** 지금 입금할 금액(입금 대기 타임 수 × 수강료) */
+  amount?: number;
   error?: string;
 };
 
@@ -51,9 +64,17 @@ export function previewNowOverride(search: string): number | null {
 
 /* ---------- 테스트 모드: 브라우저 localStorage 에만 저장 ---------- */
 
-const STORE_KEY = 'mi-preview-rows-v2';
-const EXTRA_REQ_KEY = 'mi-preview-extra-requests-v1';
-type MockExtraRequest = { id: string; at: number; wishDate: string; wishTime: string; name: string; phone: string };
+const STORE_KEY = 'mi-preview-rows-v3';
+const EXTRA_REQ_KEY = 'mi-preview-extra-requests-v2';
+type MockExtraRequest = {
+  id: string;
+  at: number;
+  wishDate: string;
+  wishTime: string;
+  name: string;
+  phone: string;
+  applicationId: string;
+};
 type MockRow = MiRow & { phone: string };
 
 function loadRows(): MockRow[] {
@@ -83,7 +104,7 @@ export function resetMock() {
   try {
     localStorage.removeItem(STORE_KEY);
     localStorage.removeItem(EXTRA_REQ_KEY);
-    localStorage.removeItem('mi-preview-open-requests-v1');
+    for (const old of ['mi-preview-open-requests-v1', 'mi-preview-extra-requests-v1', 'mi-preview-rows-v2']) localStorage.removeItem(old);
   } catch {
     /* noop */
   }
@@ -96,29 +117,43 @@ export function mockStatus(now: number): StatusResponse {
 }
 
 export function mockSubmit(form: MiForm, now: number): SubmitResponse {
-  if (form.website) return { ok: true, id: 'ignored', status: MI_STATUS.pending };
+  if (form.website) return { ok: true, id: 'ignored', items: [], payDeadline: null, amount: 0 };
   if (!isOpen(now)) return { ok: false, error: '11/9(월) 밤 9시에 신청이 열립니다.' };
   const errors = validateForm(form);
   if (errors.length) return { ok: false, error: errors.join(' ') };
-  if (now >= slotBookingClosesAt(form.date, form.time)) {
-    return { ok: false, error: '이 시간은 신청이 마감되었습니다.' };
-  }
+  const picks = sortSlots(form.slots);
+  if (!picks.length) return { ok: false, error: '고른 타임이 없습니다.' };
+  const closed = picks.find((x) => now >= slotBookingClosesAt(x.date, x.time));
+  if (closed) return { ok: false, error: `${closed.date} ${closed.time}은 신청이 마감되었습니다.` };
   const rows = sweep(loadRows(), now) as MockRow[];
   const phone = normalizePhone(form.phone);
-  const dup = rows.some(
-    (r) => r.phone === phone && r.status !== MI_STATUS.cancelled && r.date === form.date && r.time === form.time,
+  const dup = picks.find((x) =>
+    rows.some((r) => r.phone === phone && r.status !== MI_STATUS.cancelled && r.date === x.date && r.time === x.time),
   );
-  if (dup) return { ok: false, error: '같은 휴대폰 번호로 이미 신청한 시간입니다.' };
-  const id = `MI-TEST-${rows.length + 1}`;
-  const row: MockRow = { ...newBookingRow(rows, id, form.date, form.time, now), phone };
-  rows.push(row);
+  if (dup) return { ok: false, error: `같은 휴대폰 번호로 이미 신청한 타임입니다(${dup.date} ${dup.time}).` };
+  const groupId = `MI-TEST-${new Set(rows.map((r) => r.groupId || r.id)).size + 1}`;
+  const added: MockRow[] = [];
+  picks.forEach((x, i) => {
+    const row: MockRow = { ...newBookingRow(rows, `${groupId}-${i + 1}`, x.date, x.time, now, groupId), phone };
+    rows.push(row);
+    added.push(row);
+  });
   saveRows(rows);
+  const items = added.map((r) => ({
+    id: r.id,
+    date: r.date,
+    time: r.time,
+    status: r.status,
+    payDeadline: r.payDeadline,
+    waitlistPosition: waitlistPosition(rows, r.id),
+  }));
+  const holding = items.filter((x) => x.status === MI_STATUS.pending);
   return {
     ok: true,
-    id,
-    status: row.status,
-    payDeadline: row.payDeadline,
-    waitlistPosition: waitlistPosition(rows, id),
+    id: groupId,
+    items,
+    payDeadline: holding.length ? holding[0].payDeadline : null,
+    amount: holding.length * MI_CONFIG.fee,
   };
 }
 
@@ -135,7 +170,7 @@ export function mockExtraRequest(f: MiExtraRequest, now: number): ExtraRequestRe
     return { ok: false, error: '같은 날짜·시간으로 이미 추가 오픈 신청을 했습니다.' };
   }
   const id = `XR-TEST-${list.length + 1}`;
-  list.push({ id, at: now, wishDate, wishTime, name: f.name.trim(), phone });
+  list.push({ id, at: now, wishDate, wishTime, name: f.name.trim(), phone, applicationId: f.applicationId });
   try {
     localStorage.setItem(EXTRA_REQ_KEY, JSON.stringify(list));
   } catch {

@@ -90,3 +90,26 @@
 .mi-qna-item p { margin: 8px 0 0; }
 .mi-extra-link { margin-top: 12px; background: none; border: 1px dashed #6b5aa8; color: #6b5aa8; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 700; cursor: pointer; }
 .mi-extra-link:disabled { opacity: 0.5; cursor: default; }
+.mi-slot.is-request.is-active { background: #6b5aa8; color: #fff; border-style: solid; }
+.mi-slot.is-wide { margin-top: 12px; width: 100%; }
+.mi-picked { background: var(--mi-off); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.mi-picked-title { margin: 0; font-weight: 800; font-size: 14px; }
+.mi-picked .mi-note { margin: 0; }
+.mi-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.mi-chips li { background: var(--mi-green); color: #fff; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; }
+.mi-chips li.is-wait { background: #b26b00; }
+.mi-done-hero h1 { font-size: 26px; }
+.mi-done-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.mi-done-list li { display: flex; justify-content: space-between; gap: 12px; border: 1px solid var(--mi-line); border-radius: 10px; padding: 10px 12px; }
+.mi-done-list li b { color: var(--mi-green); }
+.mi-done-list li.is-wait b { color: #b26b00; }
+.mi-pay { border: 2px solid var(--mi-green); }
+.mi-pay-grid { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 8px 0 12px; }
+.mi-pay-grid dt { color: var(--mi-muted); font-size: 14px; }
+.mi-pay-grid dd { margin: 0; }
+.mi-chip-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.mi-chip-pick { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #6b5aa8; color: #6b5aa8; border-radius: 999px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
+.mi-chip-pick.is-on { background: #6b5aa8; color: #fff; }
+.mi-chip-pick input { margin: 0; }
+.mi-wish-text { margin-bottom: 8px; }
+.mi-back { text-align: center; margin: 24px 0; }
