@@ -38,8 +38,6 @@ export const MI_CONFIG = {
   bankNumber: '3333-38-6269721',
   bankHolder: '입시는세연쌤',
   bankAccount: '카카오뱅크 3333-38-6269721 (입시는세연쌤)',
-  /** 환불 규정이 아직 초안인지(화면에 '확정 전' 표시) */
-  refundDraft: true,
 } as const;
 
 export const MI_STATUS = {
@@ -365,10 +363,6 @@ export type MiForm = {
   track: string;
   phone: string;
   depositor: string;
-  under14: boolean;
-  guardianName: string;
-  guardianPhone: string;
-  guardianConsent: boolean;
   consentPrivacy: boolean;
   consentVideo: boolean;
   consentPhoto: boolean;
@@ -385,10 +379,6 @@ export const EMPTY_FORM: MiForm = {
   track: '',
   phone: '',
   depositor: '',
-  under14: false,
-  guardianName: '',
-  guardianPhone: '',
-  guardianConsent: false,
   consentPrivacy: false,
   consentVideo: false,
   consentPhoto: false,
@@ -441,11 +431,6 @@ export function validateForm(f: MiForm, photoRequired: boolean = MI_CONFIG.photo
   if (!f.track.trim()) errors.push('지원 전형을 적어 주세요.');
   if (!isPhone(f.phone)) errors.push('휴대폰 번호를 확인해 주세요.');
   if (booking && !f.depositor.trim()) errors.push('입금자명을 적어 주세요.');
-  if (f.under14) {
-    if (!f.guardianName.trim()) errors.push('보호자 이름을 적어 주세요.');
-    if (!isPhone(f.guardianPhone)) errors.push('보호자 연락처를 확인해 주세요.');
-    if (!f.guardianConsent) errors.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
-  }
   if (!f.consentPrivacy) errors.push('개인정보 수집·이용에 동의해야 신청할 수 있습니다.');
   if (booking && !f.consentVideo) errors.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (booking && photoRequired && !f.consentPhoto) errors.push('사진 활용에 동의해야 신청할 수 있습니다.');
@@ -472,10 +457,6 @@ export type MiExtraRequest = MiWish & {
   applicationId: string;
   name: string;
   phone: string;
-  under14: boolean;
-  guardianName: string;
-  guardianPhone: string;
-  guardianConsent: boolean;
   consentPrivacy: boolean;
   website: string;
 };
@@ -486,10 +467,6 @@ export function extraRequestFrom(f: MiForm, wish: MiWish, applicationId = ''): M
     applicationId,
     name: f.studentName,
     phone: f.phone,
-    under14: f.under14,
-    guardianName: f.guardianName,
-    guardianPhone: f.guardianPhone,
-    guardianConsent: f.guardianConsent,
     consentPrivacy: f.consentPrivacy,
     website: f.website,
   };
@@ -530,11 +507,6 @@ export function validateExtraRequest(f: MiExtraRequest): string[] {
   const errors = validateWish(f);
   if (!f.name.trim()) errors.push('이름을 적어 주세요.');
   if (!isPhone(f.phone)) errors.push('연락처를 확인해 주세요.');
-  if (f.under14) {
-    if (!f.guardianName.trim()) errors.push('보호자 이름을 적어 주세요.');
-    if (!isPhone(f.guardianPhone)) errors.push('보호자 연락처를 확인해 주세요.');
-    if (!f.guardianConsent) errors.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
-  }
   if (!f.consentPrivacy) errors.push('개인정보 수집·이용에 동의해야 추가 오픈 신청을 할 수 있습니다.');
   return errors;
 }

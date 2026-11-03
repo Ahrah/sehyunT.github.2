@@ -237,11 +237,6 @@ function mi_validate(f) {
   if (!mi_str(f.track)) e.push('지원 전형을 적어 주세요.');
   if (!mi_isPhone(f.phone)) e.push('휴대폰 번호를 확인해 주세요.');
   if (booking && !mi_str(f.depositor)) e.push('입금자명을 적어 주세요.');
-  if (f.under14 === true) {
-    if (!mi_str(f.guardianName)) e.push('보호자 이름을 적어 주세요.');
-    if (!mi_isPhone(f.guardianPhone)) e.push('보호자 연락처를 확인해 주세요.');
-    if (f.guardianConsent !== true) e.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
-  }
   if (f.consentPrivacy !== true) e.push('개인정보 수집·이용에 동의해야 신청할 수 있습니다.');
   if (booking && f.consentVideo !== true) e.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (booking && MI.PHOTO_CONSENT_REQUIRED && f.consentPhoto !== true) e.push('사진 활용에 동의해야 신청할 수 있습니다.');
@@ -272,11 +267,6 @@ function mi_validateExtraRequest(f) {
   if (!mi_wishTimeOf(f)) e.push('원하는 시간을 하나 이상 고르거나 적어 주세요.');
   if (!mi_str(f.name)) e.push('이름을 적어 주세요.');
   if (!mi_isPhone(f.phone)) e.push('연락처를 확인해 주세요.');
-  if (f.under14 === true) {
-    if (!mi_str(f.guardianName)) e.push('보호자 이름을 적어 주세요.');
-    if (!mi_isPhone(f.guardianPhone)) e.push('보호자 연락처를 확인해 주세요.');
-    if (f.guardianConsent !== true) e.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
-  }
   if (f.consentPrivacy !== true) e.push('개인정보 수집·이용에 동의해야 추가 오픈 신청을 할 수 있습니다.');
   return e;
 }
@@ -373,10 +363,7 @@ function doPost(e) {
         '서류 기한': holding ? new Date(r.docsDeadline) : '', '서류 받음': false,
         '학생 이름': mi_str(f.studentName, 40), '지원 학교': mi_str(f.school, 60), '지원 전형': mi_str(f.track, 60),
         '휴대폰': phone, '입금자명': mi_str(f.depositor, 40),
-        '만 14세 미만': f.under14 === true ? 'Y' : 'N',
-        '보호자 이름': f.under14 === true ? mi_str(f.guardianName, 40) : '',
-        '보호자 연락처': f.under14 === true ? mi_phone(f.guardianPhone) : '',
-        '보호자 동의': f.under14 === true ? (f.guardianConsent === true ? 'Y' : 'N') : '', '보호자 동의 시각': f.under14 === true ? stamp : '',
+        // '만 14세 미만'·'보호자 …' 열은 신청서에서 뺐습니다. 열은 그대로 두고 비워 둡니다.
         '개인정보 동의': f.consentPrivacy === true ? 'Y' : 'N', '개인정보 동의 시각': stamp,
         '영상 동의': f.consentVideo === true ? 'Y' : 'N', '영상 동의 시각': stamp,
         '사진 동의': f.consentPhoto === true ? 'Y' : 'N', '사진 동의 시각': stamp,
@@ -385,7 +372,7 @@ function doPost(e) {
       sheet.appendRow(data.header.map(function (h) { return rec.hasOwnProperty(h) ? rec[h] : ''; }));
       var last = sheet.getLastRow();
       // 휴대폰 앞자리 0이 지워지지 않도록 글자로 저장합니다.
-      ['휴대폰', '보호자 연락처'].forEach(function (h) {
+      ['휴대폰'].forEach(function (h) {
         var ci = data.header.indexOf(h);
         if (ci >= 0 && rec[h]) sheet.getRange(last, ci + 1).setNumberFormat('@').setValue(rec[h]);
       });
@@ -488,18 +475,17 @@ function mi_extraRequest_(f, now) {
       if (dup) return mi_json_({ ok: false, error: '같은 날짜·시간으로 이미 추가 오픈 신청을 했습니다.' });
     }
     var id = 'XR-' + Utilities.formatDate(new Date(now), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
-    var u14 = f.under14 === true;
     var rec = {
       '신청번호': id, '신청 시각': new Date(now), '희망 날짜': wishDate, '희망 시간': wishTime,
-      '이름': mi_str(f.name, 40), '연락처': phone, '만 14세 미만': u14 ? 'Y' : 'N',
-      '보호자 이름': u14 ? mi_str(f.guardianName, 40) : '', '보호자 연락처': u14 ? mi_phone(f.guardianPhone) : '',
-      '보호자 동의': u14 ? 'Y' : '', '개인정보 동의': 'Y', '동의 시각': new Date(now),
+      '이름': mi_str(f.name, 40), '연락처': phone,
+      // '만 14세 미만'·'보호자 …' 열은 그대로 두고 비워 둡니다.
+      '개인정보 동의': 'Y', '동의 시각': new Date(now),
       '이용 목적': MI.EXTRA_REQUEST_PURPOSE, '보관 기한': MI.EXTRA_REQUEST_KEEP_UNTIL, '메모': '',
       '모의면접 신청번호': mi_str(f.applicationId, 40)
     };
     sheet.appendRow(header.map(function (h) { return rec.hasOwnProperty(h) ? rec[h] : ''; }));
     var row = sheet.getLastRow();
-    ['희망 날짜', '희망 시간', '연락처', '보호자 연락처'].forEach(function (h) {
+    ['희망 날짜', '희망 시간', '연락처'].forEach(function (h) {
       var ci = header.indexOf(h);
       if (ci >= 0) sheet.getRange(row, ci + 1).setNumberFormat('@').setValue(rec[h]);
     });

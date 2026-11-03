@@ -346,31 +346,13 @@ export function MockInterviewPage() {
                 </label>
               </div>
 
-              <label className="mi-check">
-                <input type="checkbox" checked={form.under14} onChange={(e) => set('under14', e.target.checked)} />
-                학생이 만 14세 미만입니다.
-              </label>
-              {form.under14 && (
-                <div className="mi-guardian">
-                  <div className="mi-grid">
-                    <label>보호자 이름<input value={form.guardianName} onChange={(e) => set('guardianName', e.target.value)} /></label>
-                    <label>보호자 연락처<input value={form.guardianPhone} inputMode="tel" onChange={(e) => set('guardianPhone', e.target.value)} /></label>
-                  </div>
-                  <label className="mi-check">
-                    <input type="checkbox" checked={form.guardianConsent} onChange={(e) => set('guardianConsent', e.target.checked)} />
-                    (필수) 법정대리인으로서 아래 동의 내용을 읽고 학생의 신청에 동의합니다.
-                  </label>
-                  <p className="mi-note">만 14세 미만 학생은 보호자 동의가 있어야 신청할 수 있습니다.</p>
-                </div>
-              )}
-
               <div className="mi-consents">
                 <Consent
                   checked={form.consentPrivacy}
                   onChange={(v) => set('consentPrivacy', v)}
                   title="(필수) 개인정보 수집·이용 동의"
                 >
-                  <li>수집 항목: 학생 이름, 지원 학교, 지원 전형, 휴대폰 번호, 입금자명, 이메일로 보내 주신 생기부·자소서와 보낸 이메일 주소. 만 14세 미만은 보호자 이름·연락처. 추가 날짜·시간 오픈을 신청하면 원하는 날짜와 시간.</li>
+                  <li>수집 항목: 학생 이름, 지원 학교, 지원 전형, 휴대폰 번호, 입금자명, 이메일로 보내 주신 생기부·자소서와 보낸 이메일 주소. 추가 날짜·시간 오픈을 신청하면 원하는 날짜와 시간.</li>
                   <li>이용 목적: 모의면접 예약과 입금 확인, 일정 연락, 면접 질문 준비, 피드백과 보고서 작성.</li>
                   <li>보관 기간: 면접 후 6개월. 기간이 지나면 파기합니다.</li>
                   <li>추가 날짜·시간 오픈을 신청한 경우: 이름, 연락처, 원하는 날짜와 시간을 {EXTRA_REQUEST_PURPOSE} 목적으로 {KEEP_UNTIL_LABEL}까지 보관 후 삭제합니다.</li>
@@ -416,7 +398,6 @@ export function MockInterviewPage() {
           </form>
         </section>
 
-        <RefundSection />
         <QnaSection />
       </main>
       )}
@@ -462,13 +443,12 @@ function RefundSection() {
   return (
     <section className="mi-section" aria-labelledby="mi-refund-title">
       <h2 id="mi-refund-title">취소와 환불은 어떻게 하나요?</h2>
-      {MI_CONFIG.refundDraft && <p className="mi-placeholder">확정 전 초안입니다. 문구가 바뀔 수 있습니다.</p>}
       <RefundList />
     </section>
   );
 }
 
-function QnaSection() {
+function QnaSection({ refundAbove = false }: { refundAbove?: boolean }) {
   return (
     <section className="mi-section" aria-labelledby="mi-qna-title">
       <h2 id="mi-qna-title">자주 묻는 질문</h2>
@@ -494,7 +474,8 @@ function QnaSection() {
         </Qna>
         <Qna q="취소하면 환불되나요?">
           면접 시작 전에 취소하면 낸 금액을 모두 돌려 드립니다. 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을
-          기준으로 합니다. 자세한 내용은 위 환불 안내를 봐 주세요.
+          기준으로 합니다.{' '}
+          {refundAbove ? '자세한 내용은 위 환불 안내를 봐 주세요.' : '자세한 환불 기준은 신청 뒤 신청완료 화면에서 안내합니다.'}
         </Qna>
         <Qna q="16·17·18시 말고 다른 날짜나 시간에도 받을 수 있나요?">
           원하는 날짜의 '추가 오픈 신청'(목록에 없으면 '목록에 없는 날짜')을 눌러 고른 뒤 신청서를 보내 주세요.
@@ -588,7 +569,7 @@ function DoneScreen({ done, now, open, onBack }: { done: Done; now: number; open
       {wantsExtra && <WishPicker form={form} applicationId={res?.id ?? ''} now={now} open={open} />}
 
       <RefundSection />
-      <QnaSection />
+      <QnaSection refundAbove />
 
       <p className="mi-back">
         <button type="button" className="mi-extra-link" onClick={onBack}>신청 화면으로 돌아가기</button>
@@ -723,7 +704,7 @@ function Qna({ q, children }: { q: string; children: ReactNode }) {
   );
 }
 
-/** 환불 안내. 초안(/workspace 환불규정_초안.md)의 확정 전 내용입니다. 규정을 고치면 여기와 Q&A 를 함께 고칩니다. */
+/** 환불 안내. 규정을 고치면 여기와 Q&A 를 함께 고칩니다. */
 export const REFUND_RULES: string[] = [
   `수강료는 1회 ${FEE_LABEL}입니다. 환불은 입금하신 계좌로 사유가 생긴 날부터 5일 안에 돌려 드립니다.`,
   '면접 시작 전에 취소하면 낸 금액을 모두 돌려 드립니다. 문자나 카카오채널로 알려 주세요.',

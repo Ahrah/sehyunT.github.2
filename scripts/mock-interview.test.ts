@@ -157,7 +157,8 @@ const good: MiForm = {
 assert.deepEqual(validateForm(good), []);
 assert.equal(validateForm({ ...good, consentPhoto: false }, true).length, 1);
 assert.deepEqual(validateForm({ ...good, consentPhoto: false }, false), []);
-assert.equal(validateForm({ ...good, under14: true }).length, 3);
+assert.deepEqual(validateForm({ ...good, under14: true } as typeof good), [], '만 14세 미만 칸은 없앴습니다(값이 와도 무시)');
+assert.ok(!('under14' in EMPTY_FORM) && !('guardianName' in EMPTY_FORM));
 assert.ok(validateForm({ ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }).length > 0, '11시는 예약 불가');
 assert.ok(validateForm({ ...good, slots: [{ date: '2026-12-12', time: '10:00' }] }).length > 0, '예전 10시 없음');
 assert.ok(validateForm({ ...good, depositor: '' }).length > 0);
@@ -205,8 +206,7 @@ assert.equal(wishDateOf({ dates: ['2026-12-20'], dateText: '12/27' }), '2026-12-
 assert.equal(validateExtraRequest({ ...orFree, dateText: '  ' }).length, 1);
 assert.equal(validateExtraRequest({ ...orFree, timeText: '' }).length, 1);
 assert.deepEqual(validateWish(EMPTY_WISH), ['원하는 날짜를 하나 이상 고르거나 적어 주세요.', '원하는 시간을 하나 이상 고르거나 적어 주세요.']);
-assert.equal(validateExtraRequest({ ...orGood, under14: true, guardianName: '', guardianPhone: '', guardianConsent: false }).length, 3, '만 14세 미만은 보호자 이름·연락처·동의');
-assert.deepEqual(validateExtraRequest({ ...orGood, under14: true, guardianName: '홍부모', guardianPhone: '01099998888', guardianConsent: true }), []);
+assert.deepEqual(validateExtraRequest({ ...orGood, under14: true, guardianName: '' } as typeof orGood), [], '보호자 칸 없음');
 
 /* ---- 묶음(한 번에 여러 타임): 한 번에 입금, 묶음 단위로 확정·취소 ---- */
 {
@@ -302,7 +302,7 @@ assert.equal(gs.EXTRA_REQ_COLS[gs.EXTRA_REQ_COLS.length - 1], '모의면접 신�
 assert.equal(gsRows[4].payDeadline, later + HOUR);
 assert.equal(gs.mi_summarize(gsRows, later)[0].left, 1, '확정 1 + 승격 2, 빈자리 1');
 for (const f of [good, multi, extraOnly, { ...good, slots: [] }, { ...good, consentVideo: false }, { ...good, slots: [good.slots[0], good.slots[0]] },
-  { ...extraOnly, extraDates: ['2026-12-14'] }, { ...good, under14: true }, { ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }]) {
+  { ...extraOnly, extraDates: ['2026-12-14'] }, { ...good, under14: true, guardianName: '' } as typeof good, { ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }]) {
   assert.deepEqual([...gs.mi_validate(f)], validateForm(f), `GS·TS 신청서 검사 일치 ${JSON.stringify(f.slots)}`);
 }
 assert.deepEqual([...gs.MI.EXTRA_REQUEST_TIMES], [...MI_CONFIG.extraRequestTimes]);
@@ -313,7 +313,7 @@ assert.equal(gs.MI.OPEN_REQUEST_TIME, undefined);
 assert.equal(gs.MI.FEE, MI_CONFIG.fee);
 assert.equal(gs.MI.AUTO_DEPOSIT_CHECK, false, '입금알림 자동 확인은 기본 꺼짐');
 assert.equal(gs.mi_extraRequestPurgeAt(), extraRequestPurgeAt());
-for (const f of [orGood, orFree, { ...orGood, dates: ['2026-12-14'] }, { ...orFree, timeText: '' }, { ...orGood, under14: true, guardianName: '' }, { ...orGood, dates: [], times: [] }]) {
+for (const f of [orGood, orFree, { ...orGood, dates: ['2026-12-14'] }, { ...orFree, timeText: '' }, { ...orGood, under14: true, guardianName: '' } as typeof orGood, { ...orGood, dates: [], times: [] }]) {
   assert.deepEqual([...gs.mi_validateExtraRequest(f)], validateExtraRequest(f), 'GS·TS 추가 오픈 검사 일치');
 }
 assert.equal(gs.mi_wishDateOf(orFree), wishDateOf(orFree));
