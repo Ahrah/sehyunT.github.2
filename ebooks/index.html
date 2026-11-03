@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Stale-page guard: after a redeploy, a cached copy of this page can point to
+      // a JS/CSS bundle that no longer exists (404). Reload once with a fresh URL.
+      (function () {
+        var KEY = 'st-asset-reload';
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          var url = t && (t.src || t.href);
+          if (!url || url.indexOf('/assets/') === -1) return;
+          try {
+            var last = Number(sessionStorage.getItem(KEY) || 0);
+            if (Date.now() - last < 300000) return; // at most once per 5 minutes
+            sessionStorage.setItem(KEY, String(Date.now()));
+          } catch (_) { return; }
+          var u = new URL(location.href);
+          u.searchParams.set('r', Date.now().toString());
+          location.replace(u.toString());
+        }, true);
+        window.addEventListener('load', function () {
+          var u = new URL(location.href);
+          if (u.searchParams.has('r')) { u.searchParams.delete('r'); history.replaceState(null, '', u.toString()); }
+        });
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+    <style>
+      html,body,#root{margin:0;background:#f7f5f2;color:#111}
+      body{font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo",ui-sans-serif,system-ui,sans-serif}
+    </style>
+
+    <!-- Primary Meta Tags -->
+    <title>입시는세연쌤books | 2027 경기권 외고 자소서·면접 가이드 전자책</title>
+    <meta name="title" content="2027 경기권 외고 자소서·면접 가이드 전자책 | 입시는세연쌤" />
+    <meta name="description" content="경기권 외고 8개교 비교 자료집과 학교별 자소서·면접 가이드 PDF. 계좌이체로 주문하면 입금 확인 후 30분 안에 이메일로 보내 드립니다." />
+    <meta name="author" content="조세연" />
+    <link rel="canonical" href="https://sehyunt.re.kr/ebooks/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sehyunt.re.kr/ebooks/" />
+    <meta property="og:title" content="입시는세연쌤books | 2027 경기권 외고 자소서·면접 가이드 전자책" />
+    <meta property="og:description" content="경기권 외고 8개교 비교 자료집과 학교별 자소서·면접 가이드 PDF. 계좌이체로 주문하면 입금 확인 후 30분 안에 이메일로 보내 드립니다." />
+    <meta property="og:image" content="https://sehyunt.re.kr/og-image.png" />
+    <meta property="og:site_name" content="입시는세연쌤" />
+    <meta property="og:locale" content="ko_KR" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/ebooks-main.tsx"></script>
+  </body>
+</html>

@@ -2,11 +2,12 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
+import { ebooksDetailPages } from './scripts/ebooks-detail-pages';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), ebooksDetailPages()],
     base: '/',
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -36,6 +37,7 @@ export default defineConfig(({mode}) => {
           main: path.resolve(__dirname, 'index.html'),
           counseling: path.resolve(__dirname, 'jinro-counseling/index.html'),
           mockInterview: path.resolve(__dirname, 'mock-interview/index.html'),
+          ebooks: path.resolve(__dirname, 'ebooks/index.html'),
         },
         output: {
           hoistTransitiveImports: false,

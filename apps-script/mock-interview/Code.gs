@@ -797,6 +797,11 @@ function doPost(e) {
   mi_loadExtraSlots_();
   if (f.website) return mi_json_({ ok: true, id: 'ignored' }); // 스팸 방지 칸
   if (f.action === 'admin') return mi_json_(mi_admin_(f, now));
+  if (f.action === 'ebookOrder') {
+    // 전자책 주문(apps-script/ebooks/Ebook.gs). 그 파일을 넣지 않았으면 받지 않습니다.
+    if (typeof eb_handleOrder_ !== 'function') return mi_json_({ ok: false, error: '전자책 주문은 준비 중입니다.' });
+    return mi_json_(eb_handleOrder_(f, now));
+  }
   if (f.action === 'extraRequest') return mi_extraRequest_(f, now);
   if (!mi_isOpen(now)) return mi_json_({ ok: false, error: '11/9(월) 밤 9시에 신청이 열립니다.' });
   var errors = mi_validate(f);
@@ -1033,13 +1038,16 @@ function sweepNow() {
     var now = Date.now();
     mi_loadExtraSlots_();
     var data = mi_readRows_(sheet);
-    if (MI.AUTO_DEPOSIT_CHECK) checkDepositMails_(sheet, data, now);
+    // 전자책(Ebook.gs)을 넣었고 '전자책 주문' 탭이 있으면 함께 정리합니다.
+    var eb = typeof eb_load_ === 'function' ? eb_load_() : null;
+    if (MI.AUTO_DEPOSIT_CHECK) checkDepositMails_(sheet, data, now, eb);
     mi_sweep(data.rows, now);
     mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
     mi_checkLastSeat_(data.rows, now);
     mi_purgeExtraRequests_(now);
+    if (eb) eb_process_(eb, now);
   } finally {
     lock.releaseLock();
   }
@@ -1151,7 +1159,7 @@ function mi_purgeExtraRequests_(now) {
  * 맞는 신청이 없거나 2건 이상이면 '입금알림 기록' 탭에 '손으로 확인'으로 남깁니다.
  * 켜려면: MI.AUTO_DEPOSIT_CHECK = true, appsscript.json 의 oauthScopes 에 https://mail.google.com/ 추가, 다시 배포.
  */
-function checkDepositMails_(sheet, data, now) {
+function checkDepositMails_(sheet, data, now, eb) {
   var ss = SpreadsheetApp.getActive();
   var log = ss.getSheetByName(MI.DEPOSIT_SHEET) || ss.insertSheet(MI.DEPOSIT_SHEET);
   if (log.getLastRow() === 0) log.getRange(1, 1, 1, DEPOSIT_COLS.length).setValues([DEPOSIT_COLS]).setFontWeight('bold');
@@ -1172,7 +1180,14 @@ function checkDepositMails_(sheet, data, now) {
       var result = '읽지 못함(손으로 확인)', rid = '';
       if (dep) {
         var unit = mi_matchDeposit(data.rows, dep);
-        if (unit) {
+        // 전자책 주문도 함께 맞춰 봅니다. 모의면접과 전자책 양쪽에 맞으면 손으로 확인합니다.
+        var em = eb && typeof eb_matchDeposit === 'function' ? eb_matchDeposit(eb.rows, dep) : { kind: 'none' };
+        if (unit && em.kind !== 'none') {
+          result = '모의면접·전자책 양쪽에 맞음(손으로 확인)';
+        } else if (em.kind !== 'none') {
+          result = eb_applyDeposit_(eb, em, dep);
+          rid = em.kind === 'many' ? em.rows.map(function (x) { return x.id; }).join(',') : em.row.id;
+        } else if (unit) {
           unit.forEach(function (r) {
             sheet.getRange(r.rowNumber, col['입금 확정'] + 1).setValue(true);
             sheet.getRange(r.rowNumber, col['입금 시각'] + 1).setValue(new Date(at));
@@ -1232,12 +1247,21 @@ function setup() {
     if (t.getHandlerFunction() === 'onSheetEdit') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('onSheetEdit').forSpreadsheet(ss).onEdit().create();
+  if (typeof eb_setup_ === 'function') eb_setup_();
 }
 
 /** '입금 확정'·'미입금'·'서류 받음'을 체크하면 5분을 기다리지 않고 바로 정리합니다(setup 이 만드는 트리거). */
 function onSheetEdit(e) {
   if (!e || !e.range) return;
   var sheet = e.range.getSheet();
+  if (typeof EB !== 'undefined' && e.range.getRow() >= 2) {
+    if (sheet.getName() === EB.RECEIPT_SHEET) { eb_onReceiptEdit_(e); return; }
+    if (sheet.getName() === EB.ORDER_SHEET) {
+      var ebName = String(sheet.getRange(1, e.range.getColumn()).getValue());
+      if (EB_CHECKBOX_COLS.indexOf(ebName) >= 0) sweepNow();
+      return;
+    }
+  }
   if (sheet.getName() !== MI.SHEET || e.range.getRow() < 2) return;
   var name = String(sheet.getRange(1, e.range.getColumn()).getValue());
   if (CHECKBOX_COLS.indexOf(name) < 0 && name !== '입금 시각') return;
@@ -1248,7 +1272,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('모의면접')
     .addItem('지금 정리하기(입금 확정 반영·취소·대기 승격)', 'sweepNow')
     .addItem('선택한 줄 관리자 취소(대기 1번 승격)', 'adminCancelSelected')
-    .addItem('처음 설정(한 번만)', 'setup')
+    .addItem('처음 설정(한 번만, 전자책 탭도 만듭니다)', 'setup')
     .addToUi();
 }
 

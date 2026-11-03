@@ -55,30 +55,6 @@ const homePageContent = `
       </div>
     </section>
 
-    <!-- Philosophy Section -->
-    <section class="py-40 px-6 lg:px-8 bg-brand-secondary">
-      <div class="max-w-7xl mx-auto">
-        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">Philosophy</p>
-        <h2 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-brand-text mb-12">
-          좋은 전략은<br />학생을 닮아야 합니다.
-        </h2>
-        <div class="space-y-12">
-          <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">깊어지는 탐구</h3>
-            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
-              넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.
-            </p>
-          </div>
-          <div>
-            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">생각을 설명하는 힘</h3>
-            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
-              결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Programs Section -->
     <section id="programs" class="py-48 px-6 lg:px-12 max-w-7xl mx-auto">
       <div class="mb-16">
@@ -131,6 +107,30 @@ const homePageContent = `
           <li><strong>04 직접 연구하고 정리합니다</strong> — 12월 모의면접으로 실전 면접을 준비합니다.</li>
           <li><strong>05 기록하고 말하는 힘으로 남깁니다</strong> — 고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.</li>
         </ol>
+      </div>
+    </section>
+
+    <!-- What Matters Section -->
+    <section class="py-40 px-6 lg:px-8 bg-brand-secondary">
+      <div class="max-w-7xl mx-auto">
+        <p class="text-xs uppercase tracking-[0.5em] text-brand-accent font-black mb-8">What Matters</p>
+        <h2 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tighter text-brand-text mb-12">
+          좋은 전략은<br />학생을 닮아야 합니다.
+        </h2>
+        <div class="space-y-12">
+          <div>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">깊어지는 탐구</h3>
+            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
+              넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.
+            </p>
+          </div>
+          <div>
+            <h3 class="text-2xl font-black mb-6 uppercase tracking-tight">생각을 설명하는 힘</h3>
+            <p class="text-xl text-brand-gray leading-relaxed font-normal max-w-2xl">
+              결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
 

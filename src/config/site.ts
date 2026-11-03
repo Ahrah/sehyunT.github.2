@@ -10,6 +10,8 @@ export const SITE = {
   phone: '010-5308-6879',
   phoneHref: 'tel:01053086879',
   businessNumber: '612-69-00756',
+  /** 통신판매업 신고번호(전자책 판매 페이지 사업자 정보에 표시) */
+  mailOrderSalesNumber: '2026-성남수정-0842',
   address: '경기도 성남시 수정구 창업로 43, 81호',
   instagramHandle: '@consultant.sy',
   instagramUrl: 'https://instagram.com/consultant.sy',

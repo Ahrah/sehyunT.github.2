@@ -14,6 +14,7 @@ import {
   LogOut,
   Mail,
   Menu,
+  ShoppingBag,
   ShieldAlert,
   User as UserIcon,
   X,
@@ -22,6 +23,9 @@ import { SITE, NOTO_SERIF_KR_HREF, ensureStylesheet } from './config/site';
 import { HomeFocusSection } from './components/HomeFocusSection';
 import { HomeMiPopup } from './components/HomeMiPopup';
 import { ProgramsSection } from './components/ProgramsSection';
+import { CART_EVENT, PREVIEW_CART_UID, readCart, safeNext, syncCartOnLogin } from './lib/cart';
+import { isTestMode } from './lib/ebooksApi';
+import { readPreviewMember } from './lib/memberPrefill';
 
 type AuthUser = { email: string | null; displayName: string | null };
 
@@ -41,12 +45,6 @@ const strategySteps = [
   { number: '05', title: '기록하고 말하는 힘으로 남깁니다', label: 'Refine', text: '고등학교 진학 후 학기 단위로 학생부종합전형 생기부를 관리합니다.' },
 ];
 
-const studentCases = [
-  { tag: '진로·고입', before: '관심 분야가 자주 바뀌어 무엇을 준비해야 할지 막막했던 중학생', after: '좋아하는 주제와 학습 경험을 연결해 지원 학교와 자기소개서의 중심 질문을 세웠습니다.' },
-  { tag: '생기부', before: '활동은 많지만 세특과 탐구의 연결이 보이지 않았던 고등학생', after: '진로 질문을 기준으로 활동의 우선순위를 다시 잡아 학생부 전체의 일관성을 높였습니다.' },
-  { tag: '자기주도학습', before: '계획은 잘 세우지만 며칠 뒤면 지쳐 포기하던 학생', after: '집중 시간과 회복 패턴을 반영한 작은 루틴으로 바꾸며 스스로 다시 시작하는 힘을 길렀습니다.' },
-];
-
 
 const Button = ({ children, className = '', variant = 'dark' }: { children: ReactNode; className?: string; variant?: 'dark' | 'light' | 'line' }) => {
   const variants = {
@@ -57,7 +55,9 @@ const Button = ({ children, className = '', variant = 'dark' }: { children: Reac
   return <span className={`inline-flex min-h-14 items-center justify-center gap-3 rounded-full px-7 text-sm font-bold transition-colors ${variants[variant]} ${className}`}>{children}</span>;
 };
 
-const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUser | null; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
+const BOOKS_LABEL = '입시는세연쌤 books';
+
+const Navbar = ({ user, previewMember, cartCount, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUser | null; previewMember: boolean; cartCount: number; onOpenAuth: () => void; onOpenAdmin: () => void; onOpenMyPage: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -82,10 +82,8 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
   };
 
   const links = [
-    ['소개', '#about'],
     ['프로그램', '#programs'],
     ['진로 컨설팅', '/jinro-counseling/'],
-    ['전략 지도', '#strategy'],
     ['자료실', '#resources'],
   ];
 
@@ -102,7 +100,15 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
 
         <div className="hidden items-center gap-6 xl:gap-8 lg:flex">
           {links.map(([label, href]) => <a key={href} href={href} className="text-sm font-semibold text-brand-ink/70 hover:text-brand-ink">{label}</a>)}
+          <a href="/ebooks/" className="rounded-full bg-brand-accent px-3.5 py-1.5 text-sm font-black text-white hover:opacity-90">{BOOKS_LABEL}</a>
           <a href={SITE.collabInquiryUrl} target="_blank" rel="noopener" className="text-xs font-medium text-brand-ink/45 hover:text-brand-ink/70">협업 문의</a>
+          {(user || previewMember) && (
+            <button onClick={onOpenMyPage} aria-label={`장바구니 ${cartCount}권`} className="relative text-brand-ink/70 hover:text-brand-accent">
+              <ShoppingBag size={19} />
+              {cartCount > 0 && <span className="absolute -right-2 -top-2 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-accent px-1 text-[10px] font-black text-white">{cartCount}</span>}
+            </button>
+          )}
+          {!user && previewMember && <button onClick={onOpenMyPage} className="text-sm font-bold">미리보기 회원님</button>}
           {user ? (
             <div className="flex items-center gap-4 border-l border-brand-ink/10 pl-6">
               <button onClick={onOpenMyPage} className="flex items-center gap-2 text-sm font-bold hover:text-brand-accent">
@@ -111,11 +117,19 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
               {isAdmin && <button onClick={onOpenAdmin} className="text-xs font-black text-brand-accent">관리자</button>}
               <button onClick={logout} aria-label="로그아웃" className="text-brand-ink/50 hover:text-brand-accent"><LogOut size={17} /></button>
             </div>
-          ) : <button onClick={onOpenAuth} className="text-sm font-bold text-brand-ink/65 hover:text-brand-ink">로그인</button>}
+          ) : !previewMember && <button onClick={onOpenAuth} className="text-sm font-bold text-brand-ink/65 hover:text-brand-ink">로그인</button>}
           <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button className="min-h-12 px-6">상담 신청 <ArrowUpRight size={16} /></Button></a>
         </div>
 
-        <button onClick={() => setIsMenuOpen(true)} aria-label="메뉴 열기" className="grid h-11 w-11 place-items-center rounded-full border border-brand-ink/15 lg:hidden"><Menu size={21} /></button>
+        <div className="flex items-center gap-3 lg:hidden">
+          {(user || previewMember) && (
+            <button onClick={onOpenMyPage} aria-label={`장바구니 ${cartCount}권`} className="relative grid h-11 w-11 place-items-center rounded-full border border-brand-ink/15">
+              <ShoppingBag size={19} />
+              {cartCount > 0 && <span className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-accent px-1 text-[10px] font-black text-white">{cartCount}</span>}
+            </button>
+          )}
+          <button onClick={() => setIsMenuOpen(true)} aria-label="메뉴 열기" className="grid h-11 w-11 place-items-center rounded-full border border-brand-ink/15"><Menu size={21} /></button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -127,9 +141,10 @@ const Navbar = ({ user, onOpenAuth, onOpenAdmin, onOpenMyPage }: { user: AuthUse
             </div>
             <div className="flex min-h-[80vh] flex-col justify-center gap-7">
               {links.map(([label, href], index) => <a key={href} href={href} onClick={() => closeAnd()} className="flex items-center gap-4 text-4xl font-black tracking-[-0.05em]"><span className="text-xs text-brand-coral">0{index + 1}</span>{label}</a>)}
+              <a href="/ebooks/" onClick={() => closeAnd()} className="flex items-center gap-4 text-4xl font-black tracking-[-0.05em] text-brand-coral"><span className="text-xs">0{links.length + 1}</span>{BOOKS_LABEL}</a>
               <a href={SITE.collabInquiryUrl} target="_blank" rel="noopener" onClick={() => closeAnd()} className="text-sm font-medium text-white/45">협업 문의</a>
               <div className="mt-5 border-t border-white/15 pt-7">
-                {user ? <button onClick={() => closeAnd(onOpenMyPage)} className="mr-6 text-base font-bold">마이페이지</button> : <button onClick={() => closeAnd(onOpenAuth)} className="mr-6 text-base font-bold">로그인</button>}
+                {user || previewMember ? <button onClick={() => closeAnd(onOpenMyPage)} className="mr-6 text-base font-bold">마이페이지 · 장바구니{cartCount > 0 ? ` ${cartCount}` : ''}</button> : <button onClick={() => closeAnd(onOpenAuth)} className="mr-6 text-base font-bold">로그인</button>}
                 {isAdmin && <button onClick={() => closeAnd(onOpenAdmin)} className="text-base font-bold text-brand-coral">관리자</button>}
               </div>
               <a href={SITE.consultUrl} target="_blank" rel="noopener noreferrer"><Button variant="light" className="w-full">상담 신청하기 <ArrowRight size={17} /></Button></a>
@@ -183,6 +198,20 @@ const StrategyMap = () => {
               </motion.div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* What Matters (11/3 세연님: 별도 섹션을 지우고 How We Work 안으로 옮김). 예전 #about 주소도 여기로 옵니다. */}
+      <div id="about" className="mx-auto mt-24 max-w-7xl scroll-mt-24 border-t border-white/15 px-6 pt-20 sm:px-8 lg:mt-32 lg:px-12">
+        <div className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
+          <div><p className="section-label text-brand-coral">What Matters</p><h3 className="mt-7 text-4xl font-black leading-[1.05] tracking-[-0.06em] sm:text-6xl">좋은 전략은<br />학생을 닮아야<br />합니다.</h3></div>
+          <div className="lg:pt-10">
+            <p className="belief-quote text-2xl text-white sm:text-3xl">"학생에게 필요한 것은 자신의 질문을 만들고 여러 관점에서 자료를 읽으며 끝까지 생각해보는 경험입니다. 그럴듯한 활동의 개수보다 이 경험이 더 중요합니다. 그 과정이 쌓이면 기록에서는 탐구의 깊이가 보이고, 면접에서는 짧은 시간 안에도 자신의 생각을 설명할 수 있습니다."</p>
+            <div className="mt-12 grid gap-8 border-t border-white/15 pt-10 sm:grid-cols-2">
+              <div><h4 className="text-xl font-black">깊어지는 탐구</h4><p className="mt-3 text-sm leading-7 text-white/70">넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.</p></div>
+              <div><h4 className="text-xl font-black">생각을 설명하는 힘</h4><p className="mt-3 text-sm leading-7 text-white/70">결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.</p></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -247,6 +276,34 @@ export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
   const [miPopupOpen, setMiPopupOpen] = useState(false);
+  // 미리보기(테스트 모드)에서만 쓰는 가짜 회원. 실제 사이트에서는 늘 false 입니다.
+  const [previewMember] = useState(() => isTestMode() && readPreviewMember() != null);
+  const cartUid = user?.uid ?? (previewMember ? PREVIEW_CART_UID : null);
+  const [cartCount, setCartCount] = useState(0);
+  const [pendingNext, setPendingNext] = useState<string | null>(null);
+  const [wantCart, setWantCart] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setCartCount(readCart(cartUid).length);
+    sync();
+    window.addEventListener(CART_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener(CART_EVENT, sync); window.removeEventListener('storage', sync); };
+  }, [cartUid]);
+
+  // /?mypage=cart → 마이페이지 장바구니, /?login=1&next=/ebooks/... → 로그인 창, 로그인하면 돌아갑니다.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('mypage') === 'cart') setWantCart(true);
+    if (q.get('login') === '1') { setPendingNext(safeNext(q.get('next'))); setIsAuthModalOpen(true); }
+    if (q.has('mypage') || q.has('login')) window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+  }, []);
+  useEffect(() => {
+    if (wantCart && cartUid) { setIsMyPageOpen(true); setWantCart(false); }
+  }, [wantCart, cartUid]);
+  useEffect(() => {
+    if (user && pendingNext) void syncCartOnLogin(user.uid).finally(() => { window.location.href = pendingNext; });
+  }, [user, pendingNext]);
   const reduceMotion = useReducedMotion();
   const heroRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
@@ -259,6 +316,8 @@ export default function App() {
         if (cancelled) return;
         unsub = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
+          if (currentUser) void syncCartOnLogin(currentUser.uid);
+          if (!currentUser) setWantCart((w) => { if (w) setIsAuthModalOpen(true); return false; });
           setIsAdminOpen(currentUser?.email === ADMIN_EMAIL);
         });
       });
@@ -310,14 +369,14 @@ export default function App() {
     <div id="top" className="min-h-screen bg-brand-paper text-brand-ink selection:bg-brand-coral/35">
       <Suspense fallback={null}>
         <AnimatePresence>{isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}</AnimatePresence>
-        <AnimatePresence>{isMyPageOpen && <MyPage onClose={() => setIsMyPageOpen(false)} />}</AnimatePresence>
+        <AnimatePresence>{isMyPageOpen && <MyPage cartUid={cartUid} onClose={() => setIsMyPageOpen(false)} />}</AnimatePresence>
         <AnimatePresence>{isAdminOpen && user?.email === ADMIN_EMAIL && <AdminDashboard onBack={() => setIsAdminOpen(false)} />}</AnimatePresence>
         {legalModalType && <LegalModal isOpen type={legalModalType} onClose={() => setLegalModalType(null)} />}
       </Suspense>
 
       <HomeMiPopup onOpenChange={setMiPopupOpen} />
 
-      <Navbar user={user} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenAdmin={() => setIsAdminOpen(true)} onOpenMyPage={() => setIsMyPageOpen(true)} />
+      <Navbar user={user} previewMember={previewMember} cartCount={cartCount} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenAdmin={() => setIsAdminOpen(true)} onOpenMyPage={() => setIsMyPageOpen(true)} />
 
       <main>
         <section ref={heroRef} className="hero-stage relative overflow-hidden px-6 pb-24 pt-32 sm:px-8 sm:pb-32 sm:pt-40 lg:min-h-[92vh] lg:px-12 lg:pb-20">
@@ -358,37 +417,6 @@ export default function App() {
         <HomeFocusSection />
 
         <ProgramsSection />
-
-        <section id="about" className="scroll-mt-20 bg-brand-sand py-28 sm:py-36 lg:py-44">
-          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-            <motion.div {...reveal} className="grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-24">
-              <div><p className="section-label text-brand-accent">What Matters</p><h2 className="mt-7 text-5xl font-black leading-[1.02] tracking-[-0.06em] sm:text-7xl">좋은 전략은<br />학생을 닮아야<br />합니다.</h2></div>
-              <div className="lg:pt-16">
-                <p className="belief-quote text-2xl sm:text-3xl">"학생에게 필요한 것은 그럴듯한 활동을 많이 만드는 일이 아니라, 자신의 질문을 만들고 여러 관점에서 자료를 읽고 끝까지 생각해보는 경험입니다. 그 과정이 쌓이면 기록에서는 탐구의 깊이가 보이고, 면접에서는 짧은 시간 안에도 자신의 생각을 설명할 수 있습니다."</p>
-                <div className="mt-12 grid gap-8 border-t border-brand-ink/15 pt-10 sm:grid-cols-2">
-                  <div><h3 className="text-xl font-black">깊어지는 탐구</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">넓은 관심사에서 출발해 질문을 좁히고, 자료를 비교하며 한 단계 더 깊은 후속 탐구로 나아갑니다.</p></div>
-                  <div><h3 className="text-xl font-black">생각을 설명하는 힘</h3><p className="mt-3 text-sm leading-7 text-brand-ink/58">결과물을 대신 만들지 않습니다. 학생이 근거를 찾고 판단하고, 자신의 생각을 기록과 말로 설명할 수 있게 훈련합니다.</p></div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        <section className="bg-brand-paper py-28 sm:py-36">
-          <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-            <motion.div {...reveal} className="max-w-3xl"><p className="section-label text-brand-accent">What Changes</p><h2 className="mt-6 text-5xl font-black tracking-[-0.06em] sm:text-6xl">숫자보다 먼저 보이는 변화</h2></motion.div>
-            <div className="mt-14 grid gap-4 lg:grid-cols-3">
-              {studentCases.map((item, index) => (
-                <motion.article {...reveal} key={item.tag} className="flex min-h-[360px] flex-col rounded-[1.75rem] border border-brand-ink/10 bg-white p-7 sm:p-9">
-                  <div className="flex items-center justify-between"><span className="rounded-full bg-brand-coral/30 px-3 py-1.5 text-xs font-black">{item.tag}</span><span className="font-mono text-xs text-brand-ink/30">0{index + 1}</span></div>
-                  <p className="mt-9 text-base font-bold leading-7 text-brand-ink/62">{item.before}</p>
-                  <div className="my-7 h-px bg-brand-ink/10" />
-                  <p className="mt-auto text-xl font-black leading-8 tracking-[-0.025em]">“{item.after}”</p>
-                </motion.article>
-              ))}
-            </div>
-          </div>
-        </section>
 
         <StrategyMap />
 

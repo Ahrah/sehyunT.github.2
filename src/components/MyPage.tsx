@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { auth, db } from '../lib/firebase';
+import { MyCart } from './MyCart';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 
@@ -18,9 +19,10 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 interface MyPageProps {
   onClose: () => void;
+  cartUid?: string | null;
 }
 
-export const MyPage = ({ onClose }: MyPageProps) => {
+export const MyPage = ({ onClose, cartUid }: MyPageProps) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -217,6 +219,7 @@ export const MyPage = ({ onClose }: MyPageProps) => {
         )}
 
         <div className="space-y-10">
+          {cartUid && <MyCart uid={cartUid} />}
           {/* Account Info (Read-only) */}
           <div className="space-y-4">
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-accent">Account Info</h3>

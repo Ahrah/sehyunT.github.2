@@ -256,7 +256,7 @@ assert.equal(indexHtml.includes('display=swap'), true);
 const appSrc = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf-8');
 const heroStart = appSrc.indexOf('relative overflow-hidden px-6 pb-24');
 const heroEnd = appSrc.indexOf('<ProgramsSection');
-const heroSrc = appSrc.slice(heroStart, heroEnd === -1 ? appSrc.indexOf('id="about"') : heroEnd);
+const heroSrc = appSrc.slice(heroStart, heroEnd === -1 ? appSrc.indexOf('<StrategyMap />') : heroEnd);
 assert.equal(heroSrc.includes('whileInView'), false);
 assert.equal(heroSrc.includes('opacity: 0'), false);
 assert.equal(heroSrc.includes('<picture'), true);
