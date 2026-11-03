@@ -6,8 +6,10 @@ import {
   type MiExtraRequest,
   type MiRow,
   type MiStatus,
-  type SlotSummary,
+  type PublicSlot,
+  findActiveDuplicate,
   isOpen,
+  publicSlots,
   newBookingRow,
   normalizePhone,
   slotBookingClosesAt,
@@ -18,11 +20,13 @@ import {
   validateExtraRequest,
   wishDateOf,
   wishTimeOf,
-  waitlistPosition,
 } from './mockInterview';
 
-export type StatusResponse = { ok: boolean; open: boolean; now: number; slots: SlotSummary[]; error?: string };
+export type StatusResponse = { ok: boolean; open: boolean; now: number; slots: PublicSlot[]; error?: string };
 export type ExtraRequestResponse = { ok: boolean; id?: string; error?: string };
+export const DUP_OTHER_NAME =
+  "같은 휴대폰 번호로 이미 신청한 타임이 있습니다. 신청완료 화면의 확인 링크를 열거나 카카오톡 채널 '입시는세연쌤'으로 문의해 주세요.";
+
 /** 한 번에 신청한 타임 하나의 결과 */
 export type SubmitItem = {
   id: string;
@@ -30,7 +34,6 @@ export type SubmitItem = {
   time: string;
   status: MiStatus;
   payDeadline: number | null;
-  waitlistPosition: number | null;
 };
 export type SubmitResponse = {
   ok: boolean;
@@ -41,8 +44,20 @@ export type SubmitResponse = {
   payDeadline?: number | null;
   /** 지금 입금할 금액(입금 대기 타임 수 × 수강료) */
   amount?: number;
+  /** 확인 링크 키 */
+  token?: string;
+  studentName?: string;
+  school?: string;
+  track?: string;
+  /** 입금 계좌(확인 링크 화면에서 서버 값을 씁니다) */
+  bankAccount?: string;
+  /** 같은 휴대폰·같은 타임으로 이미 입금 대기·확정인 신청이 있어 새로 만들지 않고 기존 신청을 돌려준 경우 */
+  duplicate?: boolean;
   error?: string;
 };
+
+/** 확인 링크(?check=&k=)로 불러온 신청 상태. 신청 직후 응답과 같은 모양입니다. */
+export type CheckResponse = SubmitResponse;
 
 /** 실제 홈페이지(sehyunt.re.kr)에 Apps Script 주소 없이 올라가면 테스트 모드를 켜지 않고 '준비 중'으로 둡니다. */
 export const isLiveSiteWithoutBackend = () =>
@@ -75,7 +90,45 @@ type MockExtraRequest = {
   phone: string;
   applicationId: string;
 };
-type MockRow = MiRow & { phone: string };
+type MockRow = MiRow & { phone: string; studentName?: string; school?: string; track?: string };
+
+function mockToken(): string {
+  const a = new Uint8Array(16);
+  try {
+    crypto.getRandomValues(a);
+  } catch {
+    for (let i = 0; i < a.length; i += 1) a[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** 묶음 하나의 현재 상태(서버 mi_view_ 와 같은 모양) */
+function viewOf(rows: readonly MockRow[], groupId: string): SubmitResponse | null {
+  const mine = rows.filter((r) => (r.groupId || r.id) === groupId);
+  if (!mine.length) return null;
+  const items = mine.map((r) => ({ id: r.id, date: r.date, time: r.time, status: r.status, payDeadline: r.status === MI_STATUS.pending ? r.payDeadline : null }));
+  const pend = items.filter((x) => x.status === MI_STATUS.pending && x.payDeadline != null);
+  return {
+    ok: true,
+    id: groupId,
+    items,
+    payDeadline: pend.length ? Math.min(...pend.map((x) => x.payDeadline!)) : null,
+    amount: pend.length * MI_CONFIG.fee,
+    token: mine[0].token,
+    studentName: mine[0].studentName,
+    school: mine[0].school,
+    track: mine[0].track,
+    bankAccount: MI_CONFIG.bankAccount,
+  };
+}
+
+export function mockCheck(id: string, token: string, now: number): CheckResponse {
+  const rows = sweep(loadRows(), now) as MockRow[];
+  saveRows(rows);
+  const v = viewOf(rows, id);
+  if (!v || !token || v.token !== token) return { ok: false, error: '신청을 찾지 못했습니다. 받은 확인 링크를 그대로 열어 주세요.' };
+  return v;
+}
 
 function loadRows(): MockRow[] {
   try {
@@ -113,7 +166,7 @@ export function resetMock() {
 export function mockStatus(now: number): StatusResponse {
   const rows = sweep(loadRows(), now) as MockRow[];
   saveRows(rows);
-  return { ok: true, open: isOpen(now), now, slots: summarize(rows, now) };
+  return { ok: true, open: isOpen(now), now, slots: publicSlots(summarize(rows, now)) };
 }
 
 export function mockSubmit(form: MiForm, now: number): SubmitResponse {
@@ -127,34 +180,34 @@ export function mockSubmit(form: MiForm, now: number): SubmitResponse {
   if (closed) return { ok: false, error: `${closed.date} ${closed.time}은 신청이 마감되었습니다.` };
   const rows = sweep(loadRows(), now) as MockRow[];
   const phone = normalizePhone(form.phone);
-  const dup = picks.find((x) =>
+  // 같은 휴대폰·같은 타임이 입금 대기·확정이면 새로 만들지 않고 기존 신청을 보여 줍니다.
+  const existing = findActiveDuplicate(rows, phone, picks);
+  if (existing) {
+    const v = viewOf(rows, existing);
+    const n = (x: string | undefined) => (x ?? '').replace(/\s+/g, '');
+    // 이름까지 같을 때만 기존 신청을 보여 줍니다(Code.gs 와 같음).
+    if (v && n(v.studentName) && n(v.studentName) === n(form.studentName)) return { ...v, duplicate: true };
+    return { ok: false, error: DUP_OTHER_NAME };
+  }
+  const other = picks.find((x) =>
     rows.some((r) => r.phone === phone && r.status !== MI_STATUS.cancelled && r.date === x.date && r.time === x.time),
   );
-  if (dup) return { ok: false, error: `같은 휴대폰 번호로 이미 신청한 타임입니다(${dup.date} ${dup.time}).` };
+  if (other) return { ok: false, error: `같은 휴대폰 번호로 이미 신청한 타임입니다(${other.date} ${other.time}).` };
   const groupId = `MI-TEST-${new Set(rows.map((r) => r.groupId || r.id)).size + 1}`;
-  const added: MockRow[] = [];
+  const token = mockToken();
   picks.forEach((x, i) => {
-    const row: MockRow = { ...newBookingRow(rows, `${groupId}-${i + 1}`, x.date, x.time, now, groupId), phone };
+    const row: MockRow = {
+      ...newBookingRow(rows, `${groupId}-${i + 1}`, x.date, x.time, now, groupId),
+      token,
+      phone,
+      studentName: form.studentName.trim(),
+      school: form.school.trim(),
+      track: form.track.trim(),
+    };
     rows.push(row);
-    added.push(row);
   });
   saveRows(rows);
-  const items = added.map((r) => ({
-    id: r.id,
-    date: r.date,
-    time: r.time,
-    status: r.status,
-    payDeadline: r.payDeadline,
-    waitlistPosition: waitlistPosition(rows, r.id),
-  }));
-  const holding = items.filter((x) => x.status === MI_STATUS.pending);
-  return {
-    ok: true,
-    id: groupId,
-    items,
-    payDeadline: holding.length ? holding[0].payDeadline : null,
-    amount: holding.length * MI_CONFIG.fee,
-  };
+  return viewOf(rows, groupId)!;
 }
 
 export function mockExtraRequest(f: MiExtraRequest, now: number): ExtraRequestResponse {
@@ -179,16 +232,16 @@ export function mockExtraRequest(f: MiExtraRequest, now: number): ExtraRequestRe
   return { ok: true, id };
 }
 
-/** 미리보기 전용: 12/12 16:00 을 4명으로 채우고 대기 1명을 넣어 '대기' 상태를 보여 줍니다. */
+/** 미리보기 전용: 12/13 16:00 을 4명으로 채우고 대기 1명을 넣어 '대기' 상태를 보여 줍니다. */
 export function seedWaitlistDemo(now: number) {
   const rows = loadRows().filter((r) => !r.id.startsWith('MI-DEMO-'));
-  const date = MI_CONFIG.dates[0];
+  const date = MI_CONFIG.dates[1];
   const time = MI_CONFIG.times[0];
   for (let i = 1; i <= 5; i += 1) {
     const id = `MI-DEMO-${i}`;
     rows.push({ ...newBookingRow(rows, id, date, time, now - (10 - i) * 60000), phone: `0100000000${i}` });
   }
-  // 17시는 3자리를 채워 '남은 자리 1/4' 를 보여 줍니다.
+  // 17시는 3자리를 채웁니다(화면에는 숫자 없이 그대로 신청 가능으로 보입니다).
   for (let i = 6; i <= 8; i += 1) {
     const id = `MI-DEMO-${i}`;
     rows.push({ ...newBookingRow(rows, id, date, MI_CONFIG.times[1], now - (10 - i) * 60000), phone: `0100000000${i}` });
@@ -204,13 +257,21 @@ export async function fetchStatus(now: number): Promise<StatusResponse> {
   return (await res.json()) as StatusResponse;
 }
 
+export async function fetchCheck(id: string, token: string, now: number): Promise<CheckResponse> {
+  if (isTestMode()) return mockCheck(id, token, now);
+  const q = `?action=check&check=${encodeURIComponent(id)}&k=${encodeURIComponent(token)}`;
+  const res = await fetch(`${MOCK_INTERVIEW_API_URL}${q}`, { method: 'GET' });
+  return (await res.json()) as CheckResponse;
+}
+
 export async function submitApplication(form: MiForm, now: number): Promise<SubmitResponse> {
   if (isTestMode()) return mockSubmit(form, now);
   // text/plain 으로 보내야 Apps Script 가 CORS 사전 요청 없이 받습니다.
   const res = await fetch(MOCK_INTERVIEW_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(form),
+    // 학생 이름이 입금자명입니다.
+    body: JSON.stringify({ ...form, depositor: form.studentName }),
   });
   return (await res.json()) as SubmitResponse;
 }

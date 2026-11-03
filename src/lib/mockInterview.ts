@@ -19,7 +19,15 @@ export const MI_CONFIG = {
   extraRequestTimes: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
   /** 추가 오픈 신청 연락처 보관 마지막 날(이날 밤 12시에 지웁니다) */
   extraRequestKeepUntil: '2026-12-20',
+  /** 타임마다 받는 인원(화면에는 보여 주지 않습니다) */
   capacity: 4,
+  /**
+   * 오픈할 때부터 '대기'로 보여 주는 타임(세연님 11/3 결정). 이 타임은 신청이 모두 대기로 접수되고,
+   * 대기 신청이 waitlistReleaseCount 명 이상 모이면 그때 대기 순서대로 입금 대기로 올립니다(입금 안내).
+   * 한 번 열린 타임은 다시 잠그지 않습니다. Code.gs MI.WAITLIST_AT_OPEN 과 같아야 합니다.
+   */
+  waitlistAtOpen: ['2026-12-12 16:00', '2026-12-20 18:00'] as readonly string[],
+  waitlistReleaseCount: 2,
   fee: 80000,
   /** 신청(또는 대기 승격) 뒤 입금 기한 */
   payWindowMs: 60 * 60 * 1000,
@@ -75,6 +83,8 @@ export type MiRow = {
   checkReason?: string;
   /** 한 번에 여러 타임을 신청하면 같은 묶음 번호를 씁니다. 비어 있으면 혼자인 신청입니다. */
   groupId?: string;
+  /** 확인 링크 키(묶음마다 하나). 신청번호만으로는 신청 내용을 볼 수 없게 합니다. */
+  token?: string;
   log: string[];
 };
 
@@ -134,24 +144,46 @@ export type SlotSummary = {
   capacity: number;
   left: number;
   waitlist: number;
+  /** 화면에 '(대기)'로 보일 타임(자리가 없거나, 대기가 있거나, 오픈 때부터 대기로 둔 타임) */
+  wait: boolean;
   closed: boolean;
 };
+
+/** 홈페이지로 보내는 타임 정보. 남은 자리·대기 인원 숫자는 보내지 않습니다. */
+export type PublicSlot = Pick<SlotSummary, 'date' | 'time' | 'wait' | 'closed'>;
+
+export function publicSlots(list: readonly SlotSummary[]): PublicSlot[] {
+  return list.map(({ date, time, wait, closed }) => ({ date, time, wait, closed }));
+}
 
 export function summarize(rows: readonly MiRow[], now: number): SlotSummary[] {
   const out: SlotSummary[] = [];
   for (const date of MI_CONFIG.dates) {
     for (const time of MI_CONFIG.times) {
+      const left = Math.max(0, MI_CONFIG.capacity - heldCount(rows, date, time));
+      const waitlist = waitlistOf(rows, date, time).length;
       out.push({
         date,
         time,
         capacity: MI_CONFIG.capacity,
-        left: Math.max(0, MI_CONFIG.capacity - heldCount(rows, date, time)),
-        waitlist: waitlistOf(rows, date, time).length,
+        left,
+        waitlist,
+        wait: left === 0 || waitlist > 0 || isGated(rows, date, time),
         closed: now >= slotBookingClosesAt(date, time),
       });
     }
   }
   return out;
+}
+
+/**
+ * 오픈 때부터 대기로 둔 타임이 아직 잠겨 있는지.
+ * 잠김: waitlistAtOpen 에 있고, 그 타임에서 입금 대기로 올라간 적이 있는 줄이 없고, 대기가 waitlistReleaseCount 명보다 적을 때.
+ */
+export function isGated(rows: readonly MiRow[], date: string, time: string): boolean {
+  if (!MI_CONFIG.waitlistAtOpen.includes(slotKey(date, time))) return false;
+  if (slotRows(rows, date, time).some((r) => r.holdStartedAt != null)) return false;
+  return waitlistOf(rows, date, time).length < MI_CONFIG.waitlistReleaseCount;
 }
 
 /**
@@ -161,7 +193,7 @@ export function summarize(rows: readonly MiRow[], now: number): SlotSummary[] {
 export function initialStatusFor(rows: readonly MiRow[], date: string, time: string): MiStatus {
   const full = heldCount(rows, date, time) >= MI_CONFIG.capacity;
   const queued = waitlistOf(rows, date, time).length > 0;
-  return full || queued ? MI_STATUS.waitlist : MI_STATUS.pending;
+  return full || queued || isGated(rows, date, time) ? MI_STATUS.waitlist : MI_STATUS.pending;
 }
 
 export function newBookingRow(
@@ -246,6 +278,7 @@ export function decidePay(
  * 2) 미입금으로 취소된 줄에 '입금 확정'(또는 입금 시각)이 들어오면 '확인 필요'. 자동으로 예약하지 않습니다.
  * 3) 확정: 서류 기한이 지났는데 '서류 받음'이 없으면 취소.
  * 4) 빈자리가 생기면 그 타임의 대기 1번부터 입금 대기로 올리고 새 1시간 기한을 줍니다.
+ *    오픈 때부터 대기로 둔 타임은 대기가 waitlistReleaseCount 명 모일 때까지 올리지 않습니다.
  * '확인 필요' 줄은 자리를 잡지 않습니다. 세연님이 보고 상태를 '확정'으로 바꾸거나 환불합니다.
  */
 export function sweep(input: readonly MiRow[], now: number): MiRow[] {
@@ -287,6 +320,7 @@ export function sweep(input: readonly MiRow[], now: number): MiRow[] {
   for (const date of MI_CONFIG.dates) {
     for (const time of MI_CONFIG.times) {
       if (now >= slotBookingClosesAt(date, time)) continue;
+      if (isGated(rows, date, time)) continue;
       let free = MI_CONFIG.capacity - heldCount(rows, date, time);
       const queue = waitlistOf(rows, date, time);
       while (free > 0 && queue.length > 0) {
@@ -345,6 +379,49 @@ export function formatShortKst(ms: number): string {
 
 export const OPEN_LABEL = '11/9(월) 밤 9시 신청 오픈';
 
+/** 신청 오픈까지 남은 시간(ms). 이미 열렸으면 0 */
+export function msUntilOpen(now: number): number {
+  return Math.max(0, Date.parse(MI_CONFIG.openAt) - now);
+}
+
+/**
+ * 중복 신청 찾기: 같은 휴대폰으로 고른 타임 중 하나라도 입금 대기·확정 줄이 있으면 그 줄의 묶음 번호(없으면 신청번호).
+ * 이때는 새로 만들지 않고 기존 신청을 보여 줍니다. Code.gs mi_findActiveDuplicate 와 같습니다.
+ */
+export function findActiveDuplicate(
+  rows: readonly (MiRow & { phone?: string })[],
+  phone: string,
+  picks: readonly MiSlotPick[],
+): string | null {
+  const p = normalizePhone(phone);
+  const hit = rows.find(
+    (r) =>
+      r.kind === '예약' &&
+      normalizePhone(r.phone ?? '') === p &&
+      (r.status === MI_STATUS.pending || r.status === MI_STATUS.confirmed) &&
+      picks.some((x) => x.date === r.date && x.time === r.time),
+  );
+  return hit ? hit.groupId || hit.id : null;
+}
+
+/** 확인 링크 화면에 보여 줄 신청 상태 이름 */
+export function statusLabel(status: MiStatus): string {
+  return status === MI_STATUS.check ? '확인 중' : status;
+}
+
+/** 확인 링크: ?check=신청번호&k=키 */
+export function checkLinkSearch(id: string, token: string): string {
+  return `?check=${encodeURIComponent(id)}&k=${encodeURIComponent(token)}`;
+}
+
+/** 면접 날짜의 서류 기한 안내 문장(예약확정 문자에 넣습니다). 예: '12/12(토) 면접은 12/5(토) 밤 12시 전까지' */
+export function docsDeadlineExample(date: string): string {
+  const dl = baseDocsDeadline(date);
+  const d = new Date(dl + KST_OFFSET_MS);
+  const day = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  return `${formatDateLabel(date)} 면접은 ${formatDateLabel(day)} 밤 12시 전까지`;
+}
+
 /* ---------- 신청서 ---------- */
 
 /** 목록에 없는 날짜·시간을 직접 적을 때 쓰는 값('목록에 없는 날짜' 추가 오픈 신청 버튼도 이 값을 씁니다) */
@@ -362,7 +439,6 @@ export type MiForm = {
   school: string;
   track: string;
   phone: string;
-  depositor: string;
   consentPrivacy: boolean;
   consentVideo: boolean;
   consentPhoto: boolean;
@@ -378,7 +454,6 @@ export const EMPTY_FORM: MiForm = {
   school: '',
   track: '',
   phone: '',
-  depositor: '',
   consentPrivacy: false,
   consentVideo: false,
   consentPhoto: false,
@@ -412,7 +487,8 @@ export function isPhone(v: string): boolean {
 
 /**
  * 빈 배열이면 통과. 각 항목은 학생·학부모에게 보여 줄 문장입니다.
- * 정규 타임을 하나 이상 고르면 입금자명·영상·사진 동의가 필요합니다. 추가 오픈 신청만 하면 입금이 없으므로 받지 않습니다.
+ * 학생 이름이 입금자명입니다(신청서 칸 '학생이름(입금자명)').
+ * 정규 타임을 하나 이상 고르면 영상·사진 동의가 필요합니다. 추가 오픈 신청만 하면 입금이 없으므로 받지 않습니다.
  */
 export function validateForm(f: MiForm, photoRequired: boolean = MI_CONFIG.photoConsentRequired): string[] {
   const errors: string[] = [];
@@ -426,11 +502,10 @@ export function validateForm(f: MiForm, photoRequired: boolean = MI_CONFIG.photo
   if (extra.some((d) => d !== OTHER_CHOICE && !(MI_CONFIG.dates as readonly string[]).includes(d))) {
     errors.push('추가 오픈 신청 날짜가 올바르지 않습니다.');
   }
-  if (!f.studentName.trim()) errors.push('학생 이름을 적어 주세요.');
+  if (!f.studentName.trim()) errors.push('학생이름(입금자명)을 적어 주세요.');
   if (!f.school.trim()) errors.push('지원 학교를 적어 주세요.');
   if (!f.track.trim()) errors.push('지원 전형을 적어 주세요.');
   if (!isPhone(f.phone)) errors.push('휴대폰 번호를 확인해 주세요.');
-  if (booking && !f.depositor.trim()) errors.push('입금자명을 적어 주세요.');
   if (!f.consentPrivacy) errors.push('개인정보 수집·이용에 동의해야 신청할 수 있습니다.');
   if (booking && !f.consentVideo) errors.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (booking && photoRequired && !f.consentPhoto) errors.push('사진 활용에 동의해야 신청할 수 있습니다.');

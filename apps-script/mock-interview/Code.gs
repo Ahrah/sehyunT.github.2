@@ -25,6 +25,11 @@ var MI = {
   EXTRA_REQUEST_PURPOSE: '대기·추가 타임 연락',
   FEE: 80000,
   CAPACITY: 4,
+  /** 오픈 때부터 '대기'로 보여 주는 타임. 대기가 WAITLIST_RELEASE_COUNT 명 모이면 대기 순서대로 입금 대기로 올립니다(src/lib/mockInterview.ts 와 같음). */
+  WAITLIST_AT_OPEN: ['2026-12-12 16:00', '2026-12-20 18:00'],
+  WAITLIST_RELEASE_COUNT: 2,
+  DUP_OTHER_NAME: '같은 휴대폰 번호로 이미 신청한 타임이 있습니다. 신청완료 화면의 확인 링크를 열거나 카카오톡 채널 \'입시는세연쌤\'으로 문의해 주세요.',
+  BANK_ACCOUNT: '카카오뱅크 3333-38-6269721 (입시는세연쌤)',
   PAY_WINDOW_MS: 60 * 60 * 1000,
   /** 입금 기한 뒤 자동 취소까지 기다리는 시간(10분). 입금 시각이 기한 + 10분 안이면 제때 입금으로 봅니다. */
   PAY_GRACE_MS: 10 * 60 * 1000,
@@ -56,10 +61,12 @@ var COLS = [
   /** 새 열은 맨 뒤에 붙입니다(setup 을 다시 실행하면 빠진 머리글을 붙입니다). */
   '확인 필요 사유',
   /** 한 번에 여러 타임을 신청하면 같은 묶음 번호. 한 번에 입금하고, 한 줄만 입금 확정해도 묶음 전체가 확정됩니다. */
-  '묶음 번호'
+  '묶음 번호',
+  /** 신청완료 화면의 확인 링크 키(묶음마다 하나). 신청번호와 이 키가 모두 맞아야 신청 상태를 보여 줍니다. */
+  '확인 키'
 ];
 /** 스크립트가 고치는 열(세연님이 입력하는 칸은 덮어쓰지 않습니다) */
-var SCRIPT_OWNED = ['상태', '대기 순번', '입금 기한', '서류 기한', '입금 대기 시작', '취소 사유', '처리 기록', '확인 필요 사유', '묶음 번호'];
+var SCRIPT_OWNED = ['상태', '대기 순번', '입금 기한', '서류 기한', '입금 대기 시작', '취소 사유', '처리 기록', '확인 필요 사유', '묶음 번호', '확인 키'];
 var CHECKBOX_COLS = ['입금 확정', '미입금', '서류 받음'];
 var EXTRA_REQ_COLS = ['신청번호', '신청 시각', '희망 날짜', '희망 시간', '이름', '연락처', '만 14세 미만', '보호자 이름',
   '보호자 연락처', '보호자 동의', '개인정보 동의', '동의 시각', '이용 목적', '보관 기한', '메모',
@@ -91,24 +98,72 @@ function mi_waitlistOf(rows, date, time) {
   return mi_slotRows(rows, date, time).filter(function (r) { return r.status === ST.waitlist; })
     .sort(function (a, b) { return (a.appliedAt - b.appliedAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
 }
+/** 오픈 때부터 대기로 둔 타임이 아직 잠겨 있는지(src/lib/mockInterview.ts isGated 와 같음) */
+function mi_isGated(rows, date, time) {
+  if (MI.WAITLIST_AT_OPEN.indexOf(date + ' ' + time) < 0) return false;
+  if (mi_slotRows(rows, date, time).some(function (r) { return r.holdStartedAt != null; })) return false;
+  return mi_waitlistOf(rows, date, time).length < MI.WAITLIST_RELEASE_COUNT;
+}
 function mi_initialStatus(rows, date, time) {
   var full = mi_heldCount(rows, date, time) >= MI.CAPACITY;
   var queued = mi_waitlistOf(rows, date, time).length > 0;
-  return (full || queued) ? ST.waitlist : ST.pending;
+  return (full || queued || mi_isGated(rows, date, time)) ? ST.waitlist : ST.pending;
 }
 function mi_summarize(rows, now) {
   var out = [];
   MI.DATES.forEach(function (date) {
     MI.TIMES.forEach(function (time) {
+      var left = Math.max(0, MI.CAPACITY - mi_heldCount(rows, date, time));
+      var waitlist = mi_waitlistOf(rows, date, time).length;
       out.push({
-        date: date, time: time, capacity: MI.CAPACITY,
-        left: Math.max(0, MI.CAPACITY - mi_heldCount(rows, date, time)),
-        waitlist: mi_waitlistOf(rows, date, time).length,
+        date: date, time: time, capacity: MI.CAPACITY, left: left, waitlist: waitlist,
+        wait: left === 0 || waitlist > 0 || mi_isGated(rows, date, time),
         closed: now >= mi_bookingClosesAt(date, time)
       });
     });
   });
   return out;
+}
+/** 홈페이지로 보내는 타임 정보: 남은 자리·대기 인원 숫자는 보내지 않습니다. */
+function mi_publicSlots(list) {
+  return list.map(function (s) { return { date: s.date, time: s.time, wait: s.wait, closed: s.closed }; });
+}
+/** 같은 휴대폰·같은 타임으로 입금 대기·확정인 줄이 있으면 그 묶음 번호(src/lib/mockInterview.ts findActiveDuplicate 와 같음) */
+function mi_findActiveDuplicate(rows, phone, picks) {
+  var p = mi_phone(phone);
+  var hit = rows.filter(function (r) {
+    return r.kind === '예약' && mi_phone(r.phone) === p && (r.status === ST.pending || r.status === ST.confirmed) &&
+      picks.some(function (x) { return x.date === r.date && x.time === r.time; });
+  })[0];
+  return hit ? (hit.groupId || hit.id) : null;
+}
+/** 묶음 하나의 현재 상태(확인 링크·중복 신청 응답). 휴대폰·입금자명은 돌려주지 않습니다. */
+function mi_view_(rows, groupId) {
+  var mine = rows.filter(function (r) { return (r.groupId || r.id) === groupId; });
+  if (!mine.length) return null;
+  var items = mine.map(function (r) {
+    return { id: r.id, date: r.date, time: r.time, status: r.status, payDeadline: r.status === ST.pending ? r.payDeadline : null };
+  });
+  var dls = items.filter(function (x) { return x.status === ST.pending && x.payDeadline != null; }).map(function (x) { return x.payDeadline; });
+  return {
+    ok: true, id: groupId, items: items,
+    payDeadline: dls.length ? Math.min.apply(null, dls) : null,
+    amount: dls.length * MI.FEE,
+    token: mine[0].token || '', studentName: mine[0].studentName || '', school: mine[0].school || '', track: mine[0].track || '',
+    bankAccount: MI.BANK_ACCOUNT
+  };
+}
+function mi_sameName_(a, b) {
+  var n = function (x) { return String(x || '').replace(/\s+/g, ''); };
+  return !!n(a) && n(a) === n(b);
+}
+/** 확인 링크 키 비교. 키가 비어 있으면 늘 거절합니다. */
+function mi_tokenOk(view, k) {
+  var a = String((view && view.token) || ''), b = String(k || '');
+  if (!a || a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 function mi_cancel(r, now, reason) {
   r.status = ST.cancelled;
@@ -192,6 +247,7 @@ function mi_sweep(rows, now) {
   MI.DATES.forEach(function (date) {
     MI.TIMES.forEach(function (time) {
       if (now >= mi_bookingClosesAt(date, time)) return;
+      if (mi_isGated(rows, date, time)) return;
       var free = MI.CAPACITY - mi_heldCount(rows, date, time);
       var queue = mi_waitlistOf(rows, date, time);
       while (free > 0 && queue.length > 0) {
@@ -208,6 +264,16 @@ function mi_sweep(rows, now) {
     });
   });
   return rows;
+}
+/** 서류 기한 예시(예약확정 문자): '12/12(토) 면접은 12/5(토) 밤 12시 전까지' (src/lib/mockInterview.ts docsDeadlineExample 와 같음) */
+function mi_dateLabel_(ymd) {
+  var d = new Date(Date.parse(ymd + 'T00:00:00Z'));
+  return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '(' + '일월화수목금토'.charAt(d.getUTCDay()) + ')';
+}
+function mi_docsExample(date) {
+  var dl = new Date(mi_baseDocsDeadline(date) + 9 * 3600000);
+  var ymd = dl.getUTCFullYear() + '-' + ('0' + (dl.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + dl.getUTCDate()).slice(-2);
+  return mi_dateLabel_(date) + ' 면접은 ' + mi_dateLabel_(ymd) + ' 밤 12시 전까지';
 }
 function mi_fmt(ms) {
   var d = new Date(ms + 9 * 3600000);
@@ -232,11 +298,10 @@ function mi_validate(f) {
   if (bad) e.push('고를 수 없는 타임이 들어 있습니다.');
   else if (dup) e.push('같은 타임을 두 번 골랐습니다.');
   if (extra.some(function (d) { return d !== 'other' && MI.DATES.indexOf(d) < 0; })) e.push('추가 오픈 신청 날짜가 올바르지 않습니다.');
-  if (!mi_str(f.studentName)) e.push('학생 이름을 적어 주세요.');
+  if (!mi_str(f.studentName)) e.push('학생이름(입금자명)을 적어 주세요.');
   if (!mi_str(f.school)) e.push('지원 학교를 적어 주세요.');
   if (!mi_str(f.track)) e.push('지원 전형을 적어 주세요.');
   if (!mi_isPhone(f.phone)) e.push('휴대폰 번호를 확인해 주세요.');
-  if (booking && !mi_str(f.depositor)) e.push('입금자명을 적어 주세요.');
   if (f.consentPrivacy !== true) e.push('개인정보 수집·이용에 동의해야 신청할 수 있습니다.');
   if (booking && f.consentVideo !== true) e.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (booking && MI.PHOTO_CONSENT_REQUIRED && f.consentPhoto !== true) e.push('사진 활용에 동의해야 신청할 수 있습니다.');
@@ -304,8 +369,16 @@ function mi_matchDeposit(rows, dep) {
 
 function doGet(e) {
   var now = Date.now();
+  var p = (e && e.parameter) || {};
   var rows = mi_readRows_(mi_sheet_()).rows;
-  return mi_json_({ ok: true, open: mi_isOpen(now), openAt: MI.OPEN_AT, now: now, slots: mi_summarize(rows, now) });
+  if (p.check) {
+    // 확인 링크: 신청번호와 확인 키가 모두 맞아야 보여 줍니다. 정리(sweep) 결과는 5분 트리거가 시트에 씁니다.
+    mi_sweep(rows, now);
+    var v = mi_view_(rows, String(p.check));
+    if (!v || !mi_tokenOk(v, p.k)) return mi_json_({ ok: false, error: '신청을 찾지 못했습니다. 받은 확인 링크를 그대로 열어 주세요.' });
+    return mi_json_(v);
+  }
+  return mi_json_({ ok: true, open: mi_isOpen(now), openAt: MI.OPEN_AT, now: now, slots: mi_publicSlots(mi_summarize(rows, now)) });
 }
 
 function doPost(e) {
@@ -332,6 +405,14 @@ function doPost(e) {
     mi_writeChanged_(sheet, data);
 
     var phone = mi_phone(f.phone);
+    // 같은 휴대폰·같은 타임이 입금 대기·확정이면 새로 만들지 않고 기존 신청을 보여 줍니다(두 번 누름 방지).
+    var existing = mi_findActiveDuplicate(data.rows, phone, picks);
+    if (existing) {
+      var ev = mi_view_(data.rows, existing);
+      // 이름까지 같을 때만 기존 신청(확인 링크 포함)을 보여 줍니다. 휴대폰·타임만 아는 다른 사람에게는 보여 주지 않습니다.
+      if (ev && mi_sameName_(ev.studentName, f.studentName)) { ev.duplicate = true; return mi_json_(ev); }
+      return mi_json_({ ok: false, error: MI.DUP_OTHER_NAME });
+    }
     var dup = picks.filter(function (x) {
       return data.rows.some(function (r) {
         return r.phone === phone && r.status !== ST.cancelled && r.kind === '예약' && r.date === x.date && r.time === x.time;
@@ -341,7 +422,7 @@ function doPost(e) {
 
     var groupId = 'MI-' + Utilities.formatDate(new Date(now), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
     var stamp = new Date(now);
-    var items = [];
+    var token = Utilities.getUuid().replace(/-/g, '');
     picks.forEach(function (x, i) {
       var id = groupId + '-' + (i + 1);
       // 메모리의 rows 에 먼저 넣어 같은 신청 안에서도 정원을 넘지 않게 합니다.
@@ -349,7 +430,9 @@ function doPost(e) {
       var holding = status === ST.pending;
       var position = status === ST.waitlist ? mi_waitlistOf(data.rows, x.date, x.time).length + 1 : null;
       var r = {
-        id: id, groupId: groupId, appliedAt: now, kind: f.kind, date: x.date, time: x.time, status: status,
+        id: id, groupId: groupId, token: token, phone: phone,
+        studentName: mi_str(f.studentName, 40), school: mi_str(f.school, 60), track: mi_str(f.track, 60),
+        depositor: mi_str(f.depositor || f.studentName, 40), appliedAt: now, kind: f.kind, date: x.date, time: x.time, status: status,
         payDeadline: holding ? now + MI.PAY_WINDOW_MS : null,
         holdStartedAt: holding ? now : null,
         docsDeadline: holding ? mi_docsDeadlineFor(x.date, now) : null,
@@ -362,7 +445,8 @@ function doPost(e) {
         '입금 기한': holding ? new Date(r.payDeadline) : '', '입금 확정': false, '입금 시각': '', '미입금': false,
         '서류 기한': holding ? new Date(r.docsDeadline) : '', '서류 받음': false,
         '학생 이름': mi_str(f.studentName, 40), '지원 학교': mi_str(f.school, 60), '지원 전형': mi_str(f.track, 60),
-        '휴대폰': phone, '입금자명': mi_str(f.depositor, 40),
+        // 신청서 칸 '학생이름(입금자명)' 하나를 두 열에 같은 값으로 씁니다(입금 대조는 '입금자명' 열을 봅니다).
+        '휴대폰': phone, '입금자명': r.depositor, '확인 키': token,
         // '만 14세 미만'·'보호자 …' 열은 신청서에서 뺐습니다. 열은 그대로 두고 비워 둡니다.
         '개인정보 동의': f.consentPrivacy === true ? 'Y' : 'N', '개인정보 동의 시각': stamp,
         '영상 동의': f.consentVideo === true ? 'Y' : 'N', '영상 동의 시각': stamp,
@@ -380,14 +464,14 @@ function doPost(e) {
         var ci = data.header.indexOf(name);
         if (ci >= 0) sheet.getRange(last, ci + 1).insertCheckboxes();
       });
-      items.push({ id: id, date: x.date, time: x.time, status: status, payDeadline: r.payDeadline, waitlistPosition: position });
+      r.rowNumber = last;
+      r.changed = false;
     });
-    var holdingItems = items.filter(function (x) { return x.status === ST.pending; });
-    return mi_json_({
-      ok: true, id: groupId, items: items,
-      payDeadline: holdingItems.length ? holdingItems[0].payDeadline : null,
-      amount: holdingItems.length * MI.FEE
-    });
+    // 오픈 때부터 대기로 둔 타임에 대기가 2명 모였으면 바로 입금 대기로 올리고 세연님께 알립니다.
+    mi_sweep(data.rows, now);
+    mi_writeChanged_(sheet, data);
+    mi_notifyOwner_(data.rows);
+    return mi_json_(mi_view_(data.rows, groupId));
   } finally {
     lock.releaseLock();
   }
@@ -436,12 +520,14 @@ function mi_notifyOwner_(rows) {
     if (g.type === 'check') {
       subject = '[모의면접] 확인 필요 ' + slots + ' ' + r.studentName;
       body = '자동으로 확정하지 않았습니다. 확인해 주세요.\n' + head + '\n사유: ' + r.checkReason +
-        '\n\n이 줄은 자리를 잡지 않습니다. 그 타임에 빈자리가 있으면 상태를 \'확정\'으로 바꾸고, 없으면 환불해 주세요.';
+        '\n\n이 줄은 자리를 잡지 않습니다. 그 타임에 빈자리가 있으면 상태를 \'확정\'으로 바꾸고, 없으면 환불해 주세요.' +
+        '\n(환불 규정: 기한이 지난 뒤 입금해 신청이 취소되었다면 전액 환불합니다.)';
     } else if (g.type === 'confirmed') {
       subject = '[모의면접] 예약 확정 ' + slots + ' ' + r.studentName;
       body = '예약을 확정했습니다. 입금액이 ' + total + '인지 확인해 주세요.\n' + head +
         '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + r.studentName + ' 학생 12월 3:1 모의면접 ' + slots + ' 예약이 확정되었습니다. ' +
-        '면접 1주 전까지 생기부와 자소서를 ' + MI.OWNER_EMAIL + '으로 보내 주세요.';
+        '\n\n서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
+        '보내지 않으면 자동 취소되고 대기자에게 넘어갑니다. 예: ' + mi_docsExample(r.date) + ' 보내야 합니다.';
     } else {
       subject = '[모의면접] 대기 승격, 연락 필요 ' + slots + ' ' + r.studentName;
       body = '대기에서 입금 대기로 바뀌었습니다. 학생에게 연락해 주세요.\n' + head + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
@@ -665,6 +751,9 @@ function mi_readRows_(sheet) {
       docsReceived: v[col['서류 받음']] === true,
       phone: mi_phone(v[col['휴대폰']]),
       studentName: String(v[col['학생 이름']] || ''),
+      school: String(v[col['지원 학교']] || ''),
+      track: String(v[col['지원 전형']] || ''),
+      token: col['확인 키'] != null ? String(v[col['확인 키']] || '') : '',
       depositor: String(v[col['입금자명']] || ''),
       cancelReason: String(v[col['취소 사유']] || ''),
       checkReason: col['확인 필요 사유'] != null ? String(v[col['확인 필요 사유']] || '') : '',
@@ -718,5 +807,6 @@ if (typeof module !== 'undefined') {
     mi_waitlistOf: mi_waitlistOf, mi_payUnitKey: mi_payUnitKey, mi_decidePay: mi_decidePay, mi_payUnits: mi_payUnits, mi_toMs_: mi_toMs_, mi_validateExtraRequest: mi_validateExtraRequest,
     mi_wishDateOf: mi_wishDateOf, mi_wishTimeOf: mi_wishTimeOf,
     mi_extraRequestPurgeAt: mi_extraRequestPurgeAt, mi_parseDepositMail: mi_parseDepositMail, mi_matchDeposit: mi_matchDeposit,
-    EXTRA_REQ_COLS: EXTRA_REQ_COLS };
+    EXTRA_REQ_COLS: EXTRA_REQ_COLS, mi_isGated: mi_isGated, mi_publicSlots: mi_publicSlots, mi_findActiveDuplicate: mi_findActiveDuplicate, mi_sameName_: mi_sameName_, MI_DUP_OTHER_NAME: MI.DUP_OTHER_NAME,
+    mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, SCRIPT_OWNED: SCRIPT_OWNED };
 }

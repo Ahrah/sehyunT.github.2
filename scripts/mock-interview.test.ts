@@ -34,6 +34,13 @@ import {
   wishDateOf,
   wishTimeOf,
   waitlistPosition,
+  isGated,
+  publicSlots,
+  findActiveDuplicate,
+  docsDeadlineExample,
+  msUntilOpen,
+  checkLinkSearch,
+  statusLabel,
 } from '../src/lib/mockInterview';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,12 +57,12 @@ assert.equal(formatDateLabel('2026-12-20'), '12/20(일)');
 /* ---- 정원 4명, 5번째는 대기 ---- */
 const open = T('2026-11-09T21:01:00');
 let rows: MiRow[] = [];
-for (let i = 1; i <= 6; i += 1) rows.push(newBookingRow(rows, `r${i}`, '2026-12-12', '16:00', open + i * 1000));
+for (let i = 1; i <= 6; i += 1) rows.push(newBookingRow(rows, `r${i}`, '2026-12-13', '16:00', open + i * 1000));
 assert.deepEqual(rows.map((r) => r.status), ['입금 대기', '입금 대기', '입금 대기', '입금 대기', '대기', '대기']);
 assert.equal(rows[0].payDeadline, open + 1000 + HOUR);
 assert.equal(waitlistPosition(rows, 'r5'), 1);
 assert.equal(waitlistPosition(rows, 'r6'), 2);
-let s = summarize(rows, open).find((x) => x.date === '2026-12-12' && x.time === '16:00')!;
+let s = summarize(rows, open).find((x) => x.date === '2026-12-13' && x.time === '16:00')!;
 assert.equal(s.left, 0);
 assert.equal(s.waitlist, 2);
 // 다른 타임은 영향 없음
@@ -87,7 +94,7 @@ assert.equal(rows[4].status, MI_STATUS.pending, '대기 1번 승격');
 assert.equal(rows[4].payDeadline, later + HOUR, '승격 시각부터 새 1시간');
 assert.equal(rows[4].holdStartedAt, later);
 assert.equal(rows[5].status, MI_STATUS.pending, '대기 2번도 승격(빈자리 2개: 확인 필요 줄은 자리를 잡지 않음)');
-assert.equal(summarize(rows, later)[0].left, 0);
+assert.equal(summarize(rows, later).find((x) => x.date === '2026-12-13' && x.time === '16:00')!.left, 0);
 // 승격된 학생도 새 기한 + 10분이 지나면 자동 취소
 let promoted = sweep(rows, later + HOUR + GRACE + 1);
 assert.equal(promoted[4].status, MI_STATUS.cancelled);
@@ -96,7 +103,7 @@ rows[3] = { ...rows[3], paidChecked: true };
 rows = sweep(rows, later + 60000);
 assert.equal(rows[3].status, MI_STATUS.check);
 assert.match(rows[3].checkReason!, /미입금 취소 뒤 입금 확정/);
-assert.equal(heldCount(rows, '2026-12-12', '16:00'), 4, '확인 필요 줄은 자리를 잡지 않음');
+assert.equal(heldCount(rows, '2026-12-13', '16:00'), 4, '확인 필요 줄은 자리를 잡지 않음');
 // 입금 시각 없이 기한 + 10분 뒤에 입금 확정 체크 → 확인 필요
 let lateCheck: MiRow[] = [newBookingRow([], 'l1', '2026-12-13', '18:00', open)];
 lateCheck[0] = { ...lateCheck[0], paidChecked: true };
@@ -144,12 +151,11 @@ assert.equal(close[4].status, MI_STATUS.waitlist);
 /* ---- 신청서 검사 ---- */
 const good: MiForm = {
   ...EMPTY_FORM,
-  slots: [{ date: '2026-12-12', time: '16:00' }],
+  slots: [{ date: '2026-12-13', time: '16:00' }],
   studentName: '홍길동',
   school: '○○외고',
   track: '일반전형',
   phone: '010-1234-5678',
-  depositor: '홍길동',
   consentPrivacy: true,
   consentVideo: true,
   consentPhoto: true,
@@ -161,21 +167,20 @@ assert.deepEqual(validateForm({ ...good, under14: true } as typeof good), [], '�
 assert.ok(!('under14' in EMPTY_FORM) && !('guardianName' in EMPTY_FORM));
 assert.ok(validateForm({ ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }).length > 0, '11시는 예약 불가');
 assert.ok(validateForm({ ...good, slots: [{ date: '2026-12-12', time: '10:00' }] }).length > 0, '예전 10시 없음');
-assert.ok(validateForm({ ...good, depositor: '' }).length > 0);
 // 여러 타임
-const multi: MiForm = { ...good, slots: [{ date: '2026-12-13', time: '18:00' }, { date: '2026-12-12', time: '16:00' }] };
+const multi: MiForm = { ...good, slots: [{ date: '2026-12-13', time: '18:00' }, { date: '2026-12-13', time: '16:00' }] };
 assert.deepEqual(validateForm(multi), []);
 assert.equal(validateForm({ ...good, slots: [good.slots[0], good.slots[0]] }).length, 1, '같은 타임 두 번');
 assert.equal(validateForm({ ...good, slots: [] }).length, 1, '타임도 추가 오픈 신청도 없음');
 // 추가 오픈 신청만: 입금자명·영상·사진 동의는 받지 않음
-const extraOnly: MiForm = { ...good, slots: [], extraDates: ['2026-12-19', OTHER_CHOICE], depositor: '', consentVideo: false, consentPhoto: false };
+const extraOnly: MiForm = { ...good, slots: [], extraDates: ['2026-12-19', OTHER_CHOICE], consentVideo: false, consentPhoto: false };
 assert.deepEqual(validateForm(extraOnly), []);
 assert.equal(validateForm({ ...extraOnly, consentPrivacy: false }).length, 1, '개인정보 동의는 늘 필요');
 assert.equal(validateForm({ ...extraOnly, extraDates: ['2026-12-14'] }).length, 1, '목록 밖 날짜 값');
 // 토글
-assert.deepEqual(toggleSlot(toggleSlot([], '2026-12-12', '16:00'), '2026-12-12', '17:00'), [
-  { date: '2026-12-12', time: '16:00' }, { date: '2026-12-12', time: '17:00' }]);
-assert.deepEqual(toggleSlot([{ date: '2026-12-12', time: '16:00' }], '2026-12-12', '16:00'), [], '다시 누르면 선택 취소');
+assert.deepEqual(toggleSlot(toggleSlot([], '2026-12-13', '16:00'), '2026-12-12', '17:00'), [
+  { date: '2026-12-13', time: '16:00' }, { date: '2026-12-12', time: '17:00' }]);
+assert.deepEqual(toggleSlot([{ date: '2026-12-13', time: '16:00' }], '2026-12-13', '16:00'), [], '다시 누르면 선택 취소');
 assert.deepEqual(toggleValue(toggleValue([], 'a'), 'a'), []);
 assert.ok(!('date' in EMPTY_FORM) && !('time' in EMPTY_FORM), '신청서에 날짜·시간 칸 없음');
 assert.deepEqual([...MI_CONFIG.times], ['16:00', '17:00', '18:00']);
@@ -211,7 +216,7 @@ assert.deepEqual(validateExtraRequest({ ...orGood, under14: true, guardianName: 
 /* ---- 묶음(한 번에 여러 타임): 한 번에 입금, 묶음 단위로 확정·취소 ---- */
 {
   let g: MiRow[] = [];
-  g.push(newBookingRow(g, 'G1-1', '2026-12-12', '16:00', open, 'G1'));
+  g.push(newBookingRow(g, 'G1-1', '2026-12-13', '16:00', open, 'G1'));
   g.push(newBookingRow(g, 'G1-2', '2026-12-12', '17:00', open, 'G1'));
   g.push(newBookingRow(g, 'S1', '2026-12-12', '18:00', open));
   assert.equal(payUnitKey(g[0]), payUnitKey(g[1]));
@@ -253,9 +258,9 @@ assert.equal(gs.mi_toMs_('2026-11-09 21:30'), T('2026-11-09T21:30:00'));
 
 const gsRows: any[] = [];
 for (let i = 1; i <= 6; i += 1) {
-  const st = gs.mi_initialStatus(gsRows, '2026-12-12', '16:00');
+  const st = gs.mi_initialStatus(gsRows, '2026-12-13', '16:00');
   gsRows.push({
-    id: `g${i}`, appliedAt: open + i, kind: '예약', date: '2026-12-12', time: '16:00', status: st,
+    id: `g${i}`, appliedAt: open + i, kind: '예약', date: '2026-12-13', time: '16:00', status: st,
     payDeadline: st === '입금 대기' ? open + i + HOUR : null, holdStartedAt: null, docsDeadline: st === '입금 대기' ? baseDocsDeadline('2026-12-12') : null,
     paidChecked: false, paidAt: null, unpaidChecked: false, docsReceived: false, cancelReason: '', log: [],
   });
@@ -271,7 +276,8 @@ assert.match(gsRows[3].cancelReason, /^미입금\(입금 기한/);
 assert.equal(gsRows[4].justPromoted, true);
 assert.equal(gs.ST.check, MI_STATUS.check);
 assert.equal(gs.MI.PAY_GRACE_MS, MI_CONFIG.payGraceMs);
-assert.deepEqual([...gs.COLS.slice(-2)], ['확인 필요 사유', '묶음 번호'], '새 열은 맨 뒤');
+assert.deepEqual([...gs.COLS.slice(-3)], ['확인 필요 사유', '묶음 번호', '확인 키'], '새 열은 맨 뒤(확인 키가 마지막)');
+assert.ok(gs.SCRIPT_OWNED.includes('확인 키'));
 assert.equal(gs.EXTRA_REQ_COLS[gs.EXTRA_REQ_COLS.length - 1], '모의면접 신청번호');
 // GS·TS sweep 일치(여러 경우)
 {
@@ -300,7 +306,7 @@ assert.equal(gs.EXTRA_REQ_COLS[gs.EXTRA_REQ_COLS.length - 1], '모의면접 신�
   }
 }
 assert.equal(gsRows[4].payDeadline, later + HOUR);
-assert.equal(gs.mi_summarize(gsRows, later)[0].left, 1, '확정 1 + 승격 2, 빈자리 1');
+assert.equal(gs.mi_summarize(gsRows, later).find((x: any) => x.date === '2026-12-13' && x.time === '16:00').left, 1, '확정 1 + 승격 2, 빈자리 1');
 for (const f of [good, multi, extraOnly, { ...good, slots: [] }, { ...good, consentVideo: false }, { ...good, slots: [good.slots[0], good.slots[0]] },
   { ...extraOnly, extraDates: ['2026-12-14'] }, { ...good, under14: true, guardianName: '' } as typeof good, { ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }]) {
   assert.deepEqual([...gs.mi_validate(f)], validateForm(f), `GS·TS 신청서 검사 일치 ${JSON.stringify(f.slots)}`);
@@ -323,7 +329,7 @@ assert.equal(gs.mi_wishTimeOf(orGood), wishTimeOf(orGood));
 assert.deepEqual([...gs.EXTRA_REQ_COLS.slice(2, 6)], ['희망 날짜', '희망 시간', '이름', '연락처']);
 assert.ok(gs.EXTRA_REQ_COLS.includes('보호자 동의') && gs.EXTRA_REQ_COLS.includes('보관 기한'));
 // 입금 확정 체크만으로 확정
-const gm: any[] = [{ id: 'x', appliedAt: open, kind: '예약', date: '2026-12-12', time: '16:00', status: '입금 대기', payDeadline: open + HOUR,
+const gm: any[] = [{ id: 'x', appliedAt: open, kind: '예약', date: '2026-12-13', time: '16:00', status: '입금 대기', payDeadline: open + HOUR,
   holdStartedAt: open, docsDeadline: baseDocsDeadline('2026-12-12'), paidChecked: true, paidAt: null, unpaidChecked: false, docsReceived: false, cancelReason: '', log: [] }];
 gs.mi_sweep(gm, open + 60000);
 assert.equal(gm[0].status, '확정');
@@ -346,7 +352,7 @@ assert.equal(gs.mi_matchDeposit(grp, { amount: 80000, name: '홍길동', at: 10 
 {
   const mk = (): MiRow[] => {
     const g: MiRow[] = [];
-    g.push(newBookingRow(g, 'G1-1', '2026-12-12', '16:00', open, 'G1'));
+    g.push(newBookingRow(g, 'G1-1', '2026-12-13', '16:00', open, 'G1'));
     g.push(newBookingRow(g, 'G1-2', '2026-12-12', '17:00', open, 'G1'));
     return g;
   };
@@ -363,6 +369,68 @@ assert.equal(gs.mi_matchDeposit(grp, { amount: 80000, name: '홍길동', at: 10 
     assert.deepEqual(JSON.parse(JSON.stringify(g.map((r) => [r.status, r.cancelReason, r.checkReason || '', [...r.log]]))),
       ts.map((r) => [r.status, r.cancelReason, r.checkReason || '', r.log]), `GS·TS 묶음 sweep 일치 @${now}`);
   }
+}
+
+/* ---- 11/3 결정: 오픈 때부터 대기인 타임, 숫자 숨김, 중복 신청, 확인 링크 ---- */
+{
+  assert.deepEqual([...MI_CONFIG.waitlistAtOpen], ['2026-12-12 16:00', '2026-12-20 18:00']);
+  const g: MiRow[] = [];
+  assert.equal(isGated(g, '2026-12-12', '16:00'), true);
+  assert.equal(isGated(g, '2026-12-12', '17:00'), false);
+  g.push(newBookingRow(g, 'W1', '2026-12-12', '16:00', open + 1000));
+  assert.equal(g[0].status, MI_STATUS.waitlist, '오픈 때부터 대기 타임은 첫 신청도 대기');
+  assert.equal(sweep(g, open + 2000)[0].status, MI_STATUS.waitlist, '1명일 때는 그대로 대기');
+  g.push(newBookingRow(g, 'W2', '2026-12-12', '16:00', open + 3000));
+  assert.equal(g[1].status, MI_STATUS.waitlist);
+  assert.equal(isGated(g, '2026-12-12', '16:00'), false, '대기 2명이면 풀림');
+  const rel = sweep(g, open + 4000);
+  assert.deepEqual(rel.map((r) => r.status), [MI_STATUS.pending, MI_STATUS.pending], '2명 모두 입금 대기로 승격(신청 순서)');
+  assert.equal(rel[0].payDeadline, open + 4000 + HOUR, '입금 1시간은 승격 시각부터');
+  assert.equal(isGated(rel, '2026-12-12', '16:00'), false, '한 번 풀리면 다시 잠기지 않음');
+  // GS 와 같음
+  const gg = [newBookingRow([], 'W1', '2026-12-12', '16:00', open + 1000)].map((r) => ({ ...r, log: [...r.log] })) as any[];
+  assert.equal(gs.mi_initialStatus([], '2026-12-12', '16:00'), MI_STATUS.waitlist);
+  assert.equal(gs.mi_initialStatus([], '2026-12-20', '18:00'), MI_STATUS.waitlist);
+  assert.equal(gs.mi_initialStatus([], '2026-12-20', '17:00'), MI_STATUS.pending);
+  gg.push({ ...newBookingRow(gg, 'W2', '2026-12-12', '16:00', open + 3000), log: [] });
+  gs.mi_sweep(gg, open + 4000);
+  assert.deepEqual(JSON.parse(JSON.stringify(gg.map((r: any) => [r.status, r.payDeadline]))), rel.map((r) => [r.status, r.payDeadline]), 'GS·TS 대기 풀림 일치');
+  // 홈페이지로는 숫자를 보내지 않음
+  const pub = publicSlots(summarize([], open));
+  assert.deepEqual(Object.keys(pub[0]).sort(), ['closed', 'date', 'time', 'wait']);
+  assert.equal(pub.find((x) => x.date === '2026-12-12' && x.time === '16:00')!.wait, true);
+  assert.equal(pub.find((x) => x.date === '2026-12-12' && x.time === '17:00')!.wait, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(gs.mi_publicSlots(gs.mi_summarize([], open)))), pub, 'GS·TS 공개 타임 일치');
+  // 중복 신청
+  const d = [
+    { ...newBookingRow([], 'A-1', '2026-12-13', '16:00', open, 'A'), phone: '01012345678' },
+    { ...newBookingRow([], 'B', '2026-12-13', '17:00', open), phone: '01099998888', status: MI_STATUS.cancelled },
+  ];
+  assert.equal(findActiveDuplicate(d, '010-1234-5678', [{ date: '2026-12-13', time: '16:00' }]), 'A');
+  assert.equal(findActiveDuplicate(d, '010-1234-5678', [{ date: '2026-12-13', time: '17:00' }]), null);
+  assert.equal(findActiveDuplicate(d, '010-9999-8888', [{ date: '2026-12-13', time: '17:00' }]), null, '취소된 줄은 중복 아님');
+  for (const [ph, slot] of [['010-1234-5678', '16:00'], ['010-1234-5678', '17:00'], ['010-9999-8888', '17:00']] as const) {
+    const sl = [{ date: '2026-12-13', time: slot }];
+    assert.equal(gs.mi_findActiveDuplicate(JSON.parse(JSON.stringify(d)), ph, sl), findActiveDuplicate(d, ph, sl), `GS·TS 중복 일치 ${ph} ${slot}`);
+  }
+  assert.equal(gs.mi_sameName_('홍 길동', '홍길동'), true);
+  assert.equal(gs.mi_sameName_('홍길동', '김철수'), false);
+  assert.equal(gs.mi_sameName_('', ''), false);
+  // 확인 키
+  assert.equal(gs.mi_tokenOk({ token: 'abc123' }, 'abc123'), true);
+  assert.equal(gs.mi_tokenOk({ token: 'abc123' }, 'abc124'), false);
+  assert.equal(gs.mi_tokenOk({ token: '' }, ''), false, '키 없는 줄은 늘 거절');
+  assert.equal(gs.mi_tokenOk({ token: 'abc123' }, undefined), false);
+  assert.equal(checkLinkSearch('MI-1', 'ab'), '?check=MI-1&k=ab');
+  // 서류 기한 예시(예약확정 문자)
+  assert.equal(docsDeadlineExample('2026-12-12'), '12/12(토) 면접은 12/5(토) 밤 12시 전까지');
+  assert.equal(gs.mi_docsExample('2026-12-12'), docsDeadlineExample('2026-12-12'));
+  assert.equal(gs.mi_docsExample('2026-12-20'), docsDeadlineExample('2026-12-20'));
+  // 오픈 시각
+  assert.equal(msUntilOpen(T('2026-11-09T21:00:00') - 5000), 5000);
+  assert.equal(msUntilOpen(T('2026-11-09T21:00:00')), 0);
+  assert.equal(statusLabel(MI_STATUS.check), '확인 중');
+  assert.equal(statusLabel(MI_STATUS.waitlist), '대기');
 }
 
 console.log('✅ mock interview slot/waitlist/deadline tests passed');

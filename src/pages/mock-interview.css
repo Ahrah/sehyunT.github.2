@@ -112,3 +112,10 @@
 .mi-chip-pick input { margin: 0; }
 .mi-wish-text { margin-bottom: 8px; }
 .mi-back { text-align: center; margin: 24px 0; }
+.mi-copy-row { display: flex; gap: 8px; }
+.mi-copy-row input { flex: 1; min-width: 0; font-size: 14px; padding: 10px 12px; border: 1px solid #d6d1e6; border-radius: 10px; background: #faf9fd; }
+.mi-copy { white-space: nowrap; border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; background: var(--mi-green); color: #fff; cursor: pointer; }
+.mi-once { background: #fff7e6; border-radius: 10px; padding: 10px 12px; }
+.mi-refund > li { margin-bottom: 10px; }
+.mi-refund ul { margin: 4px 0 0; padding-left: 18px; }
+.mi-pay-guide { margin-top: 4px; }
