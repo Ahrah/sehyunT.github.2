@@ -481,3 +481,101 @@ console.log('✅ mock interview slot/waitlist/deadline tests passed');
   ]) assert.ok(page.includes(t), `화면 문구: ${t}`);
   for (const t of ['면접 7일 전: ⅔ 환불', '면접 5일 전 ⅓ 환불', '그 이후 및 노쇼', '1시간 이내에 입금하고']) assert.ok(!page.includes(t), `옛 문구 없음: ${t}`);
 }
+
+/* ---- [문자발송] 메일(세연님 iPhone 단축어가 읽어 문자로 보냄, 11/3) ---- */
+{
+  const OPEN = T('2026-11-09T21:00:00');
+  const NOW = T('2026-11-10T10:00:00');
+  const row = (id: string, over: Record<string, unknown> = {}) => ({
+    id, groupId: '', rowNumber: 2, appliedAt: OPEN + 1000, kind: '예약', date: '2026-12-12', time: '17:00',
+    status: MI_STATUS.confirmed, payDeadline: OPEN + HOUR, holdStartedAt: OPEN, docsDeadline: null,
+    paidChecked: true, paidAt: null, unpaidChecked: false, docsReceived: false,
+    phone: '010-1234-5678', studentName: '홍길동', depositor: '홍길동', cancelReason: '', checkReason: '', log: [] as string[], changed: false,
+    ...over,
+  });
+  const lines = (body: string) => body.split('\n');
+
+  // 형식: 제목 고정, 첫 줄 번호(숫자만), 둘째 줄 문자(한 줄), 빈 줄 뒤 사람이 볼 내용
+  const m = gs.mi_smsMail(' 010-1234-5678 ', '첫 줄\n둘째 줄\r\n  셋째', ['신청번호: MI-1', '보낼 문자: 섞이면 안 됨']);
+  assert.equal(m.subject, '[문자발송] 모의면접');
+  assert.equal(lines(m.body)[0], '받는번호: 01012345678', '번호는 숫자만');
+  assert.equal(lines(m.body)[1], '문자: 첫 줄 둘째 줄 셋째', '문자는 한 줄');
+  assert.equal(lines(m.body)[2], '', '빈 줄 뒤 사람용 내용');
+  assert.equal(m.body.match(/받는번호:\s*(\d+)/)![1], '01012345678', '단축어 정규식(번호)');
+  assert.equal(m.body.match(/문자:\s*(.+)/)![1], '첫 줄 둘째 줄 셋째', '단축어 정규식(문자)');
+  assert.equal((m.body.match(/문자:/g) || []).length, 1, "사람용 줄에는 '문자:'가 없음");
+  assert.equal((m.body.match(/받는번호:/g) || []).length, 1);
+  assert.equal(gs.mi_smsMail('02-123-4567', 'x', []), null, '휴대폰이 아니면 보내지 않음');
+  assert.equal(gs.mi_smsMail('+82 10 1234 5678', 'x', []), null, '국가번호 형식은 받지 않음(신청서는 010 형식만 받음)');
+
+  // 예약확정: 묶음 하나에 한 통, 다시 정리해도 다시 보내지 않음
+  const rows: any[] = [
+    row('MI-1', { groupId: 'G1', rowNumber: 2, date: '2026-12-13', time: '16:00' }),
+    row('MI-2', { groupId: 'G1', rowNumber: 3, date: '2026-12-12', time: '17:00' }),
+    row('MI-3', { rowNumber: 4, phone: '01099998888', studentName: '김철수', depositor: '김철수' }),
+    row('MI-4', { rowNumber: 5, status: MI_STATUS.pending, paidChecked: false }),
+    row('MI-0', { rowNumber: 6, appliedAt: OPEN - 1, phone: '01055556666' }),
+  ];
+  const q1 = gs.mi_smsQueue(rows, NOW);
+  assert.equal(q1.length, 2, '묶음 G1 한 통 + MI-3 한 통(입금 대기·오픈 전 시험 줄 제외)');
+  assert.deepEqual(JSON.parse(JSON.stringify(q1.map((q: any) => q.rows.map((r: any) => r.id)))), [['MI-1', 'MI-2'], ['MI-3']]);
+  const t1 = lines(q1[0].mail.body)[1];
+  assert.equal(
+    t1,
+    `문자: [입시는세연쌤] 홍길동 학생, 12월 12일 17시, 12월 13일 16시 3:1 모의면접 예약이 확정되었습니다. 서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ${gs.MI.OWNER_EMAIL}으로 보내주세요. 예: 12/12(토) 면접은 12/5(토) 밤 12시 전까지, 12/13(일) 면접은 12/6(일) 밤 12시 전까지 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.`,
+  );
+  assert.ok(q1[0].mail.body.includes('시트 행: 2, 3') && q1[0].mail.body.includes('신청번호: MI-1, MI-2 (묶음 G1)'));
+  assert.equal(lines(q1[1].mail.body)[0], '받는번호: 01099998888');
+  assert.ok(rows.slice(0, 3).every((r) => r.changed && r.log.some((l: string) => l.includes('예약확정 문자 메일 보냄'))), '처리 기록 표시');
+  assert.equal(rows[3].log.length + rows[4].log.length, 0);
+  const sent: string[][] = [];
+  gs.mi_sendSmsMails_(q1, (to: string, s: string, b: string) => sent.push([to, s, b]));
+  assert.equal(sent.length, 2, '메일 두 통');
+  assert.ok(sent.every(([to, s]) => to === gs.MI.OWNER_EMAIL && s === '[문자발송] 모의면접'));
+  assert.equal(gs.mi_smsQueue(rows, NOW + 300000).length, 0, '다시 정리해도 다시 보내지 않음');
+  // 손으로 상태를 '확정'으로 바꾼 줄도 한 번 보냄
+  rows[3].status = MI_STATUS.confirmed;
+  const q2 = gs.mi_smsQueue(rows, NOW + 600000);
+  assert.deepEqual(JSON.parse(JSON.stringify(q2.map((q: any) => q.rows.map((r: any) => r.id)))), [['MI-4']]);
+  // 메일 실패 → 표시를 지워 다음 정리에 다시 보냄
+  gs.mi_sendSmsMails_(q2, () => { throw new Error('quota'); });
+  assert.ok(!rows[3].log.some((l: string) => l.includes('예약확정 문자 메일 보냄')), '실패하면 표시 지움');
+  assert.equal(gs.mi_smsQueue(rows, NOW + 900000).length, 1, '다음 정리에 다시 보냄');
+  // 번호가 이상하면 보내지 않고 한 번만 기록
+  const bad: any[] = [row('MI-9', { phone: '0212345678' })];
+  assert.equal(gs.mi_smsQueue(bad, NOW).length, 0);
+  assert.equal(gs.mi_smsQueue(bad, NOW + 1).length, 0);
+  assert.equal(bad[0].log.length, 1, '번호 확인 필요 기록은 한 번');
+
+  // sweep 으로 확정된 묶음(세금 봇·세연님이 한 줄만 '입금 확정' 체크)도 한 통
+  const sw: any[] = [
+    row('MI-5', { groupId: 'G5', status: MI_STATUS.pending, paidChecked: true }),
+    row('MI-6', { groupId: 'G5', status: MI_STATUS.pending, paidChecked: false, time: '18:00' }),
+  ];
+  gs.mi_sweep(sw, OPEN + 1000);
+  assert.deepEqual(sw.map((r) => r.status), [MI_STATUS.confirmed, MI_STATUS.confirmed]);
+  assert.equal(gs.mi_smsQueue(sw, OPEN + 1000).length, 1, '묶음 확정은 한 통');
+
+  // 대기 승격: 올라간 줄마다 한 통, 승격 문구 그대로 한 줄
+  const pw: any[] = [];
+  for (let i = 1; i <= 2; i += 1) {
+    pw.push(row(`W${i}`, { date: '2026-12-12', time: '16:00', status: MI_STATUS.waitlist, paidChecked: false, payDeadline: null,
+      holdStartedAt: null, phone: `0101111000${i}`, depositor: `대기${i}`, appliedAt: OPEN + i }));
+  }
+  gs.mi_sweep(pw, T('2026-12-03T14:00:00'));
+  const qp = gs.mi_smsQueue(pw, T('2026-12-03T14:00:00'));
+  assert.equal(qp.length, 2, '승격 두 명, 두 통');
+  assert.equal(lines(qp[0].mail.body)[0], '받는번호: 01011110001');
+  assert.equal(
+    lines(qp[0].mail.body)[1],
+    `문자: [입시는세연쌤] 대기 1번 대기1 학생, 현재 12월 12일 16시 3:1 모의면접 신청 가능합니다. 8시간 이내(12월 3일 22:00까지)에 입금 완료해 주시면 예약이 확정됩니다. 입금 계좌: ${gs.MI.BANK_ACCOUNT}, 80,000원`,
+  );
+  assert.ok(lines(qp[1].mail.body)[1].startsWith('문자: [입시는세연쌤] 대기 2번 대기2 학생'));
+  assert.ok(qp[0].mail.body.includes('입금 기한: 2026-12-03 22:00'));
+  // 다른 알림 메일 제목에는 '[문자발송]'이 없음
+  const subjects = code.match(/subject = '[^']*'/g) || [];
+  assert.ok(subjects.length >= 3 && subjects.every((x) => !x.includes('문자발송')), "다른 알림 메일 제목에 '[문자발송]' 없음");
+  assert.equal((code.match(/: '\[문자발송\] 모의면접'/g) || []).length, 1, '문자발송 제목은 MI.SMS_SUBJECT 한 곳');
+  assert.ok(!code.includes("'[모의면접] 대기 승격, 문자 보내기 필요"), '옛 승격 제목 없음');
+  console.log('✅ [문자발송] mail format/idempotency tests passed');
+}

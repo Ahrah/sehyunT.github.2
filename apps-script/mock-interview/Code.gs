@@ -6,6 +6,7 @@
  * - '추가 날짜·시간 오픈 신청'은 '추가 오픈 신청' 탭에 쌓입니다(희망 날짜·희망 시간·이름·연락처, 입금 없음).
  * - 입금 확인은 손으로 합니다(기본): 세연님이 '입금 확정' 칸에 체크하면 5분 안에 '확정'으로 바뀌고
  *   세연님 메일로 확정 안내 메일이 옵니다. 학생 이메일은 받지 않으므로 학생에게 직접 메일을 보내지 않습니다.
+ * - 학생 문자(대기 승격·예약확정)는 세연님 메일로 '[문자발송] 모의면접' 메일을 보내고, 세연님 iPhone 단축어가 문자로 보냅니다.
  * - [입금알림] 메일 자동 확인은 나중에 켤 수 있는 선택 기능입니다(AUTO_DEPOSIT_CHECK, 기본 꺼짐).
  * - 좌석·대기·기한 규칙은 홈페이지 코드 src/lib/mockInterview.ts 와 같습니다.
  *
@@ -44,6 +45,20 @@ var MI = {
   /** 확정·대기 승격 때 세연님에게 알림 메일을 보낼지 */
   NOTIFY_OWNER: true,
   OWNER_EMAIL: ['consultantsyssam', 'gmail.com'].join('@'),
+  /**
+   * 학생 문자(대기 승격·예약확정)는 세연님 메일로 '[문자발송] 모의면접' 메일을 한 통씩 보내고,
+   * 세연님 iPhone 단축어(이메일 자동화)가 그 메일을 읽어 '메시지 보내기'로 보냅니다(세연님 11/3 결정).
+   * 제목은 늘 같습니다. 다른 알림 메일 제목에는 '[문자발송]'을 넣지 않습니다.
+   */
+  SMS_BY_MAIL: true,
+  SMS_SUBJECT: '[문자발송] 모의면접',
+  SMS_PREFIX: '[입시는세연쌤] ',
+  /** 이 시각보다 먼저 신청한 줄(오픈 전 시험 줄)에는 예약확정 문자를 보내지 않습니다. 시트로 시험하려면 잠깐 앞당깁니다. */
+  SMS_SINCE: '2026-11-09T21:00:00+09:00',
+  /** 처리 기록에 남기는 표시. 이 표시가 있는 줄에는 예약확정 문자를 다시 보내지 않습니다. 고치지 마세요. */
+  SMS_MARK_CONFIRM: '예약확정 문자 메일 보냄',
+  SMS_MARK_CONFIRM_SKIP: '예약확정 문자 못 보냄(휴대폰 번호 확인 필요)',
+  SMS_MARK_PROMOTE: '승격 문자 메일 보냄',
   /** [입금알림] 메일 자동 확인(선택 기능). 켜기 전에 README '선택: 입금 알림 자동 확인'을 따르세요. */
   AUTO_DEPOSIT_CHECK: false,
   DEPOSIT_SHEET: '입금알림 기록',
@@ -283,9 +298,12 @@ function mi_docsExample(date) {
   return mi_dateLabel_(date) + ' 면접은 ' + mi_dateLabel_(ymd) + ' 밤 12시 전까지';
 }
 /** 대기 승격 문자(세연님 11/3 문구, src/lib/mockInterview.ts waitlistPromotionText 와 같음) */
-function mi_promotionText(position, depositor, date, time, payDeadline) {
+function mi_slotLabel_(date, time) {
   var ymd = date.split('-'), hm = time.split(':');
-  var slot = Number(ymd[1]) + '월 ' + Number(ymd[2]) + '일 ' + Number(hm[0]) + '시' + (Number(hm[1]) ? ' ' + Number(hm[1]) + '분' : '');
+  return Number(ymd[1]) + '월 ' + Number(ymd[2]) + '일 ' + Number(hm[0]) + '시' + (Number(hm[1]) ? ' ' + Number(hm[1]) + '분' : '');
+}
+function mi_promotionText(position, depositor, date, time, payDeadline) {
+  var slot = mi_slotLabel_(date, time);
   var d = new Date(payDeadline + 9 * 3600000);
   function p(n) { return (n < 10 ? '0' : '') + n; }
   var dl = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes());
@@ -294,6 +312,104 @@ function mi_promotionText(position, depositor, date, time, payDeadline) {
   return '대기 ' + position + '번 ' + depositor + ' 학생, 현재 ' + slot + ' 3:1 모의면접 신청 가능합니다. ' +
     hours + '시간 이내(' + dl + '까지)에 입금 완료해 주시면 예약이 확정됩니다. ' +
     '입금 계좌: ' + MI.BANK_ACCOUNT + ', ' + fee + '원';
+}
+/**
+ * 예약확정 문자(묶음 하나에 한 통). 기존 확정 메일의 문자 예시를 한 줄로 만든 것입니다.
+ * 예: '[입시는세연쌤] 홍길동 학생, 12월 12일 16시 3:1 모의면접 예약이 확정되었습니다. 서류는 면접 1주 전까지 …'
+ */
+function mi_confirmText(rows) {
+  var list = rows.slice().sort(function (a, b) { return mi_slotStart(a.date, a.time) - mi_slotStart(b.date, b.time); });
+  var slots = list.map(function (x) { return mi_slotLabel_(x.date, x.time); }).join(', ');
+  var dates = [];
+  list.forEach(function (x) { if (dates.indexOf(x.date) < 0) dates.push(x.date); });
+  return MI.SMS_PREFIX + (list[0].studentName || list[0].depositor) + ' 학생, ' + slots + ' 3:1 모의면접 예약이 확정되었습니다. ' +
+    '서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
+    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.';
+}
+/** 문자 본문은 한 줄로(단축어가 '문자:' 줄 하나만 읽습니다) */
+function mi_oneLine(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
+/**
+ * '[문자발송]' 메일 한 통. 본문 첫 두 줄이 늘 '받는번호: 숫자만' / '문자: 한 줄'이고, 빈 줄 뒤에 사람이 볼 내용이 옵니다.
+ * 번호가 휴대폰 번호가 아니면 null(보내지 않음).
+ */
+function mi_smsMail(phone, text, details) {
+  var to = mi_phone(phone);
+  if (!mi_isPhone(to)) return null;
+  var extra = (details || []).map(mi_oneLine).filter(String)
+    // 단축어가 잘못 읽지 않도록 사람이 볼 줄에는 '받는번호:'·'문자:'를 쓰지 않습니다.
+    .map(function (l) { return l.replace(/받는번호\s*:/g, '받는번호 -').replace(/문자\s*:/g, '문자 -'); });
+  return {
+    subject: MI.SMS_SUBJECT,
+    body: '받는번호: ' + to + '\n문자: ' + mi_oneLine(text) + '\n\n' +
+      extra.concat(['이 메일은 iPhone 단축어가 읽어 위 번호로 문자를 보냅니다. 제목과 첫 두 줄을 고치지 마세요.']).join('\n')
+  };
+}
+function mi_hasMark_(r, mark) { return r.log.some(function (l) { return l.indexOf(mark) >= 0; }); }
+function mi_details_(list) {
+  return ['신청번호: ' + list.map(function (x) { return x.id; }).join(', ') + (list[0].groupId ? ' (묶음 ' + list[0].groupId + ')' : ''),
+    '시트 행: ' + list.map(function (x) { return x.rowNumber; }).filter(function (n) { return n != null; }).join(', '),
+    '학생: ' + list[0].studentName + ', 입금자명: ' + list[0].depositor,
+    '타임: ' + list.map(function (x) { return x.date + ' ' + x.time; }).join(', ')];
+}
+/**
+ * 보낼 문자 목록을 만들고 처리 기록에 표시를 남깁니다(시트에는 아직 쓰지 않습니다).
+ * - 대기 승격: 이번 정리에서 올라간 줄마다 한 통.
+ * - 예약확정: '확정'인 예약 줄 가운데 표시가 없는 줄을 묶음마다 모아 한 통. 세금 봇이 '입금 확정'을 체크했든,
+ *   세연님이 손으로 체크하거나 상태를 '확정'으로 바꿨든 같습니다. 표시가 있으면 다시 보내지 않습니다.
+ */
+function mi_smsQueue(rows, now) {
+  var out = [];
+  if (!MI.SMS_BY_MAIL) return out;
+  var since = Date.parse(MI.SMS_SINCE);
+  var stamp = mi_fmt(now) + ' ';
+  rows.forEach(function (r) {
+    if (!r.justPromoted) return;
+    var dl = r.payDeadline;
+    var mail = mi_smsMail(r.phone, MI.SMS_PREFIX + mi_promotionText(r.promotedFrom || 1, r.depositor || r.studentName, r.date, r.time, dl),
+      mi_details_([r]).concat(['입금 기한: ' + mi_fmt(dl) + ' (승격 뒤 ' + Math.round(MI.PROMOTED_PAY_WINDOW_MS / 3600000) + '시간, 기한 + 10분이 지나면 자동 취소)']));
+    r.log.push(stamp + (mail ? MI.SMS_MARK_PROMOTE : '승격 문자 못 보냄(휴대폰 번호 확인 필요)'));
+    r.changed = true;
+    if (mail) out.push({ kind: 'promoted', rows: [r], mark: MI.SMS_MARK_PROMOTE, mail: mail });
+  });
+  var keys = [], groups = {};
+  rows.forEach(function (r) {
+    if (r.kind !== '예약' || r.status !== ST.confirmed) return;
+    if (!(r.appliedAt >= since)) return;
+    if (mi_hasMark_(r, MI.SMS_MARK_CONFIRM) || mi_hasMark_(r, MI.SMS_MARK_CONFIRM_SKIP)) return;
+    var k = r.groupId || 'row:' + r.id;
+    if (!groups[k]) { groups[k] = []; keys.push(k); }
+    groups[k].push(r);
+  });
+  keys.forEach(function (k) {
+    var list = groups[k];
+    var mail = mi_smsMail(list[0].phone, mi_confirmText(list), mi_details_(list));
+    list.forEach(function (r) {
+      r.log.push(stamp + (mail ? MI.SMS_MARK_CONFIRM : MI.SMS_MARK_CONFIRM_SKIP));
+      r.changed = true;
+    });
+    if (mail) out.push({ kind: 'confirmed', rows: list, mark: MI.SMS_MARK_CONFIRM, mail: mail });
+  });
+  return out;
+}
+/**
+ * '[문자발송]' 메일을 보냅니다. 시트에 쓰기 전에 보내고, 보내지 못한 예약확정은 표시를 지워 다음 정리(5분 뒤)에 다시 보냅니다.
+ * send 는 테스트용으로 바꿀 수 있습니다(기본 MailApp).
+ */
+function mi_sendSmsMails_(queue, send) {
+  send = send || function (to, subject, body) { MailApp.sendEmail(to, subject, body); };
+  queue.forEach(function (q) {
+    try {
+      send(MI.OWNER_EMAIL, q.mail.subject, q.mail.body);
+    } catch (err) {
+      console.warn('문자발송 메일 실패: ' + err);
+      q.rows.forEach(function (r) {
+        var i = r.log.length - 1;
+        if (i >= 0 && r.log[i].indexOf(q.mark) >= 0) r.log.splice(i, 1);
+        // 승격 문자는 다시 만들 수 없으므로 실패를 남기고 확정 알림처럼 세연님이 직접 보냅니다.
+        if (q.kind === 'promoted') r.log.push(mi_fmt(Date.now()) + ' 승격 문자 메일 실패(직접 보내 주세요)');
+      });
+    }
+  });
 }
 function mi_fmt(ms) {
   var d = new Date(ms + 9 * 3600000);
@@ -489,6 +605,7 @@ function doPost(e) {
     });
     // 오픈 때부터 대기로 둔 타임에 대기가 2명 모였으면 바로 입금 대기로 올리고 세연님께 알립니다.
     mi_sweep(data.rows, now);
+    mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
     return mi_json_(mi_view_(data.rows, groupId));
@@ -507,6 +624,7 @@ function sweepNow() {
     var data = mi_readRows_(sheet);
     if (MI.AUTO_DEPOSIT_CHECK) checkDepositMails_(sheet, data, now);
     mi_sweep(data.rows, now);
+    mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
     mi_purgeExtraRequests_(now);
@@ -523,7 +641,8 @@ function mi_notifyOwner_(rows) {
   if (!MI.NOTIFY_OWNER) return;
   var keys = [], groups = {};
   rows.forEach(function (r) {
-    var type = r.justNeedsCheck ? 'check' : r.justConfirmed ? 'confirmed' : r.justPromoted ? 'promoted' : '';
+    // 대기 승격은 '[문자발송]' 메일 하나로 알립니다(아래 사람이 볼 내용 포함). 여기서는 따로 보내지 않습니다.
+    var type = r.justNeedsCheck ? 'check' : r.justConfirmed ? 'confirmed' : (r.justPromoted && !MI.SMS_BY_MAIL) ? 'promoted' : '';
     if (!type) return;
     var k = type + '|' + mi_payUnitKey(r);
     if (!groups[k]) { groups[k] = { type: type, rows: [] }; keys.push(k); }
@@ -545,16 +664,15 @@ function mi_notifyOwner_(rows) {
     } else if (g.type === 'confirmed') {
       subject = '[모의면접] 예약 확정 ' + slots + ' ' + r.studentName;
       body = '예약을 확정했습니다. 입금액이 ' + total + '인지 확인해 주세요.\n' + head +
-        '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + r.studentName + ' 학생 12월 3:1 모의면접 ' + slots + ' 예약이 확정되었습니다. ' +
-        '\n\n서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
-        '예: ' + mi_docsExample(r.date) + ' 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.';
+        (MI.SMS_BY_MAIL ? '\n\n학생 예약확정 안내는 \'' + MI.SMS_SUBJECT + '\' 메일로 따로 보냈습니다(iPhone 단축어가 문자로 보냅니다).'
+          : '\n\n학생에게 보낼 안내\n' + mi_confirmText(g.rows));
     } else {
-      subject = '[모의면접] 대기 승격, 문자 보내기 필요 ' + slots + ' ' + r.studentName;
-      // 자동 문자 발송 수단(문자 API)이 아직 없습니다. 보낼 문자와 받는 번호를 메일에 넣어 세연님이 보냅니다.
-      body = '대기에서 입금 대기로 바뀌었습니다. 아래 번호로 문자를 보내 주세요.\n' + head + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
+      // SMS_BY_MAIL 을 끈 경우에만 씁니다. 제목에 '[문자발송]'을 넣지 않습니다(단축어가 읽지 않도록).
+      subject = '[모의면접] 대기 승격 ' + slots + ' ' + r.studentName;
+      body = '대기에서 입금 대기로 바뀌었습니다. 아래 번호로 직접 안내해 주세요.\n' + head + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
         ' (승격 뒤 ' + Math.round(MI.PROMOTED_PAY_WINDOW_MS / 3600000) + '시간, 기한 + 10분이 지나면 자동 취소)' +
         g.rows.map(function (x) {
-          return '\n\n받는 번호: ' + x.phone + '\n보낼 문자:\n[입시는세연쌤] ' +
+          return '\n\n휴대폰 ' + x.phone + '\n' + MI.SMS_PREFIX +
             mi_promotionText(x.promotedFrom || 1, x.depositor || x.studentName, x.date, x.time, x.payDeadline);
         }).join('');
     }
@@ -832,5 +950,6 @@ if (typeof module !== 'undefined') {
     mi_wishDateOf: mi_wishDateOf, mi_wishTimeOf: mi_wishTimeOf,
     mi_extraRequestPurgeAt: mi_extraRequestPurgeAt, mi_parseDepositMail: mi_parseDepositMail, mi_matchDeposit: mi_matchDeposit,
     EXTRA_REQ_COLS: EXTRA_REQ_COLS, mi_isGated: mi_isGated, mi_publicSlots: mi_publicSlots, mi_findActiveDuplicate: mi_findActiveDuplicate, mi_sameName_: mi_sameName_, MI_DUP_OTHER_NAME: MI.DUP_OTHER_NAME,
-    mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, mi_promotionText: mi_promotionText, SCRIPT_OWNED: SCRIPT_OWNED };
+    mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, mi_promotionText: mi_promotionText, mi_confirmText: mi_confirmText, mi_oneLine: mi_oneLine,
+    mi_smsMail: mi_smsMail, mi_smsQueue: mi_smsQueue, mi_sendSmsMails_: mi_sendSmsMails_, SCRIPT_OWNED: SCRIPT_OWNED };
 }
