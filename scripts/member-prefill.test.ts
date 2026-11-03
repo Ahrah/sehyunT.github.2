@@ -84,3 +84,21 @@ assert.equal(await hasStoredLogin(), true, 'localStorage 로그인 키');
 delete g.window;
 
 console.log('✅ member prefill tests passed');
+
+// 전자책 주문서: 휴대폰·이메일(확인 칸 포함)만 채우고 주문자 이름은 비워 둡니다.
+{
+  const { EMPTY_EB_FORM } = await import('../src/lib/ebooks');
+  type EbForm = typeof EMPTY_EB_FORM;
+  const f = applyMemberPrefill(
+    applyMemberPrefill(EMPTY_EB_FORM, profile, { phone: 'phone', email: 'email' } as PrefillMap<EbForm>),
+    profile,
+    { email: 'emailConfirm' } as PrefillMap<EbForm>,
+  );
+  assert.equal(f.name, '');
+  assert.equal(f.phone, '010-1234-5678');
+  assert.equal(f.email, 'fake@example.com');
+  assert.equal(f.emailConfirm, 'fake@example.com');
+  const typed = applyMemberPrefill({ ...EMPTY_EB_FORM, email: 'mine@x.y' }, profile, { email: 'email' } as PrefillMap<EbForm>);
+  assert.equal(typed.email, 'mine@x.y');
+  console.log('✅ ebooks member prefill tests passed');
+}

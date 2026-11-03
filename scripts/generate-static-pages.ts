@@ -19,6 +19,7 @@ import {
   assertNoSensitiveCopy,
   buildCareerCounselingPrerenderHtml,
 } from './career-counseling-prerender';
+import { EBOOKS } from '../src/lib/ebooks';
 import { fetchResourcesPublic, type ResourceItem } from './fetch-public-resources';
 
 // ESM __dirname equivalent
@@ -91,6 +92,12 @@ function generateSitemap(resources: ResourceItem[]): string {
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>`,
+    // 입시는세연쌤 books 목록과 책별 상세
+    ...['/ebooks/', ...EBOOKS.map(b => `/ebooks/${b.id}/`)].map(u => `  <url>
+    <loc>${DOMAIN}${u}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`),
   ];
 
   // Add public (unlocked, not members-only) resources
@@ -247,7 +254,7 @@ async function main() {
     console.log(`   - ${KEYWORD_PAGES.length} keyword pages`);
     console.log(`   - /jinro-counseling/ prerendered SPA page`);
     console.log(`   - /links page`);
-    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length} public URLs`);
+    console.log(`   - sitemap.xml with ${publicResources.length + 2 + KEYWORD_PAGES.length + 1 + EBOOKS.length} public URLs`);
     console.log(`   - robots.txt`);
     
   } catch (error) {
