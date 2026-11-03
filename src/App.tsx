@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { SITE, NOTO_SERIF_KR_HREF, ensureStylesheet } from './config/site';
 import { HomeFocusSection } from './components/HomeFocusSection';
+import { HomeMiPopup } from './components/HomeMiPopup';
 import { ProgramsSection } from './components/ProgramsSection';
 
 type AuthUser = { email: string | null; displayName: string | null };
@@ -245,6 +246,7 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | null>(null);
+  const [miPopupOpen, setMiPopupOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const heroRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
@@ -297,10 +299,10 @@ export default function App() {
   useEffect(() => { window.scrollTo(0, 0); }, [isAdminOpen]);
 
   useEffect(() => {
-    const locked = isAuthModalOpen || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType;
+    const locked = isAuthModalOpen || isMyPageOpen || (isAdminOpen && user?.email === ADMIN_EMAIL) || legalModalType || miPopupOpen;
     document.body.style.overflow = locked ? 'hidden' : 'auto';
     return () => { document.body.style.overflow = 'auto'; };
-  }, [isAuthModalOpen, isMyPageOpen, isAdminOpen, user, legalModalType]);
+  }, [isAuthModalOpen, isMyPageOpen, isAdminOpen, user, legalModalType, miPopupOpen]);
 
   const reveal = reduceMotion ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, amount: 0.2 }, transition: { duration: 0.65 } };
 
@@ -312,6 +314,8 @@ export default function App() {
         <AnimatePresence>{isAdminOpen && user?.email === ADMIN_EMAIL && <AdminDashboard onBack={() => setIsAdminOpen(false)} />}</AnimatePresence>
         {legalModalType && <LegalModal isOpen type={legalModalType} onClose={() => setLegalModalType(null)} />}
       </Suspense>
+
+      <HomeMiPopup onOpenChange={setMiPopupOpen} />
 
       <Navbar user={user} onOpenAuth={() => setIsAuthModalOpen(true)} onOpenAdmin={() => setIsAdminOpen(true)} onOpenMyPage={() => setIsMyPageOpen(true)} />
 
