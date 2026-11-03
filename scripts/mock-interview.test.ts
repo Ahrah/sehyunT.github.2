@@ -20,6 +20,8 @@ import {
   sweep,
   payGraceEnd,
   isUnpaidCancel,
+  waitlistPromotionText,
+  slotMonthDayHour,
   heldCount,
   validateForm,
   validateExtraRequest,
@@ -91,13 +93,19 @@ assert.match(rows[3].cancelReason, /^미입금\(입금 기한 .* \+ 10분 지남
 assert.ok(isUnpaidCancel(rows[3].cancelReason));
 assert.match(rows[3].log.join('\n'), /취소: 미입금/);
 assert.equal(rows[4].status, MI_STATUS.pending, '대기 1번 승격');
-assert.equal(rows[4].payDeadline, later + HOUR, '승격 시각부터 새 1시간');
+assert.equal(MI_CONFIG.promotedPayWindowMs, 8 * HOUR, '대기 승격 입금 기한은 8시간');
+assert.equal(rows[4].payDeadline, later + 8 * HOUR, '승격 시각부터 새 8시간');
+assert.equal(rows[4].promotedFrom, 1);
+assert.equal(rows[5].promotedFrom, 2);
+assert.match(rows[4].log.join('\n'), /대기 1번에서 입금 대기로 승격/);
 assert.equal(rows[4].holdStartedAt, later);
 assert.equal(rows[5].status, MI_STATUS.pending, '대기 2번도 승격(빈자리 2개: 확인 필요 줄은 자리를 잡지 않음)');
 assert.equal(summarize(rows, later).find((x) => x.date === '2026-12-13' && x.time === '16:00')!.left, 0);
 // 승격된 학생도 새 기한 + 10분이 지나면 자동 취소
-let promoted = sweep(rows, later + HOUR + GRACE + 1);
+assert.equal(sweep(rows, later + 8 * HOUR + GRACE - 1)[4].status, MI_STATUS.pending, '8시간 + 10분 안에는 그대로');
+let promoted = sweep(rows, later + 8 * HOUR + GRACE + 1);
 assert.equal(promoted[4].status, MI_STATUS.cancelled);
+assert.equal(promoted[4].promotedFrom, undefined, '승격 표시는 그 정리에서만');
 // 미입금 취소 뒤 입금 확정 → 확인 필요(자동 예약 없음)
 rows[3] = { ...rows[3], paidChecked: true };
 rows = sweep(rows, later + 60000);
@@ -122,7 +130,8 @@ early[0] = { ...early[0], unpaidChecked: true };
 early = sweep(early, open + 10 * 60000);
 assert.equal(early[0].status, MI_STATUS.pending);
 
-/* ---- 서류: 7일 전 23:59 까지, 없으면 확정 취소 + 대기 승격 ---- */
+/* ---- 서류: 7일 전 23:59 까지. 서류가 없어도 확정은 그대로(세연님 11/3: 당일 즉석 질문으로 진행) ---- */
+assert.equal(MI_CONFIG.cancelWithoutDocs, false);
 assert.equal(formatShortKst(baseDocsDeadline('2026-12-12')), '12/5(토) 23:59');
 let docs: MiRow[] = [];
 for (let i = 1; i <= 5; i += 1) docs.push(newBookingRow(docs, `d${i}`, '2026-12-19', '18:00', open + i));
@@ -133,11 +142,16 @@ assert.equal(docs.filter((r) => r.status === MI_STATUS.confirmed).length, 4);
 const afterDocs = baseDocsDeadline('2026-12-19') + 1;
 docs = sweep(docs, afterDocs);
 assert.equal(docs[1].status, MI_STATUS.confirmed, '서류 받은 학생은 유지');
-assert.equal(docs.filter((r) => r.cancelReason === '서류 미제출').length, 3);
-assert.equal(docs[4].status, MI_STATUS.pending, '대기자 승격');
-assert.equal(docs[4].docsDeadline, afterDocs + MI_CONFIG.docsGraceMs, '서류 기한이 지난 뒤 승격하면 24시간');
+assert.equal(docs.filter((r) => r.status === MI_STATUS.confirmed).length, 4, '서류가 없어도 취소하지 않음');
+assert.equal(docs.filter((r) => r.cancelReason === '서류 미제출').length, 0);
+assert.equal(docs[4].status, MI_STATUS.waitlist, '빈자리가 없으니 대기 그대로');
+// 다른 사유로 자리가 나서 서류 기한 뒤에 승격되면 서류 기한은 24시간
+docs[0] = { ...docs[0], status: MI_STATUS.cancelled, cancelReason: '본인 취소' };
 docs = sweep(docs, afterDocs + 60000);
-assert.equal(docs.filter((r) => r.cancelReason === '서류 미제출' && r.status === MI_STATUS.cancelled).length, 3, '서류 미제출 취소(입금 확정 있음)는 확인 필요로 바꾸지 않음');
+assert.equal(docs[4].status, MI_STATUS.pending, '대기자 승격');
+assert.equal(docs[4].docsDeadline, afterDocs + 60000 + MI_CONFIG.docsGraceMs, '서류 기한이 지난 뒤 승격하면 24시간');
+const docsForGs = docs.slice(1, 4).map((r) => ({ ...r, log: [...r.log] }));
+const docsAfterForGs = afterDocs + 120000;
 assert.equal(docsDeadlineFor('2026-12-19', open), baseDocsDeadline('2026-12-19'));
 
 /* ---- 면접 24시간 전에는 승격하지 않음 ---- */
@@ -305,7 +319,9 @@ assert.equal(gs.EXTRA_REQ_COLS[gs.EXTRA_REQ_COLS.length - 1], '모의면접 신�
       [ts.status, ts.cancelReason, ts.checkReason || '', ts.log], `GS·TS sweep 일치 ${JSON.stringify(extra)} @${now}`);
   }
 }
-assert.equal(gsRows[4].payDeadline, later + HOUR);
+assert.equal(gsRows[4].payDeadline, later + 8 * HOUR);
+assert.equal(gs.MI.PROMOTED_PAY_WINDOW_MS, MI_CONFIG.promotedPayWindowMs);
+assert.equal(gs.MI.CANCEL_WITHOUT_DOCS, MI_CONFIG.cancelWithoutDocs);
 assert.equal(gs.mi_summarize(gsRows, later).find((x: any) => x.date === '2026-12-13' && x.time === '16:00').left, 1, '확정 1 + 승격 2, 빈자리 1');
 for (const f of [good, multi, extraOnly, { ...good, slots: [] }, { ...good, consentVideo: false }, { ...good, slots: [good.slots[0], good.slots[0]] },
   { ...extraOnly, extraDates: ['2026-12-14'] }, { ...good, under14: true, guardianName: '' } as typeof good, { ...good, slots: [{ date: '2026-12-12', time: '11:00' }] }]) {
@@ -385,7 +401,8 @@ assert.equal(gs.mi_matchDeposit(grp, { amount: 80000, name: '홍길동', at: 10 
   assert.equal(isGated(g, '2026-12-12', '16:00'), false, '대기 2명이면 풀림');
   const rel = sweep(g, open + 4000);
   assert.deepEqual(rel.map((r) => r.status), [MI_STATUS.pending, MI_STATUS.pending], '2명 모두 입금 대기로 승격(신청 순서)');
-  assert.equal(rel[0].payDeadline, open + 4000 + HOUR, '입금 1시간은 승격 시각부터');
+  assert.equal(rel[0].payDeadline, open + 4000 + 8 * HOUR, '입금 8시간은 승격 시각부터');
+  assert.deepEqual(rel.map((r) => r.promotedFrom), [1, 2], '대기 순번 기록');
   assert.equal(isGated(rel, '2026-12-12', '16:00'), false, '한 번 풀리면 다시 잠기지 않음');
   // GS 와 같음
   const gg = [newBookingRow([], 'W1', '2026-12-12', '16:00', open + 1000)].map((r) => ({ ...r, log: [...r.log] })) as any[];
@@ -394,7 +411,15 @@ assert.equal(gs.mi_matchDeposit(grp, { amount: 80000, name: '홍길동', at: 10 
   assert.equal(gs.mi_initialStatus([], '2026-12-20', '17:00'), MI_STATUS.pending);
   gg.push({ ...newBookingRow(gg, 'W2', '2026-12-12', '16:00', open + 3000), log: [] });
   gs.mi_sweep(gg, open + 4000);
-  assert.deepEqual(JSON.parse(JSON.stringify(gg.map((r: any) => [r.status, r.payDeadline]))), rel.map((r) => [r.status, r.payDeadline]), 'GS·TS 대기 풀림 일치');
+  assert.deepEqual(JSON.parse(JSON.stringify(gg.map((r: any) => [r.status, r.payDeadline, r.promotedFrom]))), rel.map((r) => [r.status, r.payDeadline, r.promotedFrom]), 'GS·TS 대기 풀림 일치');
+  // 승격 문자(세연님 11/3 문구)
+  const text = waitlistPromotionText(1, '홍길동', '2026-12-12', '16:00', T('2026-12-03T22:00:00'));
+  assert.equal(
+    text,
+    `대기 1번 홍길동 학생, 현재 12월 12일 16시 3:1 모의면접 신청 가능합니다. 8시간 이내(12월 3일 22:00까지)에 입금 완료해 주시면 예약이 확정됩니다. 입금 계좌: ${MI_CONFIG.bankAccount}, 80,000원`,
+  );
+  assert.equal(gs.mi_promotionText(1, '홍길동', '2026-12-12', '16:00', T('2026-12-03T22:00:00')), text, 'GS·TS 승격 문자 일치');
+  assert.equal(slotMonthDayHour('2026-12-20', '18:30'), '12월 20일 18시 30분');
   // 홈페이지로는 숫자를 보내지 않음
   const pub = publicSlots(summarize([], open));
   assert.deepEqual(Object.keys(pub[0]).sort(), ['closed', 'date', 'time', 'wait']);
@@ -434,3 +459,25 @@ assert.equal(gs.mi_matchDeposit(grp, { amount: 80000, name: '홍길동', at: 10 
 }
 
 console.log('✅ mock interview slot/waitlist/deadline tests passed');
+
+/* ---- GS 도 서류 미제출로 취소하지 않음 ---- */
+{
+  const gd = docsForGs as any[];
+  gs.mi_sweep(gd, docsAfterForGs);
+  assert.deepEqual(gd.map((r: any) => r.status), [MI_STATUS.confirmed, MI_STATUS.confirmed, MI_STATUS.confirmed], 'GS 서류 미제출 취소 없음');
+}
+
+/* ---- 신청완료 화면 문구: 환불 구간(빈틈 없음), 서류, 대기 안내(세연님 11/3) ---- */
+{
+  const page = fs.readFileSync(path.join(__dirname, '../src/pages/MockInterviewPage.tsx'), 'utf-8');
+  for (const t of [
+    '면접 10일 전까지: 전액 환불',
+    '면접 9일 전 ~ 7일 전: ⅔ 환불',
+    '면접 6일 전 ~ 5일 전: ⅓ 환불',
+    '면접 4일 전부터, 노쇼: 환불 불가',
+    '서류를 내지 않아도 면접은 그대로 진행합니다. 이때는 당일 즉석 질문으로 진행합니다.',
+    '문자를 받은 때부터 ${PROMOTED_HOURS}시간 이내에 입금해 주세요.',
+    "대기 신청이 ${n}명이 되면 대기 순서대로 입금 안내 문자를 보내 드립니다.",
+  ]) assert.ok(page.includes(t), `화면 문구: ${t}`);
+  for (const t of ['면접 7일 전: ⅔ 환불', '면접 5일 전 ⅓ 환불', '그 이후 및 노쇼', '1시간 이내에 입금하고']) assert.ok(!page.includes(t), `옛 문구 없음: ${t}`);
+}

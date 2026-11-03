@@ -598,11 +598,12 @@ function QnaSection({ refundAbove = false }: { refundAbove?: boolean }) {
         <Qna q="입금은 언제까지 하나요?">
           신청 후 1시간 이내에 신청 회차당 {FEE_LABEL}을 입금해 주세요. 1시간은 은행에 찍힌 입금 시각으로 판단합니다. 1시간
           안에 입금하지 않으면 신청이 취소되고 대기 1번 학생에게 자리가 넘어갑니다. 입금 후 예약확정 문자를 받으면 예약이
-          확정됩니다. 계좌는 신청완료 화면에서 안내합니다.
+          확정됩니다. 대기로 신청해 입금 안내 문자를 받으셨다면 문자를 받은 때부터 {PROMOTED_HOURS}시간 이내에 입금해 주세요.
+          계좌는 신청완료 화면에서 안내합니다.
         </Qna>
         <Qna q="취소하면 환불되나요?">
-          면접 10일 전까지 취소하면 낸 금액을 모두 돌려 드립니다. 면접 7일 전에는 ⅔, 5일 전에는 ⅓을 돌려 드리고, 그
-          이후와 노쇼는 환불되지 않습니다. 취소는 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을 기준으로 합니다.{' '}
+          면접 10일 전까지 취소하면 낸 금액을 모두 돌려 드립니다. 면접 9일 전부터 7일 전까지는 ⅔, 6일 전부터 5일 전까지는
+          ⅓을 돌려 드리고, 4일 전부터와 노쇼는 환불되지 않습니다. 취소는 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을 기준으로 합니다.{' '}
           {refundAbove ? '자세한 내용은 위 환불 안내를 봐 주세요.' : '자세한 환불 기준은 신청 뒤 신청완료 화면에서 안내합니다.'}
         </Qna>
         <Qna q="다른 날짜에도 열리나요?">
@@ -611,6 +612,34 @@ function QnaSection({ refundAbove = false }: { refundAbove?: boolean }) {
           연락드립니다. 입금은 하지 않으며, 연락처는 {KEEP_UNTIL_LABEL}까지 보관 후 삭제합니다.
         </Qna>
       </div>
+    </section>
+  );
+}
+
+/** 대기로 올라간 뒤 입금 기한(시간) */
+const PROMOTED_HOURS = Math.round(MI_CONFIG.promotedPayWindowMs / 3600000);
+
+/** 신청완료 화면: '(대기)' 타임으로 신청한 학생에게 보여 주는 대기 흐름 안내 */
+export function waitlistGuideItems(items: readonly { date: string; time: string }[]): string[] {
+  const atOpen = items.some((x) => MI_CONFIG.waitlistAtOpen.includes(`${x.date} ${x.time}`));
+  const full = items.some((x) => !MI_CONFIG.waitlistAtOpen.includes(`${x.date} ${x.time}`));
+  const n = MI_CONFIG.waitlistReleaseCount;
+  return [
+    '대기 중에는 입금하지 않습니다.',
+    ...(atOpen ? [`처음부터 대기로 받는 타임은 대기 신청이 ${n}명이 되면 대기 순서대로 입금 안내 문자를 보내 드립니다.`] : []),
+    ...(full ? ['자리가 다 찬 타임은 빈자리가 생기면 대기 1번부터 순서대로 입금 안내 문자를 보내 드립니다.'] : []),
+    `문자를 받은 때부터 ${PROMOTED_HOURS}시간 이내에 입금해 주세요. 입금이 확인되면 예약확정 문자를 보내 드리고 예약이 확정됩니다.`,
+    `${PROMOTED_HOURS}시간 안에 입금하지 않으면 신청이 취소되고 다음 대기 학생에게 차례가 넘어갑니다.`,
+  ];
+}
+
+function WaitlistGuide({ items }: { items: readonly { date: string; time: string }[] }) {
+  return (
+    <section className="mi-section" aria-labelledby="mi-done-wait">
+      <h2 id="mi-done-wait">대기 안내</h2>
+      <ul className="mi-list">
+        {waitlistGuideItems(items).map((t) => <li key={t}>{t}</li>)}
+      </ul>
     </section>
   );
 }
@@ -670,9 +699,9 @@ function DoneScreen({ done, now, open, onNew }: { done: Done; now: number; open:
   const checkUrl = checkUrlOf(res);
   const name = res?.studentName || form?.studentName || '';
   const lead = pending.length
-    ? '아래 안내대로 1시간 이내에 입금해 주세요. 입금 후 예약확정 문자를 받으면 예약이 확정됩니다.'
+    ? '아래 입금 기한까지 입금해 주세요. 입금 후 예약확정 문자를 받으면 예약이 확정됩니다.'
     : waiting.length && !confirmed.length
-      ? '고른 타임은 모두 대기로 접수되었습니다. 아직 입금하지 마세요. 자리가 나면 연락드립니다.'
+      ? '고른 타임은 모두 대기로 접수되었습니다. 아직 입금하지 마세요. 아래 대기 안내를 확인해 주세요.'
       : confirmed.length
         ? '예약이 확정된 타임이 있습니다. 아래에서 신청 상태를 확인해 주세요.'
         : '아래에서 신청 상태를 확인해 주세요.';
@@ -729,11 +758,13 @@ function DoneScreen({ done, now, open, onNew }: { done: Done; now: number; open:
             {pending.length > 0 && <li>위 계좌로 {won(amount)}을 입금 기한까지 보냅니다.</li>}
             {pending.length > 0 && <li>입금 후 예약확정 문자를 받으면 예약이 확정됩니다.</li>}
             {waiting.length > 0 && (
-              <li>대기 타임은 자리가 나면 연락드립니다. 그때 1시간 이내에 입금하고 예약확정 문자를 받으면 예약이 확정됩니다.</li>
+              <li>대기 타임은 차례가 되면 문자로 알려 드립니다. 문자를 받은 때부터 {PROMOTED_HOURS}시간 이내에 입금해 주세요.</li>
             )}
           </ol>
         </section>
       )}
+
+      {waiting.length > 0 && <WaitlistGuide items={waiting} />}
 
       {wantsExtra && form && <WishPicker form={form} applicationId={res?.id ?? ''} now={now} open={open} />}
 
@@ -874,7 +905,8 @@ function Qna({ q, children }: { q: string; children: ReactNode }) {
 }
 
 /**
- * 환불 안내: 세연님 환불 규정 문서(11/3 수정본) 문구 그대로입니다. 규정을 고치면 여기와 Q&A 를 함께 고칩니다.
+ * 환불 안내: 세연님 환불 규정 문서(11/3 수정본) 문구입니다. 11/3 추가 결정: 9~8일 전은 7일 전 기준, 6일 전은 5일 전 기준으로 구간을 이어 붙였고, 서류 미제출 항목을 더했습니다.
+ * 규정을 고치면 여기와 Q&A 를 함께 고칩니다.
  * 문서의 마지막 항목 번호(10)는 순서대로 8로 적었습니다.
  */
 export const REFUND_SECTIONS: { title: string; items: string[] }[] = [
@@ -892,17 +924,26 @@ export const REFUND_SECTIONS: { title: string; items: string[] }[] = [
   {
     title: '면접 전에 취소할 때',
     items: [
-      '면접 질문 준비가 10일 전부터 이루어집니다. 면접 10일 전에 취소하면 낸 금액을 모두 돌려 드립니다.',
+      '면접 질문 준비가 10일 전부터 이루어집니다. 면접 10일 전까지 취소하면 낸 금액을 모두 돌려 드립니다.',
       '취소는 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을 기준으로 합니다.',
     ],
   },
   {
     title: '면접 10일 전 이후',
-    items: ['면접 10일 전: 전액 환불', '면접 7일 전: ⅔ 환불', '면접 5일 전 ⅓ 환불', '그 이후 및 노쇼: 환불 불가'],
+    items: [
+      '면접 10일 전까지: 전액 환불',
+      '면접 9일 전 ~ 7일 전: ⅔ 환불',
+      '면접 6일 전 ~ 5일 전: ⅓ 환불',
+      '면접 4일 전부터, 노쇼: 환불 불가',
+    ],
   },
   {
     title: '입금 기한을 넘겼을 때',
-    items: ['신청 후 1시간 안에 입금하지 않으면 신청이 취소됩니다.', '기한이 지난 뒤 입금하셔서 신청이 취소되셨다면 전액 환불해드립니다.'],
+    items: [
+      '신청 후 1시간 안에 입금하지 않으면 신청이 취소됩니다.',
+      `대기에서 차례가 되어 입금 안내 문자를 받으셨다면 문자를 받은 때부터 ${Math.round(MI_CONFIG.promotedPayWindowMs / 3600000)}시간 안에 입금합니다.`,
+      '기한이 지난 뒤 입금하셔서 신청이 취소되셨다면 전액 환불해드립니다.',
+    ],
   },
   { title: '대기 신청', items: ['대기 중에는 입금하지 않습니다.', '대기 중 입금 시 전액 환불해드립니다.'] },
   {
@@ -920,6 +961,10 @@ export const REFUND_SECTIONS: { title: string; items: string[] }[] = [
   {
     title: '세연쌤 사정으로 진행하지 못할 때',
     items: ['세연쌤 사정으로 면접을 열지 못하면 낸 금액을 모두 돌려 드립니다.', '원하시면 다른 날짜로 옮겨 드립니다.'],
+  },
+  {
+    title: '서류를 내지 않았을 때',
+    items: ['서류를 내지 않아도 면접은 그대로 진행합니다. 이때는 당일 즉석 질문으로 진행합니다.'],
   },
 ];
 

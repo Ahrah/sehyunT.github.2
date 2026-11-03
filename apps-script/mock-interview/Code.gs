@@ -31,10 +31,14 @@ var MI = {
   DUP_OTHER_NAME: '같은 휴대폰 번호로 이미 신청한 타임이 있습니다. 신청완료 화면의 확인 링크를 열거나 카카오톡 채널 \'입시는세연쌤\'으로 문의해 주세요.',
   BANK_ACCOUNT: '카카오뱅크 3333-38-6269721 (입시는세연쌤)',
   PAY_WINDOW_MS: 60 * 60 * 1000,
+  /** 대기에서 입금 대기로 올라간 뒤 입금 기한(8시간, 세연님 11/3 결정). +10분 유예·자동 취소는 같습니다. */
+  PROMOTED_PAY_WINDOW_MS: 8 * 60 * 60 * 1000,
   /** 입금 기한 뒤 자동 취소까지 기다리는 시간(10분). 입금 시각이 기한 + 10분 안이면 제때 입금으로 봅니다. */
   PAY_GRACE_MS: 10 * 60 * 1000,
   DOCS_DAYS_BEFORE: 7,
   DOCS_GRACE_MS: 24 * 60 * 60 * 1000,
+  /** 서류 기한까지 서류가 없으면 확정을 취소할지. 세연님 11/3 결정: 서류 없이도 면접은 그대로 진행합니다(당일 즉석 질문). */
+  CANCEL_WITHOUT_DOCS: false,
   BOOKING_CLOSE_MS: 24 * 60 * 60 * 1000,
   PHOTO_CONSENT_REQUIRED: true,
   /** 확정·대기 승격 때 세연님에게 알림 메일을 보낼지 */
@@ -240,7 +244,7 @@ function mi_sweep(rows, now) {
     if (r.status === ST.cancelled && mi_isUnpaidCancel(r.cancelReason) && (r.paidChecked || r.paidAt != null)) {
       mi_needsCheck(r, now, '미입금 취소 뒤 입금 확정' + (r.paidAt != null ? '(입금 시각 ' + mi_fmt(r.paidAt) + ')' : ''));
     }
-    if (r.status === ST.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
+    if (MI.CANCEL_WITHOUT_DOCS && r.status === ST.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
       mi_cancel(r, now, '서류 미제출');
     }
   });
@@ -250,13 +254,16 @@ function mi_sweep(rows, now) {
       if (mi_isGated(rows, date, time)) return;
       var free = MI.CAPACITY - mi_heldCount(rows, date, time);
       var queue = mi_waitlistOf(rows, date, time);
+      var position = 0;
       while (free > 0 && queue.length > 0) {
         var next = queue.shift();
+        position += 1;
         next.status = ST.pending;
         next.holdStartedAt = now;
-        next.payDeadline = now + MI.PAY_WINDOW_MS;
+        next.payDeadline = now + MI.PROMOTED_PAY_WINDOW_MS;
         next.docsDeadline = mi_docsDeadlineFor(date, now);
-        next.log.push(mi_fmt(now) + ' 대기에서 입금 대기로 승격');
+        next.promotedFrom = position;
+        next.log.push(mi_fmt(now) + ' 대기 ' + position + '번에서 입금 대기로 승격');
         next.changed = true;
         next.justPromoted = true;
         free -= 1;
@@ -274,6 +281,19 @@ function mi_docsExample(date) {
   var dl = new Date(mi_baseDocsDeadline(date) + 9 * 3600000);
   var ymd = dl.getUTCFullYear() + '-' + ('0' + (dl.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + dl.getUTCDate()).slice(-2);
   return mi_dateLabel_(date) + ' 면접은 ' + mi_dateLabel_(ymd) + ' 밤 12시 전까지';
+}
+/** 대기 승격 문자(세연님 11/3 문구, src/lib/mockInterview.ts waitlistPromotionText 와 같음) */
+function mi_promotionText(position, depositor, date, time, payDeadline) {
+  var ymd = date.split('-'), hm = time.split(':');
+  var slot = Number(ymd[1]) + '월 ' + Number(ymd[2]) + '일 ' + Number(hm[0]) + '시' + (Number(hm[1]) ? ' ' + Number(hm[1]) + '분' : '');
+  var d = new Date(payDeadline + 9 * 3600000);
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  var dl = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes());
+  var hours = Math.round(MI.PROMOTED_PAY_WINDOW_MS / 3600000);
+  var fee = String(MI.FEE).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '대기 ' + position + '번 ' + depositor + ' 학생, 현재 ' + slot + ' 3:1 모의면접 신청 가능합니다. ' +
+    hours + '시간 이내(' + dl + '까지)에 입금 완료해 주시면 예약이 확정됩니다. ' +
+    '입금 계좌: ' + MI.BANK_ACCOUNT + ', ' + fee + '원';
 }
 function mi_fmt(ms) {
   var d = new Date(ms + 9 * 3600000);
@@ -527,12 +547,16 @@ function mi_notifyOwner_(rows) {
       body = '예약을 확정했습니다. 입금액이 ' + total + '인지 확인해 주세요.\n' + head +
         '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + r.studentName + ' 학생 12월 3:1 모의면접 ' + slots + ' 예약이 확정되었습니다. ' +
         '\n\n서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
-        '보내지 않으면 자동 취소되고 대기자에게 넘어갑니다. 예: ' + mi_docsExample(r.date) + ' 보내야 합니다.';
+        '예: ' + mi_docsExample(r.date) + ' 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.';
     } else {
-      subject = '[모의면접] 대기 승격, 연락 필요 ' + slots + ' ' + r.studentName;
-      body = '대기에서 입금 대기로 바뀌었습니다. 학생에게 연락해 주세요.\n' + head + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
-        '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + slots + ' 모의면접 자리가 났습니다. ' + mi_fmt(r.payDeadline) +
-        '까지 ' + total + '을 입금해 주세요.';
+      subject = '[모의면접] 대기 승격, 문자 보내기 필요 ' + slots + ' ' + r.studentName;
+      // 자동 문자 발송 수단(문자 API)이 아직 없습니다. 보낼 문자와 받는 번호를 메일에 넣어 세연님이 보냅니다.
+      body = '대기에서 입금 대기로 바뀌었습니다. 아래 번호로 문자를 보내 주세요.\n' + head + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
+        ' (승격 뒤 ' + Math.round(MI.PROMOTED_PAY_WINDOW_MS / 3600000) + '시간, 기한 + 10분이 지나면 자동 취소)' +
+        g.rows.map(function (x) {
+          return '\n\n받는 번호: ' + x.phone + '\n보낼 문자:\n[입시는세연쌤] ' +
+            mi_promotionText(x.promotedFrom || 1, x.depositor || x.studentName, x.date, x.time, x.payDeadline);
+        }).join('');
     }
     try { MailApp.sendEmail(MI.OWNER_EMAIL, subject, body); } catch (err) { console.warn('알림 메일 실패: ' + err); }
   });
@@ -808,5 +832,5 @@ if (typeof module !== 'undefined') {
     mi_wishDateOf: mi_wishDateOf, mi_wishTimeOf: mi_wishTimeOf,
     mi_extraRequestPurgeAt: mi_extraRequestPurgeAt, mi_parseDepositMail: mi_parseDepositMail, mi_matchDeposit: mi_matchDeposit,
     EXTRA_REQ_COLS: EXTRA_REQ_COLS, mi_isGated: mi_isGated, mi_publicSlots: mi_publicSlots, mi_findActiveDuplicate: mi_findActiveDuplicate, mi_sameName_: mi_sameName_, MI_DUP_OTHER_NAME: MI.DUP_OTHER_NAME,
-    mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, SCRIPT_OWNED: SCRIPT_OWNED };
+    mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, mi_promotionText: mi_promotionText, SCRIPT_OWNED: SCRIPT_OWNED };
 }

@@ -29,14 +29,21 @@ export const MI_CONFIG = {
   waitlistAtOpen: ['2026-12-12 16:00', '2026-12-20 18:00'] as readonly string[],
   waitlistReleaseCount: 2,
   fee: 80000,
-  /** 신청(또는 대기 승격) 뒤 입금 기한 */
+  /** 신청 뒤 입금 기한 */
   payWindowMs: 60 * 60 * 1000,
+  /** 대기에서 입금 대기로 올라간 뒤 입금 기한(세연님 11/3 결정: 8시간). Code.gs MI.PROMOTED_PAY_WINDOW_MS 와 같아야 합니다. */
+  promotedPayWindowMs: 8 * 60 * 60 * 1000,
   /** 입금 기한 뒤 자동 취소까지 기다리는 시간. 입금 시각이 기한 + 10분 안이면 제때 입금으로 봅니다. Code.gs MI.PAY_GRACE_MS 와 같아야 합니다. */
   payGraceMs: 10 * 60 * 1000,
   /** 서류 기한: 면접 날짜 7일 전 23:59:59 KST */
   docsDaysBefore: 7,
   /** 서류 기한이 지난 뒤 자리를 받은 학생에게 주는 서류 제출 시간 */
   docsGraceMs: 24 * 60 * 60 * 1000,
+  /**
+   * 서류 기한까지 서류가 없으면 확정을 취소할지. 세연님 11/3 결정: 서류를 내지 않아도 면접은 그대로 진행합니다(당일 즉석 질문).
+   * Code.gs MI.CANCEL_WITHOUT_DOCS 와 같아야 합니다.
+   */
+  cancelWithoutDocs: false,
   /** 면접 시작 몇 시간 전까지 예약·대기 승격을 받을지 */
   bookingCloseMs: 24 * 60 * 60 * 1000,
   /** 사진 활용 동의를 필수로 받을지(세연님 결정: 필수). false 로 바꾸면 선택 동의가 됩니다. */
@@ -85,6 +92,8 @@ export type MiRow = {
   groupId?: string;
   /** 확인 링크 키(묶음마다 하나). 신청번호만으로는 신청 내용을 볼 수 없게 합니다. */
   token?: string;
+  /** 이번 정리에서 대기에서 올라갔다면 올라가기 전 대기 순번(안내 문자용, 시트에 쓰지 않습니다) */
+  promotedFrom?: number;
   log: string[];
 };
 
@@ -276,13 +285,13 @@ export function decidePay(
  *    - 입금 확정 없이 '입금 기한 + 10분'이 지나면 묶음 전체 자동 취소(취소 사유 '미입금(…)'). 자리가 비고 대기 1번이 올라갑니다.
  *    - (손으로) 기한이 지났고 '미입금'에 체크하면 10분을 기다리지 않고 바로 취소.
  * 2) 미입금으로 취소된 줄에 '입금 확정'(또는 입금 시각)이 들어오면 '확인 필요'. 자동으로 예약하지 않습니다.
- * 3) 확정: 서류 기한이 지났는데 '서류 받음'이 없으면 취소.
- * 4) 빈자리가 생기면 그 타임의 대기 1번부터 입금 대기로 올리고 새 1시간 기한을 줍니다.
+ * 3) 확정: 서류 기한이 지났는데 '서류 받음'이 없으면 취소(cancelWithoutDocs 가 true 일 때만. 지금은 꺼 둠: 서류 없이도 면접 진행).
+ * 4) 빈자리가 생기면 그 타임의 대기 1번부터 입금 대기로 올리고 새 8시간 기한을 줍니다(+10분 유예·자동 취소는 같음).
  *    오픈 때부터 대기로 둔 타임은 대기가 waitlistReleaseCount 명 모일 때까지 올리지 않습니다.
  * '확인 필요' 줄은 자리를 잡지 않습니다. 세연님이 보고 상태를 '확정'으로 바꾸거나 환불합니다.
  */
 export function sweep(input: readonly MiRow[], now: number): MiRow[] {
-  const rows = input.map((r) => ({ ...r, log: [...r.log] }));
+  const rows = input.map((r) => ({ ...r, log: [...r.log], promotedFrom: undefined }));
   const units = new Map<string, MiRow[]>();
   for (const r of rows) {
     if (r.kind !== '예약' || r.status !== MI_STATUS.pending || r.payDeadline == null) continue;
@@ -313,7 +322,7 @@ export function sweep(input: readonly MiRow[], now: number): MiRow[] {
     if (r.status === MI_STATUS.cancelled && isUnpaidCancel(r.cancelReason) && (r.paidChecked || r.paidAt != null)) {
       needsCheck(r, now, `미입금 취소 뒤 입금 확정${r.paidAt != null ? `(입금 시각 ${formatKst(r.paidAt)})` : ''}`);
     }
-    if (r.status === MI_STATUS.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
+    if (MI_CONFIG.cancelWithoutDocs && r.status === MI_STATUS.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
       cancel(r, now, '서류 미제출');
     }
   }
@@ -323,13 +332,16 @@ export function sweep(input: readonly MiRow[], now: number): MiRow[] {
       if (isGated(rows, date, time)) continue;
       let free = MI_CONFIG.capacity - heldCount(rows, date, time);
       const queue = waitlistOf(rows, date, time);
+      let position = 0;
       while (free > 0 && queue.length > 0) {
         const next = queue.shift()!;
+        position += 1;
         next.status = MI_STATUS.pending;
         next.holdStartedAt = now;
-        next.payDeadline = now + MI_CONFIG.payWindowMs;
+        next.payDeadline = now + MI_CONFIG.promotedPayWindowMs;
         next.docsDeadline = docsDeadlineFor(date, now);
-        next.log.push(`${formatKst(now)} 대기에서 입금 대기로 승격`);
+        next.promotedFrom = position;
+        next.log.push(`${formatKst(now)} 대기 ${position}번에서 입금 대기로 승격`);
         free -= 1;
       }
     }
@@ -347,6 +359,33 @@ function needsCheck(r: MiRow, now: number, reason: string) {
   r.status = MI_STATUS.check;
   r.checkReason = reason;
   r.log.push(`${formatKst(now)} 확인 필요: ${reason}`);
+}
+
+/** '12월 12일 16시' (KST 날짜·시간 문자열에서) */
+export function slotMonthDayHour(date: string, time: string): string {
+  const [, m, d] = date.split('-').map(Number);
+  const [h, min] = time.split(':').map(Number);
+  return `${m}월 ${d}일 ${h}시${min ? ` ${min}분` : ''}`;
+}
+
+/** epoch ms → '11월 10일 05:00' (KST) */
+export function formatMonthDayTimeKst(ms: number): string {
+  const d = new Date(ms + KST_OFFSET_MS);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+/**
+ * 대기에서 입금 대기로 올라간 학생에게 보낼 문자(세연님 11/3 문구). Code.gs mi_promotionText 와 같아야 합니다.
+ * 예: '대기 1번 홍길동 학생, 현재 12월 12일 16시 3:1 모의면접 신청 가능합니다. 8시간 이내(12월 3일 22:00까지)에 입금 완료해 주시면 예약이 확정됩니다. 입금 계좌: …, 80,000원'
+ */
+export function waitlistPromotionText(position: number, depositor: string, date: string, time: string, payDeadline: number): string {
+  const hours = Math.round(MI_CONFIG.promotedPayWindowMs / 3600000);
+  return (
+    `대기 ${position}번 ${depositor} 학생, 현재 ${slotMonthDayHour(date, time)} 3:1 모의면접 신청 가능합니다. ` +
+    `${hours}시간 이내(${formatMonthDayTimeKst(payDeadline)}까지)에 입금 완료해 주시면 예약이 확정됩니다. ` +
+    `입금 계좌: ${MI_CONFIG.bankAccount}, ${MI_CONFIG.fee.toLocaleString('ko-KR')}원`
+  );
 }
 
 /** 대기 순번(1부터). 대기가 아니면 null */
