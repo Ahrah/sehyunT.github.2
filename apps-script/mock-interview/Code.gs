@@ -44,6 +44,8 @@ var MI = {
   PHOTO_CONSENT_REQUIRED: true,
   /** 확정·대기 승격 때 세연님에게 알림 메일을 보낼지 */
   NOTIFY_OWNER: true,
+  // '[문자발송]' 메일로 확정을 이미 알리면 같은 내용의 '[모의면접] 예약 확정' 메일은 보내지 않습니다(MailApp 하루 약 100통 한도 절약).
+  OWNER_CONFIRM_MAIL_WITH_SMS: false,
   OWNER_EMAIL: ['consultantsyssam', 'gmail.com'].join('@'),
   /**
    * 학생 문자(대기 승격·예약확정)는 세연님 메일로 '[문자발송] 모의면접' 메일을 한 통씩 보내고,
@@ -1052,7 +1054,7 @@ function mi_notifyOwner_(rows) {
   var keys = [], groups = {};
   rows.forEach(function (r) {
     // 대기 승격은 '[문자발송]' 메일 하나로 알립니다(아래 사람이 볼 내용 포함). 여기서는 따로 보내지 않습니다.
-    var type = r.justNeedsCheck ? 'check' : r.justConfirmed ? 'confirmed' : (r.justPromoted && !MI.SMS_BY_MAIL) ? 'promoted' : '';
+    var type = r.justNeedsCheck ? 'check' : (r.justConfirmed && (!MI.SMS_BY_MAIL || MI.OWNER_CONFIRM_MAIL_WITH_SMS)) ? 'confirmed' : r.justConfirmed ? '' : (r.justPromoted && !MI.SMS_BY_MAIL) ? 'promoted' : '';
     if (!type) return;
     var k = type + '|' + mi_payUnitKey(r);
     if (!groups[k]) { groups[k] = { type: type, rows: [] }; keys.push(k); }
@@ -1088,6 +1090,7 @@ function mi_notifyOwner_(rows) {
     }
     try { MailApp.sendEmail(MI.OWNER_EMAIL, subject, body); } catch (err) { console.warn('알림 메일 실패: ' + err); }
   });
+  try { var left = MailApp.getRemainingDailyQuota(); if (left < 20) console.warn('MailApp 오늘 남은 메일 ' + left + '통'); } catch (e2) {}
 }
 
 /** 추가 날짜·시간 오픈 신청 저장(입금 없음, 자리를 잡지 않음) */

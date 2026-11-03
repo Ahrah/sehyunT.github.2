@@ -190,7 +190,7 @@ function MockInterviewApply() {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetchStatus(now);
+      const res = await fetchStatus(nowRef.current);
       if (res.ok) {
         // 관리자가 연 추가 타임도 신청할 수 있게 합니다.
         setExtraSlots(res.extraSlots ?? []);
@@ -201,11 +201,34 @@ function MockInterviewApply() {
     } catch {
       setLoadError('신청할 수 있는 타임을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.');
     }
-  }, [now, setServerNow]);
+    // now 를 의존성에 넣으면 15초 시계마다 모든 탭이 동시에 서버를 읽습니다(오픈 순간 몰림). 시각은 ref 로 읽습니다.
+  }, [setServerNow]);
 
+  const nowRef = useRef(now);
+  nowRef.current = now;
+  const wasOpen = useRef(open);
   useEffect(() => {
     void refresh();
+    // 60초(+0~10초 흩뿌림)마다 빈자리를 다시 읽습니다.
+    let id = 0;
+    const loop = () => {
+      id = window.setTimeout(() => {
+        if (document.visibilityState === 'visible') void refresh();
+        loop();
+      }, 60000 + Math.random() * 10000);
+    };
+    loop();
+    return () => window.clearTimeout(id);
   }, [refresh]);
+  // 오픈되는 순간에는 0~5초 사이에 흩어서 한 번 다시 읽습니다.
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      const id = window.setTimeout(() => void refresh(), Math.random() * 5000);
+      wasOpen.current = open;
+      return () => window.clearTimeout(id);
+    }
+    wasOpen.current = open;
+  }, [open, refresh]);
 
   // 로그인한 회원이면 이름·휴대폰을 미리 채웁니다. 이미 적은 칸은 그대로 두고, 채운 칸도 고칠 수 있습니다.
   const touched = useRef(new Set<keyof MiForm>());
@@ -306,7 +329,8 @@ function MockInterviewApply() {
         void refresh();
       }
     } catch {
-      setErrors(['신청을 보내지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.']);
+      // 서버가 몰려 Google 오류 화면(HTML)을 돌려줘도 여기로 옵니다. 같은 이름·번호로 다시 눌러도 중복 신청은 막힙니다.
+      setErrors(['신청 결과를 받지 못했습니다(신청이 몰리거나 연결 문제). 잠시 뒤 같은 내용으로 다시 눌러 주세요. 이미 접수됐다면 기존 신청이 보입니다.']);
     } finally {
       setSending(false);
     }
