@@ -55,6 +55,9 @@ jobs:
           VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          # 모의면접 신청 Apps Script 웹 앱 주소(Settings → Secrets and variables → Actions → Variables).
+          # 비어 있으면 sehyunt.re.kr/mock-interview/ 는 '신청 접수 준비 중'으로 보이고 신청을 받지 않습니다.
+          VITE_MOCK_INTERVIEW_API_URL: ${{ vars.VITE_MOCK_INTERVIEW_API_URL }}
       - name: Writing style check
         continue-on-error: true
         run: npm run style:check
