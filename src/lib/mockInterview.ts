@@ -13,11 +13,18 @@ export const MI_CONFIG = {
   /** 신청 오픈: 2026-11-09(월) 21:00 KST */
   openAt: '2026-11-09T21:00:00+09:00',
   dates: ['2026-12-12', '2026-12-13', '2026-12-19', '2026-12-20'],
-  times: ['10:00', '11:00', '12:00'],
+  /** 신청을 받는 타임 */
+  times: ['16:00', '17:00', '18:00'],
+  /** '추가 날짜·시간 오픈 신청'에서 고를 수 있는 시간(이 밖의 시간은 직접 적습니다). 정규 타임과 따로입니다. */
+  extraRequestTimes: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
+  /** 추가 오픈 신청 연락처 보관 마지막 날(이날 밤 12시에 지웁니다) */
+  extraRequestKeepUntil: '2026-12-20',
   capacity: 4,
   fee: 80000,
   /** 신청(또는 대기 승격) 뒤 입금 기한 */
   payWindowMs: 60 * 60 * 1000,
+  /** 입금 기한 뒤 자동 취소까지 기다리는 시간. 입금 시각이 기한 + 10분 안이면 제때 입금으로 봅니다. Code.gs MI.PAY_GRACE_MS 와 같아야 합니다. */
+  payGraceMs: 10 * 60 * 1000,
   /** 서류 기한: 면접 날짜 7일 전 23:59:59 KST */
   docsDaysBefore: 7,
   /** 서류 기한이 지난 뒤 자리를 받은 학생에게 주는 서류 제출 시간 */
@@ -27,7 +34,12 @@ export const MI_CONFIG = {
   /** 사진 활용 동의를 필수로 받을지(세연님 결정: 필수). false 로 바꾸면 선택 동의가 됩니다. */
   photoConsentRequired: true,
   docsEmail: ['consultantsyssam', 'gmail.com'].join('@'),
-  bankAccount: '[계좌번호 입력 예정]',
+  bankName: '카카오뱅크',
+  bankNumber: '3333-38-6269721',
+  bankHolder: '입시는세연쌤',
+  bankAccount: '카카오뱅크 3333-38-6269721 (입시는세연쌤)',
+  /** 환불 규정이 아직 초안인지(화면에 '확정 전' 표시) */
+  refundDraft: true,
 } as const;
 
 export const MI_STATUS = {
@@ -35,11 +47,13 @@ export const MI_STATUS = {
   confirmed: '확정',
   waitlist: '대기',
   cancelled: '취소',
-  request: '요청 접수',
+  /** 자동으로 처리하지 않고 세연님이 보는 줄(기한 뒤 입금, 미입금 취소 뒤 입금 확정). 자리를 잡지 않습니다. */
+  check: '확인 필요',
+  extraRequest: '추가 오픈 신청',
 } as const;
 export type MiStatus = (typeof MI_STATUS)[keyof typeof MI_STATUS];
 
-export type MiKind = '예약' | '요청';
+export type MiKind = '예약' | '추가 오픈';
 
 export type MiRow = {
   id: string;
@@ -53,12 +67,14 @@ export type MiRow = {
   /** 입금 대기로 바뀐 시각(신청 또는 대기 승격) */
   holdStartedAt: number | null;
   docsDeadline: number | null;
-  /** 세연님이 입력하는 칸 */
+  /** 세연님이 입력하는 칸: '입금 확정' 체크, (선택) 은행 입금 시각, '미입금' 체크 */
   paidChecked: boolean;
   paidAt: number | null;
   unpaidChecked: boolean;
   docsReceived: boolean;
   cancelReason: string;
+  /** '확인 필요'가 된 까닭 */
+  checkReason?: string;
   log: string[];
 };
 
@@ -170,27 +186,50 @@ export function newBookingRow(rows: readonly MiRow[], id: string, date: string, 
   };
 }
 
+/** 미입금으로 취소된 줄인지(자동 취소·'미입금' 체크·예전 문구) */
+export function isUnpaidCancel(reason: string): boolean {
+  return /^미입금/.test(reason) || reason === '1시간 안에 입금하지 않음';
+}
+
+/** 자동 취소 기준 시각: 입금 기한 + 10분 */
+export function payGraceEnd(payDeadline: number): number {
+  return payDeadline + MI_CONFIG.payGraceMs;
+}
+
 /**
  * 시간 트리거가 하는 일(서버와 같은 규칙).
- * 1) 입금 대기: 세연님이 입금 확인 + 입금 시각(기한 안)을 넣으면 확정.
- *    기한 뒤 입금 시각이 들어오면 취소. 기한이 지났고 '미입금'에 체크되어 있으면 취소.
- *    기한이 지났어도 세연님이 아직 확인하지 않았으면 그대로 둡니다.
- * 2) 확정: 서류 기한이 지났는데 '서류 받음'이 없으면 취소.
- * 3) 빈자리가 생기면 그 타임의 대기 1번부터 입금 대기로 올리고 새 1시간 기한을 줍니다.
+ * 1) 입금 대기
+ *    - '입금 확정' 체크 → 확정. 단, 입금 시각(없으면 지금 시각)이 '입금 기한 + 10분' 뒤면 확정하지 않고 '확인 필요'.
+ *    - '입금 시각'만 적혀 있고 그 시각이 '입금 기한 + 10분' 뒤여도 '확인 필요'.
+ *    - 입금 확정 없이 '입금 기한 + 10분'이 지나면 자동 취소(취소 사유 '미입금(…)'). 자리가 비고 대기 1번이 올라갑니다.
+ *    - (손으로) 기한이 지났고 '미입금'에 체크하면 10분을 기다리지 않고 바로 취소.
+ * 2) 미입금으로 취소된 줄에 '입금 확정'(또는 입금 시각)이 들어오면 '확인 필요'. 자동으로 예약하지 않습니다.
+ * 3) 확정: 서류 기한이 지났는데 '서류 받음'이 없으면 취소.
+ * 4) 빈자리가 생기면 그 타임의 대기 1번부터 입금 대기로 올리고 새 1시간 기한을 줍니다.
+ * '확인 필요' 줄은 자리를 잡지 않습니다. 세연님이 보고 상태를 '확정'으로 바꾸거나 환불합니다.
  */
 export function sweep(input: readonly MiRow[], now: number): MiRow[] {
   const rows = input.map((r) => ({ ...r, log: [...r.log] }));
   for (const r of rows) {
     if (r.kind !== '예약') continue;
     if (r.status === MI_STATUS.pending && r.payDeadline != null) {
-      if (r.paidAt != null && r.paidAt > r.payDeadline) {
-        cancel(r, now, '입금 기한 뒤 입금(환불 안내 필요)');
-      } else if (r.paidChecked && r.paidAt != null) {
-        r.status = MI_STATUS.confirmed;
-        r.log.push(`${formatKst(now)} 확정`);
+      const graceEnd = payGraceEnd(r.payDeadline);
+      if (r.paidAt != null && r.paidAt > graceEnd) {
+        needsCheck(r, now, `입금 기한(${formatKst(r.payDeadline)}) + 10분 뒤 입금(입금 시각 ${formatKst(r.paidAt)})`);
+      } else if (r.paidChecked) {
+        if (r.paidAt == null && now > graceEnd) {
+          needsCheck(r, now, `입금 기한(${formatKst(r.payDeadline)}) + 10분 뒤 입금 확정(입금 시각 없음)`);
+        } else {
+          r.status = MI_STATUS.confirmed;
+          r.log.push(`${formatKst(now)} 확정`);
+        }
+      } else if (now > graceEnd) {
+        cancel(r, now, `미입금(입금 기한 ${formatKst(r.payDeadline)} + 10분 지남)`);
       } else if (now > r.payDeadline && r.unpaidChecked) {
-        cancel(r, now, '1시간 안에 입금하지 않음');
+        cancel(r, now, '미입금(미입금 체크)');
       }
+    } else if (r.status === MI_STATUS.cancelled && isUnpaidCancel(r.cancelReason) && (r.paidChecked || r.paidAt != null)) {
+      needsCheck(r, now, `미입금 취소 뒤 입금 확정${r.paidAt != null ? `(입금 시각 ${formatKst(r.paidAt)})` : ''}`);
     }
     if (r.status === MI_STATUS.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
       cancel(r, now, '서류 미제출');
@@ -219,6 +258,12 @@ function cancel(r: MiRow, now: number, reason: string) {
   r.status = MI_STATUS.cancelled;
   r.cancelReason = reason;
   r.log.push(`${formatKst(now)} 취소: ${reason}`);
+}
+
+function needsCheck(r: MiRow, now: number, reason: string) {
+  r.status = MI_STATUS.check;
+  r.checkReason = reason;
+  r.log.push(`${formatKst(now)} 확인 필요: ${reason}`);
 }
 
 /** 대기 순번(1부터). 대기가 아니면 null */
@@ -257,7 +302,6 @@ export type MiForm = {
   kind: MiKind;
   date: string;
   time: string;
-  requestText: string;
   studentName: string;
   school: string;
   track: string;
@@ -278,7 +322,6 @@ export const EMPTY_FORM: MiForm = {
   kind: '예약',
   date: '',
   time: '',
-  requestText: '',
   studentName: '',
   school: '',
   track: '',
@@ -305,16 +348,13 @@ export function isPhone(v: string): boolean {
 /** 빈 배열이면 통과. 각 항목은 학생·학부모에게 보여 줄 문장입니다. */
 export function validateForm(f: MiForm, photoRequired: boolean = MI_CONFIG.photoConsentRequired): string[] {
   const errors: string[] = [];
-  if (f.kind === '예약') {
-    if (!isValidSlot(f.date, f.time)) errors.push('날짜와 시간을 골라 주세요.');
-  } else if (f.requestText.trim().length < 2) {
-    errors.push('원하는 날짜·요일·시간을 적어 주세요.');
-  }
+  if (f.kind !== '예약') return ['신청 구분이 올바르지 않습니다.'];
+  if (!isValidSlot(f.date, f.time)) errors.push('날짜와 시간을 골라 주세요.');
   if (!f.studentName.trim()) errors.push('학생 이름을 적어 주세요.');
   if (!f.school.trim()) errors.push('지원 학교를 적어 주세요.');
   if (!f.track.trim()) errors.push('지원 전형을 적어 주세요.');
   if (!isPhone(f.phone)) errors.push('휴대폰 번호를 확인해 주세요.');
-  if (f.kind === '예약' && !f.depositor.trim()) errors.push('입금자명을 적어 주세요.');
+  if (!f.depositor.trim()) errors.push('입금자명을 적어 주세요.');
   if (f.under14) {
     if (!f.guardianName.trim()) errors.push('보호자 이름을 적어 주세요.');
     if (!isPhone(f.guardianPhone)) errors.push('보호자 연락처를 확인해 주세요.');
@@ -324,4 +364,84 @@ export function validateForm(f: MiForm, photoRequired: boolean = MI_CONFIG.photo
   if (!f.consentVideo) errors.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (photoRequired && !f.consentPhoto) errors.push('사진 활용에 동의해야 신청할 수 있습니다.');
   return errors;
+}
+
+/* ---------- 추가 날짜·시간 오픈 신청(대기·추가 타임 연락용, 입금 없음) ---------- */
+
+/** 목록에 없는 날짜·시간을 직접 적을 때 고르는 값 */
+export const OTHER_CHOICE = 'other';
+
+export type MiExtraRequest = {
+  /** MI_CONFIG.dates 중 하나 또는 OTHER_CHOICE */
+  date: string;
+  dateText: string;
+  /** MI_CONFIG.extraRequestTimes 중 하나 또는 OTHER_CHOICE */
+  time: string;
+  timeText: string;
+  name: string;
+  phone: string;
+  under14: boolean;
+  guardianName: string;
+  guardianPhone: string;
+  guardianConsent: boolean;
+  consentPrivacy: boolean;
+  website: string;
+};
+
+export const EMPTY_EXTRA_REQUEST: MiExtraRequest = {
+  date: '',
+  dateText: '',
+  time: '',
+  timeText: '',
+  name: '',
+  phone: '',
+  under14: false,
+  guardianName: '',
+  guardianPhone: '',
+  guardianConsent: false,
+  consentPrivacy: false,
+  website: '',
+};
+
+/** 이용 목적(동의 문구·시트 칸에 같은 말을 씁니다) */
+export const EXTRA_REQUEST_PURPOSE = '대기·추가 타임 연락';
+
+const WISH_MAX = 40;
+
+/** 시트에 남길 희망 날짜: 고른 날짜(yyyy-mm-dd) 또는 직접 적은 글 */
+export function wishDateOf(f: Pick<MiExtraRequest, 'date' | 'dateText'>): string {
+  if ((MI_CONFIG.dates as readonly string[]).includes(f.date)) return f.date;
+  return f.date === OTHER_CHOICE ? f.dateText.trim().slice(0, WISH_MAX) : '';
+}
+
+/** 시트에 남길 희망 시간: 고른 시간(HH:mm) 또는 직접 적은 글 */
+export function wishTimeOf(f: Pick<MiExtraRequest, 'time' | 'timeText'>): string {
+  if ((MI_CONFIG.extraRequestTimes as readonly string[]).includes(f.time)) return f.time;
+  return f.time === OTHER_CHOICE ? f.timeText.trim().slice(0, WISH_MAX) : '';
+}
+
+/** 추가 오픈 신청 연락처를 지우는 시각: 보관 마지막 날 23:59:59.999 KST */
+export function extraRequestPurgeAt(): number {
+  return Date.parse(`${MI_CONFIG.extraRequestKeepUntil}T23:59:59.999+09:00`);
+}
+
+export function validateExtraRequest(f: MiExtraRequest): string[] {
+  const errors: string[] = [];
+  if (!wishDateOf(f)) errors.push(f.date === OTHER_CHOICE ? '원하는 날짜를 적어 주세요.' : '원하는 날짜를 골라 주세요.');
+  if (!wishTimeOf(f)) errors.push(f.time === OTHER_CHOICE ? '원하는 시간을 적어 주세요.' : '원하는 시간을 골라 주세요.');
+  if (!f.name.trim()) errors.push('이름을 적어 주세요.');
+  if (!isPhone(f.phone)) errors.push('연락처를 확인해 주세요.');
+  if (f.under14) {
+    if (!f.guardianName.trim()) errors.push('보호자 이름을 적어 주세요.');
+    if (!isPhone(f.guardianPhone)) errors.push('보호자 연락처를 확인해 주세요.');
+    if (!f.guardianConsent) errors.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
+  }
+  if (!f.consentPrivacy) errors.push('개인정보 수집·이용에 동의해야 추가 오픈 신청을 할 수 있습니다.');
+  return errors;
+}
+
+/** '12/20' */
+export function formatMonthDay(date: string): string {
+  const [, m, d] = date.split('-');
+  return `${Number(m)}/${Number(d)}`;
 }

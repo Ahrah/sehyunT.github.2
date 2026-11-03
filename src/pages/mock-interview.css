@@ -79,3 +79,14 @@
 .mi-placeholder { color: var(--mi-muted); font-weight: 700; }
 .mi-footer { padding: 32px 0 48px; color: var(--mi-muted); font-size: 13px; }
 .mi-footer p { margin: 2px 0; }
+.mi-slot.is-request { border-style: dashed; border-color: #6b5aa8; color: #6b5aa8; }
+.mi-slot.is-request.is-active { background: #6b5aa8; color: #fff; }
+.mi-submit-light { background: #6b5aa8; }
+.mi-result-inline { background: #f1eefa; border-radius: 10px; padding: 12px 14px; font-weight: 700; }
+.mi-test-banner a { color: #5c4600; font-weight: 700; }
+.mi-qna { display: grid; gap: 8px; }
+.mi-qna-item { border: 1px solid var(--mi-line); border-radius: 10px; padding: 10px 14px; }
+.mi-qna-item summary { font-weight: 800; cursor: pointer; }
+.mi-qna-item p { margin: 8px 0 0; }
+.mi-extra-link { margin-top: 12px; background: none; border: 1px dashed #6b5aa8; color: #6b5aa8; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+.mi-extra-link:disabled { opacity: 0.5; cursor: default; }

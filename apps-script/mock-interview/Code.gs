@@ -3,7 +3,10 @@
  *
  * - 홈페이지(sehyunt.re.kr/mock-interview/)가 이 웹 앱에 신청을 보냅니다.
  * - 신청 내역은 이 스프레드시트의 '신청' 탭에 쌓입니다.
- * - 학생에게 메일·문자를 자동으로 보내지 않습니다.
+ * - '추가 날짜·시간 오픈 신청'은 '추가 오픈 신청' 탭에 쌓입니다(희망 날짜·희망 시간·이름·연락처, 입금 없음).
+ * - 입금 확인은 손으로 합니다(기본): 세연님이 '입금 확정' 칸에 체크하면 5분 안에 '확정'으로 바뀌고
+ *   세연님 메일로 확정 안내 메일이 옵니다. 학생 이메일은 받지 않으므로 학생에게 직접 메일을 보내지 않습니다.
+ * - [입금알림] 메일 자동 확인은 나중에 켤 수 있는 선택 기능입니다(AUTO_DEPOSIT_CHECK, 기본 꺼짐).
  * - 좌석·대기·기한 규칙은 홈페이지 코드 src/lib/mockInterview.ts 와 같습니다.
  *
  * 설치 방법은 같은 폴더의 README.md 를 보세요.
@@ -13,31 +16,52 @@ var MI = {
   SHEET: '신청',
   OPEN_AT: '2026-11-09T21:00:00+09:00',
   DATES: ['2026-12-12', '2026-12-13', '2026-12-19', '2026-12-20'],
-  TIMES: ['10:00', '11:00', '12:00'],
+  TIMES: ['16:00', '17:00', '18:00'],
+  EXTRA_REQUEST_TIMES: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
+  EXTRA_REQUEST_SHEET: '추가 오픈 신청',
+  /** 예전 이름의 탭이 남아 있으면 같은 보관 기한에 함께 비웁니다. */
+  EXTRA_REQUEST_OLD_SHEETS: ['오픈 알림 신청'],
+  EXTRA_REQUEST_KEEP_UNTIL: '2026-12-20',
+  EXTRA_REQUEST_PURPOSE: '대기·추가 타임 연락',
+  FEE: 80000,
   CAPACITY: 4,
   PAY_WINDOW_MS: 60 * 60 * 1000,
+  /** 입금 기한 뒤 자동 취소까지 기다리는 시간(10분). 입금 시각이 기한 + 10분 안이면 제때 입금으로 봅니다. */
+  PAY_GRACE_MS: 10 * 60 * 1000,
   DOCS_DAYS_BEFORE: 7,
   DOCS_GRACE_MS: 24 * 60 * 60 * 1000,
   BOOKING_CLOSE_MS: 24 * 60 * 60 * 1000,
   PHOTO_CONSENT_REQUIRED: true,
+  /** 확정·대기 승격 때 세연님에게 알림 메일을 보낼지 */
+  NOTIFY_OWNER: true,
+  OWNER_EMAIL: ['consultantsyssam', 'gmail.com'].join('@'),
+  /** [입금알림] 메일 자동 확인(선택 기능). 켜기 전에 README '선택: 입금 알림 자동 확인'을 따르세요. */
+  AUTO_DEPOSIT_CHECK: false,
+  DEPOSIT_SHEET: '입금알림 기록',
   TZ: 'Asia/Seoul'
 };
 
-var ST = { pending: '입금 대기', confirmed: '확정', waitlist: '대기', cancelled: '취소', request: '요청 접수' };
+/** 상태 값. 미입금 자동 취소도 '취소'이고 취소 사유가 '미입금(…)'으로 시작합니다. '확인 필요'는 자리를 잡지 않습니다. */
+var ST = { pending: '입금 대기', confirmed: '확정', waitlist: '대기', cancelled: '취소', check: '확인 필요' };
 
 /** 시트 열. 순서를 바꿔도 코드는 머리글 이름으로 찾습니다. 이름은 바꾸지 마세요. */
 var COLS = [
   '신청번호', '신청 시각', '구분', '날짜', '시간', '상태', '대기 순번',
-  '입금 기한', '입금 확인', '입금 시각', '미입금',
+  '입금 기한', '입금 확정', '입금 시각', '미입금',
   '서류 기한', '서류 받음',
-  '학생 이름', '지원 학교', '지원 전형', '휴대폰', '입금자명', '희망 일시(요청)',
+  '학생 이름', '지원 학교', '지원 전형', '휴대폰', '입금자명',
   '만 14세 미만', '보호자 이름', '보호자 연락처', '보호자 동의', '보호자 동의 시각',
   '개인정보 동의', '개인정보 동의 시각', '영상 동의', '영상 동의 시각', '사진 동의', '사진 동의 시각',
-  '입금 대기 시작', '취소 사유', '처리 기록', '메모'
+  '입금 대기 시작', '취소 사유', '처리 기록', '메모',
+  /** 새 열은 맨 뒤에 붙입니다(setup 을 다시 실행하면 빠진 머리글을 붙입니다). */
+  '확인 필요 사유'
 ];
 /** 스크립트가 고치는 열(세연님이 입력하는 칸은 덮어쓰지 않습니다) */
-var SCRIPT_OWNED = ['상태', '대기 순번', '입금 기한', '서류 기한', '입금 대기 시작', '취소 사유', '처리 기록'];
-var CHECKBOX_COLS = ['입금 확인', '미입금', '서류 받음'];
+var SCRIPT_OWNED = ['상태', '대기 순번', '입금 기한', '서류 기한', '입금 대기 시작', '취소 사유', '처리 기록', '확인 필요 사유'];
+var CHECKBOX_COLS = ['입금 확정', '미입금', '서류 받음'];
+var EXTRA_REQ_COLS = ['신청번호', '신청 시각', '희망 날짜', '희망 시간', '이름', '연락처', '만 14세 미만', '보호자 이름',
+  '보호자 연락처', '보호자 동의', '개인정보 동의', '동의 시각', '이용 목적', '보관 기한', '메모'];
+var DEPOSIT_COLS = ['메일 시각', '금액', '입금자명', '결과', '신청번호', '메일 ID'];
 
 /* ===================== 규칙(순수 함수, 테스트 대상) ===================== */
 
@@ -88,20 +112,42 @@ function mi_cancel(r, now, reason) {
   r.log.push(mi_fmt(now) + ' 취소: ' + reason);
   r.changed = true;
 }
-/** 시간 트리거 규칙. rows 를 직접 고치고, 고친 행에 changed=true 를 붙입니다. */
+function mi_needsCheck(r, now, reason) {
+  r.status = ST.check;
+  r.checkReason = reason;
+  r.log.push(mi_fmt(now) + ' 확인 필요: ' + reason);
+  r.changed = true;
+  r.justNeedsCheck = true;
+}
+/** 미입금으로 취소된 줄인지(자동 취소·'미입금' 체크·예전 문구) */
+function mi_isUnpaidCancel(reason) {
+  return /^미입금/.test(reason) || reason === '1시간 안에 입금하지 않음';
+}
+function mi_payGraceEnd(payDeadline) { return payDeadline + MI.PAY_GRACE_MS; }
+/** 시간 트리거 규칙(src/lib/mockInterview.ts sweep 과 같음). rows 를 직접 고치고, 고친 행에 changed=true 를 붙입니다. */
 function mi_sweep(rows, now) {
   rows.forEach(function (r) {
     if (r.kind !== '예약') return;
     if (r.status === ST.pending && r.payDeadline != null) {
-      if (r.paidAt != null && r.paidAt > r.payDeadline) {
-        mi_cancel(r, now, '입금 기한 뒤 입금(환불 안내 필요)');
-      } else if (r.paidChecked && r.paidAt != null) {
-        r.status = ST.confirmed;
-        r.log.push(mi_fmt(now) + ' 확정');
-        r.changed = true;
+      var graceEnd = mi_payGraceEnd(r.payDeadline);
+      if (r.paidAt != null && r.paidAt > graceEnd) {
+        mi_needsCheck(r, now, '입금 기한(' + mi_fmt(r.payDeadline) + ') + 10분 뒤 입금(입금 시각 ' + mi_fmt(r.paidAt) + ')');
+      } else if (r.paidChecked) {
+        if (r.paidAt == null && now > graceEnd) {
+          mi_needsCheck(r, now, '입금 기한(' + mi_fmt(r.payDeadline) + ') + 10분 뒤 입금 확정(입금 시각 없음)');
+        } else {
+          r.status = ST.confirmed;
+          r.log.push(mi_fmt(now) + ' 확정');
+          r.changed = true;
+          r.justConfirmed = true;
+        }
+      } else if (now > graceEnd) {
+        mi_cancel(r, now, '미입금(입금 기한 ' + mi_fmt(r.payDeadline) + ' + 10분 지남)');
       } else if (now > r.payDeadline && r.unpaidChecked) {
-        mi_cancel(r, now, '1시간 안에 입금하지 않음');
+        mi_cancel(r, now, '미입금(미입금 체크)');
       }
+    } else if (r.status === ST.cancelled && mi_isUnpaidCancel(r.cancelReason) && (r.paidChecked || r.paidAt != null)) {
+      mi_needsCheck(r, now, '미입금 취소 뒤 입금 확정' + (r.paidAt != null ? '(입금 시각 ' + mi_fmt(r.paidAt) + ')' : ''));
     }
     if (r.status === ST.confirmed && r.docsDeadline != null && now > r.docsDeadline && !r.docsReceived) {
       mi_cancel(r, now, '서류 미제출');
@@ -120,6 +166,7 @@ function mi_sweep(rows, now) {
         next.docsDeadline = mi_docsDeadlineFor(date, now);
         next.log.push(mi_fmt(now) + ' 대기에서 입금 대기로 승격');
         next.changed = true;
+        next.justPromoted = true;
         free -= 1;
       }
     });
@@ -137,14 +184,13 @@ function mi_str(v, max) { return String(v == null ? '' : v).trim().slice(0, max 
 /** 신청서 검사. 빈 배열이면 통과 */
 function mi_validate(f) {
   var e = [];
-  if (f.kind !== '예약' && f.kind !== '요청') e.push('신청 구분이 올바르지 않습니다.');
-  if (f.kind === '예약' && !mi_isValidSlot(f.date, f.time)) e.push('날짜와 시간을 골라 주세요.');
-  if (f.kind === '요청' && mi_str(f.requestText).length < 2) e.push('원하는 날짜·요일·시간을 적어 주세요.');
+  if (f.kind !== '예약') return ['신청 구분이 올바르지 않습니다.'];
+  if (!mi_isValidSlot(f.date, f.time)) e.push('날짜와 시간을 골라 주세요.');
   if (!mi_str(f.studentName)) e.push('학생 이름을 적어 주세요.');
   if (!mi_str(f.school)) e.push('지원 학교를 적어 주세요.');
   if (!mi_str(f.track)) e.push('지원 전형을 적어 주세요.');
   if (!mi_isPhone(f.phone)) e.push('휴대폰 번호를 확인해 주세요.');
-  if (f.kind === '예약' && !mi_str(f.depositor)) e.push('입금자명을 적어 주세요.');
+  if (!mi_str(f.depositor)) e.push('입금자명을 적어 주세요.');
   if (f.under14 === true) {
     if (!mi_str(f.guardianName)) e.push('보호자 이름을 적어 주세요.');
     if (!mi_isPhone(f.guardianPhone)) e.push('보호자 연락처를 확인해 주세요.');
@@ -154,6 +200,58 @@ function mi_validate(f) {
   if (f.consentVideo !== true) e.push('면접 영상 촬영에 동의해야 신청할 수 있습니다.');
   if (MI.PHOTO_CONSENT_REQUIRED && f.consentPhoto !== true) e.push('사진 활용에 동의해야 신청할 수 있습니다.');
   return e;
+}
+
+/** 추가 날짜·시간 오픈 신청: 고른 날짜(yyyy-mm-dd) 또는 직접 적은 글. 없으면 ''. */
+function mi_wishDateOf(f) {
+  if (MI.DATES.indexOf(f.date) >= 0) return f.date;
+  return f.date === 'other' ? mi_str(f.dateText, 40) : '';
+}
+/** 추가 날짜·시간 오픈 신청: 고른 시간(HH:mm) 또는 직접 적은 글. 없으면 ''. */
+function mi_wishTimeOf(f) {
+  if (MI.EXTRA_REQUEST_TIMES.indexOf(f.time) >= 0) return f.time;
+  return f.time === 'other' ? mi_str(f.timeText, 40) : '';
+}
+
+/** 추가 날짜·시간 오픈 신청 검사 */
+function mi_validateExtraRequest(f) {
+  var e = [];
+  if (!mi_wishDateOf(f)) e.push(f.date === 'other' ? '원하는 날짜를 적어 주세요.' : '원하는 날짜를 골라 주세요.');
+  if (!mi_wishTimeOf(f)) e.push(f.time === 'other' ? '원하는 시간을 적어 주세요.' : '원하는 시간을 골라 주세요.');
+  if (!mi_str(f.name)) e.push('이름을 적어 주세요.');
+  if (!mi_isPhone(f.phone)) e.push('연락처를 확인해 주세요.');
+  if (f.under14 === true) {
+    if (!mi_str(f.guardianName)) e.push('보호자 이름을 적어 주세요.');
+    if (!mi_isPhone(f.guardianPhone)) e.push('보호자 연락처를 확인해 주세요.');
+    if (f.guardianConsent !== true) e.push('만 14세 미만은 보호자 동의가 있어야 신청할 수 있습니다.');
+  }
+  if (f.consentPrivacy !== true) e.push('개인정보 수집·이용에 동의해야 추가 오픈 신청을 할 수 있습니다.');
+  return e;
+}
+function mi_extraRequestPurgeAt() { return Date.parse(MI.EXTRA_REQUEST_KEEP_UNTIL + 'T23:59:59.999+09:00'); }
+
+/**
+ * [입금알림] 메일 한 통을 읽습니다(선택 기능). 읽지 못하면 null.
+ * 예상 형식(시험 전, 실제 문구 확인 필요): '[카카오뱅크] 입금 80,000원 홍길동' 또는 줄바꿈으로 나뉜 형태.
+ * 시각은 메일을 받은 시각을 씁니다.
+ */
+function mi_parseDepositMail(text, receivedAt) {
+  var t = String(text || '').replace(/\r/g, '');
+  if (t.indexOf('입금') < 0 || /출금|결제|취소/.test(t)) return null;
+  var m = t.match(/입금\s*([0-9][0-9,]*)\s*원[\s\/|·,]*([^\s\/|·,0-9][^\n\/|·,]*?)\s*(?:\n|\/|\||잔액|$)/);
+  if (!m) return null;
+  var name = m[2].replace(/\s+/g, '').trim();
+  if (!name) return null;
+  return { amount: Number(m[1].replace(/,/g, '')), name: name, at: receivedAt };
+}
+/** 입금 1건을 맞출 입금 대기 신청을 고릅니다. 정확히 1건이면 그 행, 아니면 null(손으로 확인). */
+function mi_matchDeposit(rows, dep) {
+  var hits = rows.filter(function (r) {
+    return r.kind === '예약' && r.status === ST.pending && !r.paidChecked && dep.amount === MI.FEE &&
+      String(r.depositor || '').replace(/\s+/g, '') === dep.name &&
+      (r.holdStartedAt == null || dep.at >= r.holdStartedAt - 5 * 60000);
+  });
+  return hits.length === 1 ? hits[0] : null;
 }
 
 /* ===================== 웹 앱 ===================== */
@@ -168,11 +266,12 @@ function doPost(e) {
   var now = Date.now();
   var f;
   try { f = JSON.parse(e.postData.contents); } catch (err) { return mi_json_({ ok: false, error: '신청서를 읽지 못했습니다.' }); }
-  if (f.website) return mi_json_({ ok: true, id: 'ignored', status: ST.request }); // 스팸 방지 칸
+  if (f.website) return mi_json_({ ok: true, id: 'ignored' }); // 스팸 방지 칸
+  if (f.action === 'extraRequest') return mi_extraRequest_(f, now);
   if (!mi_isOpen(now)) return mi_json_({ ok: false, error: '11/9(월) 밤 9시에 신청이 열립니다.' });
   var errors = mi_validate(f);
   if (errors.length) return mi_json_({ ok: false, error: errors.join(' ') });
-  if (f.kind === '예약' && now >= mi_bookingClosesAt(f.date, f.time)) {
+  if (now >= mi_bookingClosesAt(f.date, f.time)) {
     return mi_json_({ ok: false, error: '이 시간은 신청이 마감되었습니다.' });
   }
 
@@ -186,17 +285,16 @@ function doPost(e) {
 
     var phone = mi_phone(f.phone);
     var dup = data.rows.some(function (r) {
-      return r.phone === phone && r.status !== ST.cancelled &&
-        (f.kind === '요청' ? r.kind === '요청' : (r.kind === '예약' && r.date === f.date && r.time === f.time));
+      return r.phone === phone && r.status !== ST.cancelled && r.kind === '예약' && r.date === f.date && r.time === f.time;
     });
     if (dup) return mi_json_({ ok: false, error: '같은 휴대폰 번호로 이미 신청한 시간입니다.' });
 
     var id = 'MI-' + Utilities.formatDate(new Date(now), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
-    var status = f.kind === '예약' ? mi_initialStatus(data.rows, f.date, f.time) : ST.request;
+    var status = mi_initialStatus(data.rows, f.date, f.time);
     var holding = status === ST.pending;
     var r = {
       id: id, appliedAt: now, kind: f.kind,
-      date: f.kind === '예약' ? f.date : '', time: f.kind === '예약' ? f.time : '',
+      date: f.date, time: f.time,
       status: status,
       payDeadline: holding ? now + MI.PAY_WINDOW_MS : null,
       holdStartedAt: holding ? now : null,
@@ -209,10 +307,10 @@ function doPost(e) {
     var rec = {
       '신청번호': id, '신청 시각': stamp, '구분': f.kind, '날짜': r.date, '시간': r.time, '상태': status,
       '대기 순번': position || '',
-      '입금 기한': holding ? new Date(r.payDeadline) : '', '입금 확인': false, '입금 시각': '', '미입금': false,
+      '입금 기한': holding ? new Date(r.payDeadline) : '', '입금 확정': false, '입금 시각': '', '미입금': false,
       '서류 기한': holding ? new Date(r.docsDeadline) : '', '서류 받음': false,
       '학생 이름': mi_str(f.studentName, 40), '지원 학교': mi_str(f.school, 60), '지원 전형': mi_str(f.track, 60),
-      '휴대폰': mi_phone(f.phone), '입금자명': mi_str(f.depositor, 40), '희망 일시(요청)': f.kind === '요청' ? mi_str(f.requestText, 300) : '',
+      '휴대폰': mi_phone(f.phone), '입금자명': mi_str(f.depositor, 40),
       '만 14세 미만': f.under14 === true ? 'Y' : 'N',
       '보호자 이름': f.under14 === true ? mi_str(f.guardianName, 40) : '',
       '보호자 연락처': f.under14 === true ? mi_phone(f.guardianPhone) : '',
@@ -246,12 +344,136 @@ function sweepNow() {
   if (!lock.tryLock(30000)) return;
   try {
     var sheet = mi_sheet_();
+    var now = Date.now();
     var data = mi_readRows_(sheet);
-    mi_sweep(data.rows, Date.now());
+    if (MI.AUTO_DEPOSIT_CHECK) checkDepositMails_(sheet, data, now);
+    mi_sweep(data.rows, now);
     mi_writeChanged_(sheet, data);
+    mi_notifyOwner_(data.rows);
+    mi_purgeExtraRequests_(now);
   } finally {
     lock.releaseLock();
   }
+}
+
+/** 확정·대기 승격이 생기면 세연님 메일로 알립니다. 학생에게 보낼 문자 문구도 함께 넣습니다. */
+function mi_notifyOwner_(rows) {
+  if (!MI.NOTIFY_OWNER) return;
+  rows.forEach(function (r) {
+    if (!r.justConfirmed && !r.justPromoted && !r.justNeedsCheck) return;
+    var slot = r.date + ' ' + r.time;
+    var subject, body;
+    if (r.justNeedsCheck) {
+      subject = '[모의면접] 확인 필요 ' + slot + ' ' + r.studentName;
+      body = '자동으로 확정하지 않았습니다. 확인해 주세요.\n신청번호: ' + r.id + '\n학생: ' + r.studentName + '\n휴대폰: ' + r.phone +
+        '\n타임: ' + slot + '\n입금자명: ' + r.depositor + '\n사유: ' + r.checkReason +
+        '\n\n이 줄은 자리를 잡지 않습니다. 그 타임에 빈자리가 있으면 상태를 \'확정\'으로 바꾸고, 없으면 환불해 주세요.';
+    } else if (r.justConfirmed) {
+      subject = '[모의면접] 예약 확정 ' + slot + ' ' + r.studentName;
+      body = '예약을 확정했습니다.\n신청번호: ' + r.id + '\n학생: ' + r.studentName + '\n휴대폰: ' + r.phone + '\n타임: ' + slot +
+        '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + r.studentName + ' 학생 12월 3:1 모의면접 ' + slot + ' 예약이 확정되었습니다. ' +
+        '면접 1주 전까지 생기부와 자소서를 ' + MI.OWNER_EMAIL + '으로 보내 주세요.';
+    } else {
+      subject = '[모의면접] 대기 승격, 연락 필요 ' + slot + ' ' + r.studentName;
+      body = '대기에서 입금 대기로 바뀌었습니다. 학생에게 연락해 주세요.\n신청번호: ' + r.id + '\n학생: ' + r.studentName +
+        '\n휴대폰: ' + r.phone + '\n타임: ' + slot + '\n입금 기한: ' + mi_fmt(r.payDeadline) +
+        '\n\n학생에게 보낼 문자 예시\n[입시는세연쌤] ' + slot + ' 모의면접 자리가 났습니다. ' + mi_fmt(r.payDeadline) +
+        '까지 ' + MI.FEE.toLocaleString() + '원을 입금해 주세요.';
+    }
+    try { MailApp.sendEmail(MI.OWNER_EMAIL, subject, body); } catch (err) { console.warn('알림 메일 실패: ' + err); }
+  });
+}
+
+/** 추가 날짜·시간 오픈 신청 저장(입금 없음, 자리를 잡지 않음) */
+function mi_extraRequest_(f, now) {
+  if (!mi_isOpen(now)) return mi_json_({ ok: false, error: '11/9(월) 밤 9시부터 신청할 수 있습니다.' });
+  var errors = mi_validateExtraRequest(f);
+  if (errors.length) return mi_json_({ ok: false, error: errors.join(' ') });
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return mi_json_({ ok: false, error: '신청이 몰리고 있습니다. 잠시 뒤 다시 눌러 주세요.' });
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName(MI.EXTRA_REQUEST_SHEET);
+    if (!sheet) throw new Error("'" + MI.EXTRA_REQUEST_SHEET + "' 탭이 없습니다. setup 을 먼저 실행하세요.");
+    var phone = mi_phone(f.phone);
+    var wishDate = mi_wishDateOf(f), wishTime = mi_wishTimeOf(f);
+    var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+    var last = sheet.getLastRow();
+    if (last > 1) {
+      var di = header.indexOf('희망 날짜'), ti = header.indexOf('희망 시간'), pi = header.indexOf('연락처');
+      var vals = sheet.getRange(2, 1, last - 1, header.length).getValues();
+      var dup = vals.some(function (v) {
+        return mi_phone(v[pi]) === phone && mi_toDateStr_(v[di]) === wishDate && mi_toTimeStr_(v[ti]) === wishTime;
+      });
+      if (dup) return mi_json_({ ok: false, error: '같은 날짜·시간으로 이미 추가 오픈 신청을 했습니다.' });
+    }
+    var id = 'XR-' + Utilities.formatDate(new Date(now), MI.TZ, 'MMdd-HHmmss') + '-' + Math.floor(Math.random() * 900 + 100);
+    var u14 = f.under14 === true;
+    var rec = {
+      '신청번호': id, '신청 시각': new Date(now), '희망 날짜': wishDate, '희망 시간': wishTime,
+      '이름': mi_str(f.name, 40), '연락처': phone, '만 14세 미만': u14 ? 'Y' : 'N',
+      '보호자 이름': u14 ? mi_str(f.guardianName, 40) : '', '보호자 연락처': u14 ? mi_phone(f.guardianPhone) : '',
+      '보호자 동의': u14 ? 'Y' : '', '개인정보 동의': 'Y', '동의 시각': new Date(now),
+      '이용 목적': MI.EXTRA_REQUEST_PURPOSE, '보관 기한': MI.EXTRA_REQUEST_KEEP_UNTIL, '메모': ''
+    };
+    sheet.appendRow(header.map(function (h) { return rec.hasOwnProperty(h) ? rec[h] : ''; }));
+    var row = sheet.getLastRow();
+    ['희망 날짜', '희망 시간', '연락처', '보호자 연락처'].forEach(function (h) {
+      var ci = header.indexOf(h);
+      if (ci >= 0) sheet.getRange(row, ci + 1).setNumberFormat('@').setValue(rec[h]);
+    });
+    return mi_json_({ ok: true, id: id });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** 보관 기한(12/20)이 지나면 '추가 오픈 신청' 탭(예전 이름 탭 포함)의 연락처 줄을 모두 지웁니다(머리글은 남김). */
+function mi_purgeExtraRequests_(now) {
+  if (now <= mi_extraRequestPurgeAt()) return;
+  var ss = SpreadsheetApp.getActive();
+  [MI.EXTRA_REQUEST_SHEET].concat(MI.EXTRA_REQUEST_OLD_SHEETS).forEach(function (name) {
+    var sheet = ss.getSheetByName(name);
+    if (sheet && sheet.getLastRow() >= 2) sheet.deleteRows(2, sheet.getLastRow() - 1);
+  });
+}
+
+/**
+ * (선택 기능, 기본 꺼짐) [입금알림] 메일을 읽어 입금자명·금액이 정확히 1건과 맞으면 '입금 확정'과 '입금 시각'을 채웁니다.
+ * 맞는 신청이 없거나 2건 이상이면 '입금알림 기록' 탭에 '손으로 확인'으로 남깁니다.
+ * 켜려면: MI.AUTO_DEPOSIT_CHECK = true, appsscript.json 의 oauthScopes 에 https://mail.google.com/ 추가, 다시 배포.
+ */
+function checkDepositMails_(sheet, data, now) {
+  var ss = SpreadsheetApp.getActive();
+  var log = ss.getSheetByName(MI.DEPOSIT_SHEET) || ss.insertSheet(MI.DEPOSIT_SHEET);
+  if (log.getLastRow() === 0) log.getRange(1, 1, 1, DEPOSIT_COLS.length).setValues([DEPOSIT_COLS]).setFontWeight('bold');
+  var seen = {};
+  if (log.getLastRow() > 1) {
+    log.getRange(2, DEPOSIT_COLS.indexOf('메일 ID') + 1, log.getLastRow() - 1, 1).getValues()
+      .forEach(function (v) { seen[String(v[0])] = true; });
+  }
+  var col = data.col;
+  // GmailApp 은 이 기능을 켰을 때만 부릅니다.
+  var threads = GmailApp.search('subject:"[입금알림]" newer_than:2d', 0, 50);
+  threads.forEach(function (th) {
+    th.getMessages().forEach(function (msg) {
+      var mid = msg.getId();
+      if (seen[mid]) return;
+      var at = msg.getDate().getTime();
+      var dep = mi_parseDepositMail(msg.getPlainBody(), at);
+      var result = '읽지 못함(손으로 확인)', rid = '';
+      if (dep) {
+        var r = mi_matchDeposit(data.rows, dep);
+        if (r) {
+          sheet.getRange(r.rowNumber, col['입금 확정'] + 1).setValue(true);
+          sheet.getRange(r.rowNumber, col['입금 시각'] + 1).setValue(new Date(at));
+          r.paidChecked = true; r.paidAt = at;
+          result = '자동 확인'; rid = r.id;
+        } else result = '맞는 신청 없음 또는 2건 이상(손으로 확인)';
+      }
+      log.appendRow([new Date(at), dep ? dep.amount : '', dep ? dep.name : '', result, rid, mid]);
+      seen[mid] = true;
+    });
+  });
 }
 
 /** 처음 한 번 실행: 머리글, 체크박스, 날짜 형식, 5분 트리거를 만듭니다. */
@@ -263,6 +485,10 @@ function setup() {
     sheet.getRange(1, 1, 1, COLS.length).setValues([COLS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
   }
+  // 예전에 만든 시트에 새 열('확인 필요 사유' 등)이 없으면 맨 뒤에 붙입니다. 있던 열은 옮기지 않습니다.
+  var have = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  var missing = COLS.filter(function (n) { return have.indexOf(n) < 0; });
+  if (missing.length) sheet.getRange(1, have.length + 1, 1, missing.length).setValues([missing]).setFontWeight('bold');
   var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   ['날짜', '시간', '휴대폰', '보호자 연락처'].forEach(function (n) {
     var i = header.indexOf(n);
@@ -273,15 +499,38 @@ function setup() {
     var i = header.indexOf(n);
     if (i >= 0) sheet.getRange(2, i + 1, sheet.getMaxRows() - 1, 1).setNumberFormat('yyyy-mm-dd hh:mm');
   });
+  var orSheet = ss.getSheetByName(MI.EXTRA_REQUEST_SHEET) || ss.insertSheet(MI.EXTRA_REQUEST_SHEET);
+  if (orSheet.getLastRow() === 0) {
+    orSheet.getRange(1, 1, 1, EXTRA_REQ_COLS.length).setValues([EXTRA_REQ_COLS]).setFontWeight('bold');
+    orSheet.setFrozenRows(1);
+  }
+  ['희망 날짜', '희망 시간', '연락처', '보호자 연락처', '보관 기한'].forEach(function (n) {
+    var i = EXTRA_REQ_COLS.indexOf(n);
+    orSheet.getRange(2, i + 1, orSheet.getMaxRows() - 1, 1).setNumberFormat('@');
+  });
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'sweepNow') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('sweepNow').timeBased().everyMinutes(5).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'onSheetEdit') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('onSheetEdit').forSpreadsheet(ss).onEdit().create();
+}
+
+/** '입금 확정'·'미입금'·'서류 받음'을 체크하면 5분을 기다리지 않고 바로 정리합니다(setup 이 만드는 트리거). */
+function onSheetEdit(e) {
+  if (!e || !e.range) return;
+  var sheet = e.range.getSheet();
+  if (sheet.getName() !== MI.SHEET || e.range.getRow() < 2) return;
+  var name = String(sheet.getRange(1, e.range.getColumn()).getValue());
+  if (CHECKBOX_COLS.indexOf(name) < 0 && name !== '입금 시각') return;
+  sweepNow();
 }
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('모의면접')
-    .addItem('지금 정리하기(확정·취소·대기 승격)', 'sweepNow')
+    .addItem('지금 정리하기(입금 확정 반영·취소·대기 승격)', 'sweepNow')
     .addItem('처음 설정(한 번만)', 'setup')
     .addToUi();
 }
@@ -334,12 +583,15 @@ function mi_readRows_(sheet) {
       payDeadline: mi_toMs_(v[col['입금 기한']]),
       holdStartedAt: mi_toMs_(v[col['입금 대기 시작']]),
       docsDeadline: mi_toMs_(v[col['서류 기한']]),
-      paidChecked: v[col['입금 확인']] === true,
+      paidChecked: v[col['입금 확정']] === true,
       paidAt: mi_toMs_(v[col['입금 시각']]),
       unpaidChecked: v[col['미입금']] === true,
       docsReceived: v[col['서류 받음']] === true,
       phone: mi_phone(v[col['휴대폰']]),
+      studentName: String(v[col['학생 이름']] || ''),
+      depositor: String(v[col['입금자명']] || ''),
       cancelReason: String(v[col['취소 사유']] || ''),
+      checkReason: col['확인 필요 사유'] != null ? String(v[col['확인 필요 사유']] || '') : '',
       log: String(v[col['처리 기록']] || '').split('\n').filter(String),
       changed: false
     };
@@ -369,6 +621,7 @@ function mi_writeChanged_(sheet, data) {
       set('서류 기한', r.docsDeadline != null ? new Date(r.docsDeadline) : '');
       set('입금 대기 시작', r.holdStartedAt != null ? new Date(r.holdStartedAt) : '');
       set('취소 사유', r.cancelReason);
+      set('확인 필요 사유', r.checkReason || '');
       set('처리 기록', r.log.join('\n'));
     }
     if (r.kind === '예약' && col['대기 순번'] != null) {
@@ -384,7 +637,10 @@ function mi_json_(obj) {
 
 /* Node 테스트용(Apps Script 에서는 무시됩니다) */
 if (typeof module !== 'undefined') {
-  module.exports = { MI: MI, ST: ST, COLS: COLS, mi_sweep: mi_sweep, mi_initialStatus: mi_initialStatus, mi_summarize: mi_summarize,
+  module.exports = { MI: MI, ST: ST, COLS: COLS, mi_sweep: mi_sweep, mi_isUnpaidCancel: mi_isUnpaidCancel, mi_initialStatus: mi_initialStatus, mi_summarize: mi_summarize,
     mi_validate: mi_validate, mi_isOpen: mi_isOpen, mi_docsDeadlineFor: mi_docsDeadlineFor, mi_baseDocsDeadline: mi_baseDocsDeadline,
-    mi_waitlistOf: mi_waitlistOf, mi_toMs_: mi_toMs_ };
+    mi_waitlistOf: mi_waitlistOf, mi_toMs_: mi_toMs_, mi_validateExtraRequest: mi_validateExtraRequest,
+    mi_wishDateOf: mi_wishDateOf, mi_wishTimeOf: mi_wishTimeOf,
+    mi_extraRequestPurgeAt: mi_extraRequestPurgeAt, mi_parseDepositMail: mi_parseDepositMail, mi_matchDeposit: mi_matchDeposit,
+    EXTRA_REQ_COLS: EXTRA_REQ_COLS };
 }
