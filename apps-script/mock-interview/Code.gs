@@ -75,6 +75,18 @@ var MI = {
   /** 관리자 키를 10번 틀리면 10분 동안 관리자 기능을 막습니다. */
   ADMIN_FAIL_LIMIT: 10,
   ADMIN_FAIL_WINDOW_S: 600,
+  /**
+   * 마감 임박 알림(세연님 11/3 15:18 결정). 다른 타임이 모두 차서(대기·마감) 새로 신청할 수 있는 타임이 하나만 남고,
+   * 그 타임 남은 자리가 1명이 되면 한 번 알립니다.
+   * - 세연님 휴대폰: MI.SMS_SUBJECT 제목의 문자발송 메일(받는번호 = 스크립트 속성 OWNER_PHONE). OWNER_PHONE 이 없으면 보내지 않습니다.
+   * - 카카오채널 봇: 스크립트 속성 ALERT_EMAIL 주소로 '[마감임박] 3:1 모의면접' 메일. 비어 있으면 보내지 않습니다.
+   * 보낸 기록은 스크립트 속성 MI_LAST_SEAT 에 남깁니다(같은 타임에 다시 보내지 않음). 조건이 풀리면 지워져 다시 알릴 수 있습니다.
+   */
+  OWNER_PHONE_PROP: 'OWNER_PHONE',
+  ALERT_EMAIL_PROP: 'ALERT_EMAIL',
+  LAST_SEAT_PROP: 'MI_LAST_SEAT',
+  LAST_SEAT_SUBJECT: '[마감임박] 3:1 모의면접',
+  LAST_SEAT_KAKAO_TEXT: '마감 임박! 이후 대기 신청만 가능합니다',
   SITE_URL: 'sehyunt.re.kr/mock-interview',
   /** [입금알림] 메일 자동 확인(선택 기능). 켜기 전에 README '선택: 입금 알림 자동 확인'을 따르세요. */
   AUTO_DEPOSIT_CHECK: false,
@@ -473,6 +485,89 @@ function mi_sendSmsMails_(queue, send) {
     }
   });
 }
+/* ===================== 마감 임박 알림 ===================== */
+
+/**
+ * 새로 신청하면 바로 입금 대기가 되는 타임(마감 전이고 '(대기)'가 아닌 타임)이 하나만 남았고, 그 타임 남은 자리가 1명이면 그 타임.
+ * 아니면 null. src/lib/mockInterview.ts lastSeatSlot 과 같습니다.
+ */
+function mi_lastSeatSlot(rows, now) {
+  var open = mi_summarize(rows, now).filter(function (s) { return !s.closed && !s.wait; });
+  if (open.length !== 1 || open[0].left !== 1) return null;
+  return { date: open[0].date, time: open[0].time, key: open[0].date + ' ' + open[0].time };
+}
+/** 세연님 휴대폰 문자: '[마감임박] 12월 19일 17시 3:1 모의면접 남은 자리 1명' */
+function mi_lastSeatText(date, time) {
+  return '[마감임박] ' + mi_slotLabel_(date, time) + ' 3:1 모의면접 남은 자리 1명';
+}
+/** 카카오채널 봇용 메일. 첫 세 줄('날짜: ', '시간: ', '남은 인원: 1')은 고정입니다. */
+function mi_lastSeatAlertMail(date, time) {
+  var ymd = date.split('-'), hm = time.split(':');
+  var wd = '일월화수목금토'.charAt(new Date(Date.parse(date + 'T00:00:00Z')).getUTCDay());
+  return {
+    subject: MI.LAST_SEAT_SUBJECT,
+    body: '날짜: ' + Number(ymd[1]) + '월 ' + Number(ymd[2]) + '일(' + wd + ')\n' +
+      '시간: ' + Number(hm[0]) + '시' + (Number(hm[1]) ? ' ' + Number(hm[1]) + '분' : '') + '\n' +
+      '남은 인원: 1\n\n' +
+      '안내 문구: ' + MI.LAST_SEAT_KAKAO_TEXT + '\n' +
+      '다른 타임은 모두 마감되어 대기 신청만 받습니다. 신청: ' + MI.SITE_URL
+  };
+}
+function mi_isEmail_(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim()); }
+/**
+ * 보낼 마감 임박 알림과 다음 기록(state)을 정합니다(순수 함수).
+ * state: { key: 알린 타임 'yyyy-mm-dd HH:mm' 또는 '', sms: 문자 메일 보냄, mail: 카카오 봇 메일 보냄 }
+ * - 오픈 전·SMS_SINCE 전: 아무것도 보내지 않고 기록도 그대로 둡니다.
+ * - 조건이 아니면 기록을 비웁니다(다음에 다시 조건이 되면 또 알림).
+ * - 조건이면 그 타임에 아직 안 보낸 쪽만 보냅니다. OWNER_PHONE·ALERT_EMAIL 이 비었거나 틀리면 그쪽은 건너뛴 것으로 칩니다.
+ */
+function mi_lastSeatPlan(rows, now, state, ownerPhone, alertEmail) {
+  state = state && typeof state === 'object' ? state : { key: '' };
+  if (!mi_isOpen(now) || now < Date.parse(MI.SMS_SINCE)) return { slot: null, state: state, send: [] };
+  var slot = mi_lastSeatSlot(rows, now);
+  if (!slot) return { slot: null, state: { key: '' }, send: [] };
+  var st = state.key === slot.key ? { key: slot.key, sms: !!state.sms, mail: !!state.mail } : { key: slot.key, sms: false, mail: false };
+  var send = [];
+  if (!st.sms) {
+    var m = mi_smsMail(ownerPhone, mi_lastSeatText(slot.date, slot.time), [
+      '타임: ' + slot.key + ' (새로 신청할 수 있는 마지막 타임, 남은 자리 1명)',
+      '다른 타임은 모두 차서 대기 신청만 받습니다.',
+      '같은 타임에는 한 번만 보냅니다. 자리가 다시 비었다가 1명이 되면 또 보냅니다.'
+    ]);
+    if (m) send.push({ channel: 'sms', to: MI.OWNER_EMAIL, subject: m.subject, body: m.body });
+    else st.sms = true; // OWNER_PHONE 없음·틀림: 건너뜀
+  }
+  if (!st.mail) {
+    if (mi_isEmail_(alertEmail)) {
+      var a = mi_lastSeatAlertMail(slot.date, slot.time);
+      send.push({ channel: 'mail', to: String(alertEmail).trim(), subject: a.subject, body: a.body });
+    } else st.mail = true; // ALERT_EMAIL 없음: 건너뜀
+  }
+  return { slot: slot, state: st, send: send };
+}
+/** 보내고 state 를 고칩니다. 보내지 못한 쪽은 다음 정리(5분 뒤)에 다시 보냅니다. send 는 테스트용으로 바꿀 수 있습니다. */
+function mi_sendLastSeat_(plan, send) {
+  send = send || function (to, subject, body) { MailApp.sendEmail(to, subject, body); };
+  plan.send.forEach(function (x) {
+    try { send(x.to, x.subject, x.body); plan.state[x.channel] = true; } catch (err) { console.warn('마감 임박 알림 실패(' + x.channel + '): ' + err); }
+  });
+  return plan.state;
+}
+/** 정리할 때마다 부릅니다(잠금 안에서). 실패해도 신청·정리는 그대로 진행합니다. */
+function mi_checkLastSeat_(rows, now) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty(MI.LAST_SEAT_PROP) || '';
+    var state;
+    try { state = JSON.parse(raw || '{"key":""}'); } catch (e) { state = { key: '' }; }
+    var plan = mi_lastSeatPlan(rows, now, state, props.getProperty(MI.OWNER_PHONE_PROP), props.getProperty(MI.ALERT_EMAIL_PROP));
+    var next = JSON.stringify(mi_sendLastSeat_(plan));
+    if (next !== raw) props.setProperty(MI.LAST_SEAT_PROP, next);
+  } catch (err) {
+    console.warn('마감 임박 확인 실패: ' + err);
+  }
+}
+
 /* ===================== 관리자 기능(취소·추가 오픈 신청 목록·타임 추가) ===================== */
 
 /**
@@ -786,6 +881,7 @@ function doPost(e) {
     mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
+    mi_checkLastSeat_(data.rows, now);
     return mi_json_(mi_view_(data.rows, groupId));
   } finally {
     lock.releaseLock();
@@ -847,13 +943,15 @@ function mi_admin_(f, now) {
     mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
+    mi_checkLastSeat_(data.rows, now);
     var list = mi_readExtraRequests_();
     return Object.assign(res || { ok: true }, {
       rows: mi_adminRows(data.rows),
       extraRequests: list.requests.map(function (q) {
         return { id: q.id, at: q.at, name: q.name, phone: q.phone, wishDate: q.wishDate, wishTime: q.wishTime, notified: q.notified };
       }),
-      extraSlots: MI.EXTRA_SLOTS
+      extraSlots: MI.EXTRA_SLOTS,
+      lastSeat: (function (s) { return s ? s.key : null; })(mi_lastSeatSlot(data.rows, now))
     });
   } finally {
     lock.releaseLock();
@@ -909,6 +1007,7 @@ function adminCancelSelected() {
     mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
+    mi_checkLastSeat_(data.rows, now);
     ui.alert(res.already ? '이미 취소된 신청입니다.' : '취소했습니다.' + (res.promoted.length ? ' 대기에서 올라간 학생: ' +
       res.promoted.map(function (p) { return p.name; }).join(', ') + "('[문자발송]' 메일 보냄)" : ''));
   } finally {
@@ -930,6 +1029,7 @@ function sweepNow() {
     mi_sendSmsMails_(mi_smsQueue(data.rows, now));
     mi_writeChanged_(sheet, data);
     mi_notifyOwner_(data.rows);
+    mi_checkLastSeat_(data.rows, now);
     mi_purgeExtraRequests_(now);
   } finally {
     lock.releaseLock();
@@ -1256,5 +1356,7 @@ if (typeof module !== 'undefined') {
     mi_smsMail: mi_smsMail, mi_smsQueue: mi_smsQueue, mi_sendSmsMails_: mi_sendSmsMails_, SCRIPT_OWNED: SCRIPT_OWNED,
     mi_allSlots: mi_allSlots, mi_isValidSlot: mi_isValidSlot, mi_adminCancel: mi_adminCancel, mi_openNoticeText: mi_openNoticeText,
     mi_wishDates: mi_wishDates, mi_openNoticeQueue: mi_openNoticeQueue, mi_sendOpenNotices_: mi_sendOpenNotices_,
-    mi_checkNewSlot: mi_checkNewSlot, mi_adminKeyOk: mi_adminKeyOk, mi_adminRows: mi_adminRows };
+    mi_checkNewSlot: mi_checkNewSlot, mi_adminKeyOk: mi_adminKeyOk, mi_adminRows: mi_adminRows,
+    mi_lastSeatSlot: mi_lastSeatSlot, mi_lastSeatText: mi_lastSeatText, mi_lastSeatAlertMail: mi_lastSeatAlertMail,
+    mi_lastSeatPlan: mi_lastSeatPlan, mi_sendLastSeat_: mi_sendLastSeat_ };
 }

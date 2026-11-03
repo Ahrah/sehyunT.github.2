@@ -146,3 +146,26 @@
 .mi-admin-preview { background: #f6f6f4; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
 .mi-admin-outbox li { font-size: 13px; margin-bottom: 8px; }
 .mi-cancel-inquiry { text-align: center; margin: 12px 0; }
+
+/* 관리자: 마감 임박(새로 신청할 수 있는 마지막 타임, 남은 자리 1명) */
+.mi-badge-lastseat {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #d93025;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.mi-admin-lastseat {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #f3b4ae;
+  border-radius: 8px;
+  background: #fff4f3;
+  font-size: 14px;
+}
+.mi-admin-lastseat .mi-badge-lastseat { margin: 0 4px 0 0; }

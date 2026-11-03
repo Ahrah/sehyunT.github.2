@@ -225,6 +225,16 @@ export function summarize(rows: readonly MiRow[], now: number): SlotSummary[] {
 }
 
 /**
+ * 마감 임박 타임(세연님 11/3 결정): 새로 신청하면 바로 입금 대기가 되는 타임(마감 전이고 '(대기)'가 아닌 타임)이
+ * 하나만 남았고, 그 타임 남은 자리가 1명이면 그 타임 키('yyyy-mm-dd HH:mm'). 아니면 null.
+ * Apps Script mi_lastSeatSlot 과 같습니다.
+ */
+export function lastSeatSlot(rows: readonly MiRow[], now: number): string | null {
+  const open = summarize(rows, now).filter((s) => !s.closed && !s.wait);
+  return open.length === 1 && open[0].left === 1 ? slotKey(open[0].date, open[0].time) : null;
+}
+
+/**
  * 오픈 때부터 대기로 둔 타임이 아직 잠겨 있는지.
  * 잠김: waitlistAtOpen 에 있고, 그 타임에서 입금 대기로 올라간 적이 있는 줄이 없고, 대기가 waitlistReleaseCount 명보다 적을 때.
  */

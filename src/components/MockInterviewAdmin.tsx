@@ -211,6 +211,12 @@ export function MockInterviewAdmin() {
 
         {tab === 'rows' && (
           <section className="mi-section">
+            {data?.lastSeat && (
+              <p className="mi-admin-lastseat" role="status">
+                <span className="mi-badge-lastseat">마감 임박</span> {formatDateLabel(data.lastSeat.slice(0, 10))} {data.lastSeat.slice(11)} 남은 자리
+                1명. 새로 신청할 수 있는 마지막 타임입니다(다른 타임은 대기만 받습니다).
+              </p>
+            )}
             <p className="mi-note">
               '취소'를 누르면 그 신청을 관리자 취소로 바꾸고, 입금 대기·예약확정이던 자리는 대기 1번 학생에게 넘어갑니다(입금 기한 8시간
               10분). 시트에서 상태 칸을 직접 '취소'로 바꾸면 대기가 올라가지 않으니 이 버튼이나 시트 메뉴를 써 주세요.
@@ -229,7 +235,12 @@ export function MockInterviewAdmin() {
                   {rows.map((r) => (
                     <tr key={r.id} className={r.status === MI_STATUS.cancelled ? 'is-cancelled' : r.status === MI_STATUS.waitlist ? 'is-wait' : ''}>
                       <td>{r.id}</td>
-                      <td>{formatDateLabel(r.date)} {r.time}</td>
+                      <td>
+                        {formatDateLabel(r.date)} {r.time}
+                        {data?.lastSeat === `${r.date} ${r.time}` && r.status !== MI_STATUS.cancelled && (
+                          <span className="mi-badge-lastseat">마감 임박</span>
+                        )}
+                      </td>
                       <td>
                         {statusLabel(r.status)}
                         {r.waitlistPos ? ` ${r.waitlistPos}번` : ''}

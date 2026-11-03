@@ -33,6 +33,7 @@ import {
   allSlots,
   waitlistPromotionText,
   UNPAID_CANCEL_TEXT,
+  lastSeatSlot,
 } from './mockInterview';
 
 export type StatusResponse = {
@@ -364,6 +365,8 @@ export type AdminResponse = {
   rows?: AdminRow[];
   extraRequests?: AdminExtraRequest[];
   extraSlots?: string[];
+  /** 마감 임박 타임('yyyy-mm-dd HH:mm'): 새로 신청할 수 있는 마지막 타임이고 남은 자리가 1명일 때만 */
+  lastSeat?: string | null;
   /** cancel: 이미 취소였는지, 대기에서 올라간 학생 */
   already?: boolean;
   promoted?: { id: string; name: string; position: number; payDeadline: number | null }[];
@@ -379,7 +382,7 @@ export type AdminOp =
   | { op: 'cancel'; id: string }
   | { op: 'openSlot'; date: string; time: string; audience: 'date' | 'all' };
 
-function mockAdminList(rows: MockRow[]): AdminResponse {
+function mockAdminList(rows: MockRow[], now: number): AdminResponse {
   const pos = new Map<string, number>();
   for (const { date, time } of allSlots()) waitlistOf(rows, date, time).forEach((r, i) => pos.set(r.id, i + 1));
   return {
@@ -393,6 +396,7 @@ function mockAdminList(rows: MockRow[]): AdminResponse {
       id: q.id, at: q.at, name: q.name, phone: q.phone, wishDate: q.wishDate, wishTime: q.wishTime, notified: q.notified ?? '',
     })),
     extraSlots: getExtraSlots(),
+    lastSeat: lastSeatSlot(rows, now),
     outbox: mockOutbox(),
   };
 }
@@ -433,7 +437,7 @@ export function mockAdmin(req: AdminOp, now: number): AdminResponse {
   }
   rows = req.op === 'cancel' ? rows : mockSweep(rows, now);
   saveRows(rows);
-  return { ...mockAdminList(rows), ...res, ok: true };
+  return { ...mockAdminList(rows, now), ...res, ok: true };
 }
 
 /** 관리자 기능. 실제 모드에서는 Apps Script 스크립트 속성 MI_ADMIN_KEY 와 같은 키가 있어야 합니다. */
