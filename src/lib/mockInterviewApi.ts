@@ -20,9 +20,30 @@ import {
   validateExtraRequest,
   wishDateOf,
   wishTimeOf,
+  adminCancel,
+  checkNewSlot,
+  getExtraSlots,
+  openNoticeRecipients,
+  openNoticeText,
+  payUnitKey,
+  isUnpaidCancel,
+  setExtraSlots,
+  slotKey,
+  waitlistOf,
+  allSlots,
+  waitlistPromotionText,
+  UNPAID_CANCEL_TEXT,
 } from './mockInterview';
 
-export type StatusResponse = { ok: boolean; open: boolean; now: number; slots: PublicSlot[]; error?: string };
+export type StatusResponse = {
+  ok: boolean;
+  open: boolean;
+  now: number;
+  slots: PublicSlot[];
+  /** 관리자 화면에서 연 추가 타임('yyyy-mm-dd HH:mm') */
+  extraSlots?: string[];
+  error?: string;
+};
 export type ExtraRequestResponse = { ok: boolean; id?: string; error?: string };
 export const DUP_OTHER_NAME =
   "같은 휴대폰 번호로 이미 신청한 타임이 있습니다. 신청완료 화면의 확인 링크를 열거나 카카오톡 채널 '입시는세연쌤'으로 문의해 주세요.";
@@ -81,6 +102,9 @@ export function previewNowOverride(search: string): number | null {
 
 const STORE_KEY = 'mi-preview-rows-v3';
 const EXTRA_REQ_KEY = 'mi-preview-extra-requests-v2';
+const EXTRA_SLOTS_KEY = 'mi-preview-extra-slots-v1';
+/** 미리보기에서 '보냈을' [문자발송] 메일(실제로는 아무에게도 보내지 않습니다) */
+const OUTBOX_KEY = 'mi-preview-sms-outbox-v1';
 type MockExtraRequest = {
   id: string;
   at: number;
@@ -89,6 +113,7 @@ type MockExtraRequest = {
   name: string;
   phone: string;
   applicationId: string;
+  notified?: string;
 };
 type MockRow = MiRow & { phone: string; studentName?: string; school?: string; track?: string };
 
@@ -122,8 +147,61 @@ function viewOf(rows: readonly MockRow[], groupId: string): SubmitResponse | nul
   };
 }
 
+/* 미리보기용 [문자발송] 메일함 */
+export type MockSms = { at: number; kind: '승격' | '미입금 취소' | '추가 타임'; phone: string; text: string };
+function loadJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function saveJson(key: string, v: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(v));
+  } catch {
+    /* noop */
+  }
+}
+function pushOutbox(list: MockSms[]) {
+  if (list.length) saveJson(OUTBOX_KEY, [...loadJson<MockSms[]>(OUTBOX_KEY, []), ...list]);
+}
+export function mockOutbox(): MockSms[] {
+  return loadJson<MockSms[]>(OUTBOX_KEY, []);
+}
+function loadMockSlots() {
+  setExtraSlots(loadJson<string[]>(EXTRA_SLOTS_KEY, []));
+}
+
+/** 정리하고, 서버가 보냈을 [문자발송] 메일(대기 승격·미입금 취소)을 미리보기 메일함에 남깁니다. */
+function mockSweep(input: MockRow[], now: number): MockRow[] {
+  loadMockSlots();
+  const rows = sweep(input, now) as MockRow[];
+  recordOutbox(input, rows, now);
+  return rows;
+}
+function recordOutbox(input: readonly MockRow[], rows: MockRow[], now: number) {
+  const before = new Map(input.map((r) => [r.id, r.status]));
+  const out: MockSms[] = [];
+  for (const r of rows) {
+    if (r.promotedFrom != null && r.payDeadline != null) {
+      out.push({ at: now, kind: '승격', phone: r.phone, text: `[입시는세연쌤] ${waitlistPromotionText(r.promotedFrom, r.studentName || '학생', r.date, r.time, r.payDeadline)}` });
+    }
+  }
+  const unpaid = new Set<string>();
+  for (const r of rows) {
+    if (r.status !== MI_STATUS.cancelled || before.get(r.id) === MI_STATUS.cancelled || !isUnpaidCancel(r.cancelReason)) continue;
+    const k = payUnitKey(r);
+    if (unpaid.has(k)) continue;
+    unpaid.add(k);
+    out.push({ at: now, kind: '미입금 취소', phone: r.phone, text: UNPAID_CANCEL_TEXT });
+  }
+  pushOutbox(out);
+}
+
 export function mockCheck(id: string, token: string, now: number): CheckResponse {
-  const rows = sweep(loadRows(), now) as MockRow[];
+  const rows = mockSweep(loadRows(), now);
   saveRows(rows);
   const v = viewOf(rows, id);
   if (!v || !token || v.token !== token) return { ok: false, error: '신청을 찾지 못했습니다. 받은 확인 링크를 그대로 열어 주세요.' };
@@ -157,6 +235,8 @@ export function resetMock() {
   try {
     localStorage.removeItem(STORE_KEY);
     localStorage.removeItem(EXTRA_REQ_KEY);
+    localStorage.removeItem(EXTRA_SLOTS_KEY);
+    localStorage.removeItem(OUTBOX_KEY);
     for (const old of ['mi-preview-open-requests-v1', 'mi-preview-extra-requests-v1', 'mi-preview-rows-v2']) localStorage.removeItem(old);
   } catch {
     /* noop */
@@ -164,21 +244,22 @@ export function resetMock() {
 }
 
 export function mockStatus(now: number): StatusResponse {
-  const rows = sweep(loadRows(), now) as MockRow[];
+  const rows = mockSweep(loadRows(), now);
   saveRows(rows);
-  return { ok: true, open: isOpen(now), now, slots: publicSlots(summarize(rows, now)) };
+  return { ok: true, open: isOpen(now), now, slots: publicSlots(summarize(rows, now)), extraSlots: getExtraSlots() };
 }
 
 export function mockSubmit(form: MiForm, now: number): SubmitResponse {
   if (form.website) return { ok: true, id: 'ignored', items: [], payDeadline: null, amount: 0 };
   if (!isOpen(now)) return { ok: false, error: '11/9(월) 밤 9시에 신청이 열립니다.' };
+  loadMockSlots();
   const errors = validateForm(form);
   if (errors.length) return { ok: false, error: errors.join(' ') };
   const picks = sortSlots(form.slots);
   if (!picks.length) return { ok: false, error: '고른 타임이 없습니다.' };
   const closed = picks.find((x) => now >= slotBookingClosesAt(x.date, x.time));
   if (closed) return { ok: false, error: `${closed.date} ${closed.time}은 신청이 마감되었습니다.` };
-  const rows = sweep(loadRows(), now) as MockRow[];
+  const rows = mockSweep(loadRows(), now);
   const phone = normalizePhone(form.phone);
   // 같은 휴대폰·같은 타임이 입금 대기·확정이면 새로 만들지 않고 기존 신청을 보여 줍니다.
   const existing = findActiveDuplicate(rows, phone, picks);
@@ -247,6 +328,123 @@ export function seedWaitlistDemo(now: number) {
     rows.push({ ...newBookingRow(rows, id, date, MI_CONFIG.times[1], now - (10 - i) * 60000), phone: `0100000000${i}` });
   }
   saveRows(rows);
+}
+
+/** 미리보기 전용: 추가 오픈 신청 3건(12/26·12/19·직접 적은 날짜)을 넣습니다. */
+export function seedExtraRequestDemo(now: number) {
+  const list = loadJson<MockExtraRequest[]>(EXTRA_REQ_KEY, []).filter((r) => !r.id.startsWith('XR-DEMO-'));
+  list.push(
+    { id: 'XR-DEMO-1', at: now - 50 * 60000, wishDate: '2026-12-19, 12/26 오후', wishTime: '15:00', name: '김민준', phone: '01020001001', applicationId: '' },
+    { id: 'XR-DEMO-2', at: now - 40 * 60000, wishDate: '2026-12-19', wishTime: '16:00, 17:00', name: '이서연', phone: '01020001002', applicationId: 'MI-DEMO-5' },
+    { id: 'XR-DEMO-3', at: now - 30 * 60000, wishDate: '12월 26일', wishTime: '오후 아무 때나', name: '박지호', phone: '01020001003', applicationId: '' },
+  );
+  saveJson(EXTRA_REQ_KEY, list);
+}
+
+/* ---------- 관리자(세연님) 화면 ---------- */
+
+export type AdminRow = {
+  id: string;
+  groupId?: string;
+  appliedAt: number;
+  date: string;
+  time: string;
+  status: MiStatus;
+  waitlistPos: number | null;
+  payDeadline: number | null;
+  studentName: string;
+  depositor?: string;
+  phone: string;
+  cancelReason: string;
+};
+export type AdminExtraRequest = { id: string; at: number; name: string; phone: string; wishDate: string; wishTime: string; notified: string };
+export type AdminResponse = {
+  ok: boolean;
+  error?: string;
+  rows?: AdminRow[];
+  extraRequests?: AdminExtraRequest[];
+  extraSlots?: string[];
+  /** cancel: 이미 취소였는지, 대기에서 올라간 학생 */
+  already?: boolean;
+  promoted?: { id: string; name: string; position: number; payDeadline: number | null }[];
+  /** openSlot: 연 타임, 보낸 알림 수, 못 보낸 사람 */
+  slot?: string;
+  sent?: number;
+  failed?: string[];
+  /** 미리보기에서만: 보냈을 [문자발송] 메일 */
+  outbox?: MockSms[];
+};
+export type AdminOp =
+  | { op: 'list' }
+  | { op: 'cancel'; id: string }
+  | { op: 'openSlot'; date: string; time: string; audience: 'date' | 'all' };
+
+function mockAdminList(rows: MockRow[]): AdminResponse {
+  const pos = new Map<string, number>();
+  for (const { date, time } of allSlots()) waitlistOf(rows, date, time).forEach((r, i) => pos.set(r.id, i + 1));
+  return {
+    ok: true,
+    rows: rows.map((r) => ({
+      id: r.id, groupId: r.groupId, appliedAt: r.appliedAt, date: r.date, time: r.time, status: r.status,
+      waitlistPos: pos.get(r.id) ?? null, payDeadline: r.status === MI_STATUS.pending ? r.payDeadline : null,
+      studentName: r.studentName ?? '', phone: r.phone, cancelReason: r.cancelReason,
+    })),
+    extraRequests: loadJson<MockExtraRequest[]>(EXTRA_REQ_KEY, []).map((q) => ({
+      id: q.id, at: q.at, name: q.name, phone: q.phone, wishDate: q.wishDate, wishTime: q.wishTime, notified: q.notified ?? '',
+    })),
+    extraSlots: getExtraSlots(),
+    outbox: mockOutbox(),
+  };
+}
+
+export function mockAdmin(req: AdminOp, now: number): AdminResponse {
+  loadMockSlots();
+  let rows = loadRows();
+  let res: Partial<AdminResponse> = {};
+  if (req.op === 'cancel') {
+    const r = adminCancel(rows, req.id, now);
+    if (!r.ok) return { ok: false, error: r.error };
+    if (!r.already) recordOutbox(rows, r.rows as MockRow[], now);
+    rows = r.rows as MockRow[];
+    res = {
+      already: !!r.already,
+      promoted: r.promoted.map((p) => ({ id: p.id, name: (p as MockRow).studentName ?? '', position: p.promotedFrom ?? 1, payDeadline: p.payDeadline })),
+    };
+  } else if (req.op === 'openSlot') {
+    const err = checkNewSlot(req.date, req.time, now);
+    if (err) return { ok: false, error: err };
+    const key = slotKey(req.date, req.time);
+    const already = getExtraSlots().includes(key);
+    if (!already) {
+      setExtraSlots([...getExtraSlots(), key]);
+      saveJson(EXTRA_SLOTS_KEY, getExtraSlots());
+    }
+    const list = loadJson<MockExtraRequest[]>(EXTRA_REQ_KEY, []);
+    const to = openNoticeRecipients(list.map((q) => ({ ...q, notified: q.notified ?? '' })), req.date, req.audience);
+    const text = openNoticeText(req.date, req.time);
+    const mark = `${key} 알림 메일 보냄(미리보기)`;
+    for (const q of to) {
+      const hit = list.find((x) => x.id === q.id)!;
+      hit.notified = hit.notified ? `${hit.notified}\n${mark}` : mark;
+    }
+    saveJson(EXTRA_REQ_KEY, list);
+    pushOutbox(to.map((q) => ({ at: now, kind: '추가 타임' as const, phone: q.phone, text })));
+    res = { already, slot: key, sent: to.length, failed: [] };
+  }
+  rows = req.op === 'cancel' ? rows : mockSweep(rows, now);
+  saveRows(rows);
+  return { ...mockAdminList(rows), ...res, ok: true };
+}
+
+/** 관리자 기능. 실제 모드에서는 Apps Script 스크립트 속성 MI_ADMIN_KEY 와 같은 키가 있어야 합니다. */
+export async function adminRequest(key: string, req: AdminOp, now: number): Promise<AdminResponse> {
+  if (isTestMode()) return mockAdmin(req, now);
+  const res = await fetch(MOCK_INTERVIEW_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...req, action: 'admin', key }),
+  });
+  return (await res.json()) as AdminResponse;
 }
 
 /* ---------- 실제 모드: Apps Script 웹 앱 ---------- */

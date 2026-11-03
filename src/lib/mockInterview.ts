@@ -94,6 +94,8 @@ export type MiRow = {
   token?: string;
   /** 이번 정리에서 대기에서 올라갔다면 올라가기 전 대기 순번(안내 문자용, 시트에 쓰지 않습니다) */
   promotedFrom?: number;
+  /** 자리를 잡고 있던 줄이 막 취소됐다는 표시(대기 승격 계산용, 저장하지 않습니다). adminCancel 이 붙이고 sweep 이 지웁니다. */
+  freedSeat?: boolean;
   log: string[];
 };
 
@@ -111,8 +113,45 @@ export function slotKey(date: string, time: string): string {
   return `${date} ${time}`;
 }
 
-export function isValidSlot(date: string, time: string): boolean {
+/** 정규 타임(MI_CONFIG.dates × times)인지 */
+export function isBaseSlot(date: string, time: string): boolean {
   return (MI_CONFIG.dates as readonly string[]).includes(date) && (MI_CONFIG.times as readonly string[]).includes(time);
+}
+
+/**
+ * 관리자 화면에서 연 추가 타임('yyyy-mm-dd HH:mm'). 서버(Code.gs MI.EXTRA_SLOTS)가 status 응답 extraSlots 로 알려 줍니다.
+ * 화면은 setExtraSlots 로 넣고, 아래 함수들(allSlots·isValidSlot·summarize·sweep)이 함께 씁니다.
+ */
+let extraSlots: string[] = [];
+const EXTRA_SLOT_RE = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+export function setExtraSlots(list: readonly string[] | undefined | null): void {
+  extraSlots = [...new Set((list ?? []).map(String).filter((k) => EXTRA_SLOT_RE.test(k)))].sort();
+}
+export function getExtraSlots(): string[] {
+  return [...extraSlots];
+}
+
+export function isValidSlot(date: string, time: string): boolean {
+  return isBaseSlot(date, time) || extraSlots.includes(slotKey(date, time));
+}
+
+/** 신청을 받는 모든 타임(정규 + 추가), 시작 시각 순. Code.gs mi_allSlots 와 같음 */
+export function allSlots(): { date: string; time: string }[] {
+  const out: { date: string; time: string }[] = [];
+  const seen = new Set<string>();
+  for (const date of MI_CONFIG.dates) {
+    for (const time of MI_CONFIG.times) {
+      out.push({ date, time });
+      seen.add(slotKey(date, time));
+    }
+  }
+  for (const k of extraSlots) {
+    if (seen.has(k)) continue;
+    const [date, time] = k.split(' ');
+    out.push({ date, time });
+    seen.add(k);
+  }
+  return out.sort((a, b) => slotStart(a.date, a.time) - slotStart(b.date, b.time));
 }
 
 /** 예약·대기를 받는 마지막 시각(면접 시작 24시간 전) */
@@ -167,8 +206,8 @@ export function publicSlots(list: readonly SlotSummary[]): PublicSlot[] {
 
 export function summarize(rows: readonly MiRow[], now: number): SlotSummary[] {
   const out: SlotSummary[] = [];
-  for (const date of MI_CONFIG.dates) {
-    for (const time of MI_CONFIG.times) {
+  for (const { date, time } of allSlots()) {
+    {
       const left = Math.max(0, MI_CONFIG.capacity - heldCount(rows, date, time));
       const waitlist = waitlistOf(rows, date, time).length;
       out.push({
@@ -326,11 +365,18 @@ export function sweep(input: readonly MiRow[], now: number): MiRow[] {
       cancel(r, now, '서류 미제출');
     }
   }
-  for (const date of MI_CONFIG.dates) {
-    for (const time of MI_CONFIG.times) {
+  // 대기 승격(세연님 11/3 결정)
+  // - 오픈 때부터 대기로 둔 타임(waitlistAtOpen): 대기가 waitlistReleaseCount 명 모이면 빈자리만큼 대기 순서대로 올립니다.
+  // - 그 밖의 타임: 앞선 신청자가 취소했을 때만(미입금 자동 취소·관리자 취소) 취소된 자리 수만큼 대기 1번부터 올립니다.
+  //   '확인 필요'로 바뀌어 빈 자리는 세연님이 확정·환불을 정할 때까지 올리지 않습니다.
+  for (const { date, time } of allSlots()) {
+    {
       if (now >= slotBookingClosesAt(date, time)) continue;
       if (isGated(rows, date, time)) continue;
-      let free = MI_CONFIG.capacity - heldCount(rows, date, time);
+      const slot = slotRows(rows, date, time);
+      const releasing = MI_CONFIG.waitlistAtOpen.includes(slotKey(date, time)) && !slot.some((r) => r.holdStartedAt != null);
+      const credits = releasing ? MI_CONFIG.capacity : slot.filter((r) => r.freedSeat).length;
+      let free = Math.min(credits, MI_CONFIG.capacity - heldCount(rows, date, time));
       const queue = waitlistOf(rows, date, time);
       let position = 0;
       while (free > 0 && queue.length > 0) {
@@ -346,10 +392,95 @@ export function sweep(input: readonly MiRow[], now: number): MiRow[] {
       }
     }
   }
+  for (const r of rows) delete r.freedSeat;
   return rows;
 }
 
+export const ADMIN_CANCEL_REASON = '관리자 취소';
+/** 학생이 직접 취소하는 버튼은 없습니다. 신청완료 화면·안내 문구에 씁니다. */
+export const CANCEL_INQUIRY = '신청 취소를 원하시면 카카오채널 입시는세연쌤으로 문의해 주세요.';
+/** 미입금 자동 취소 문자(세연님 11/3 문구). Code.gs MI.UNPAID_CANCEL_TEXT 와 같음 */
+export const UNPAID_CANCEL_TEXT = '[입시는세연쌤] 3:1 모의면접 신청이 미입금으로 취소되었습니다.';
+
+/**
+ * 관리자 취소(Code.gs mi_adminCancel 과 같음). 이미 취소된 줄이면 그대로(두 번 눌러도 같음).
+ * 자리를 잡고 있던 줄이면 바로 정리해서 그 타임 대기 1번을 입금 대기(8시간 + 10분)로 올립니다.
+ */
+export function adminCancel(
+  input: readonly MiRow[],
+  id: string,
+  now: number,
+): { ok: boolean; already?: boolean; error?: string; rows: MiRow[]; promoted: MiRow[] } {
+  const target = input.find((r) => r.kind === '예약' && r.id === id);
+  if (!target) return { ok: false, error: '신청번호를 찾지 못했습니다.', rows: [...input], promoted: [] };
+  if (target.status === MI_STATUS.cancelled) return { ok: true, already: true, rows: [...input], promoted: [] };
+  const marked = input.map((r) => (r.id === id ? { ...r, log: [...r.log] } : r));
+  cancel(marked.find((r) => r.id === id)!, now, ADMIN_CANCEL_REASON);
+  const rows = sweep(marked, now);
+  const promoted = rows.filter((r) => r.promotedFrom != null && r.date === target.date && r.time === target.time);
+  return { ok: true, already: false, rows, promoted };
+}
+
+/** 타임을 새로 열 때 추가 오픈 신청자에게 보내는 문자(세연님 11/3 문구). Code.gs mi_openNoticeText 와 같음 */
+export function openNoticeText(date: string, time: string): string {
+  return (
+    `[입시는세연쌤] 3:1 모의면접 추가 날짜(${slotMonthDayHour(date, time)})가 열렸습니다. ` +
+    '신청 페이지에서 먼저 신청하신 순서대로 접수됩니다. sehyunt.re.kr/mock-interview'
+  );
+}
+
+/** '희망 날짜' 칸에서 날짜(yyyy-mm-dd) 꺼내기. Code.gs mi_wishDates 와 같음(11·12월은 2026년, 1·2월은 2027년) */
+export function wishDates(text: string): string[] {
+  const out: string[] = [];
+  const add = (y: number | null, m: number, d: number) => {
+    if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) return;
+    const k = `${y ?? (m <= 2 ? 2027 : 2026)}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    if (!out.includes(k)) out.push(k);
+  };
+  const re = /(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\s*[/.]\s*(\d{1,2})|(\d{1,2})\s*월\s*(\d{1,2})\s*일?/g;
+  for (const m of String(text ?? '').matchAll(re)) {
+    if (m[1]) add(Number(m[1]), Number(m[2]), Number(m[3]));
+    else if (m[4]) add(null, Number(m[4]), Number(m[5]));
+    else add(null, Number(m[6]), Number(m[7]));
+  }
+  return out;
+}
+
+export type OpenNoticeRequest = { id: string; at: number; name: string; phone: string; wishDate: string; wishTime: string; notified: string };
+
+/**
+ * 새로 연 타임을 알릴 사람(같은 연락처는 한 명, 신청 시각 순). Code.gs mi_openNoticeQueue 와 같음.
+ * audience 'date': 희망 날짜에 그 날짜가 있는 사람, 'all': 추가 오픈 신청한 모든 사람. 이미 그 날짜 알림을 받은 연락처는 뺍니다.
+ */
+export function openNoticeRecipients(
+  requests: readonly OpenNoticeRequest[],
+  date: string,
+  audience: 'date' | 'all',
+): OpenNoticeRequest[] {
+  const sent = new Set(
+    requests.filter((q) => String(q.notified || '').split('\n').some((l) => l.startsWith(date))).map((q) => normalizePhone(q.phone)),
+  );
+  const picked = new Map<string, OpenNoticeRequest>();
+  for (const q of [...requests].sort((a, b) => (a.at || 0) - (b.at || 0))) {
+    const ph = normalizePhone(q.phone);
+    if (!isPhone(ph) || sent.has(ph) || picked.has(ph)) continue;
+    if (audience !== 'all' && !wishDates(q.wishDate).includes(date)) continue;
+    picked.set(ph, q);
+  }
+  return [...picked.values()];
+}
+
+/** 새로 열 타임 확인(Code.gs mi_checkNewSlot 과 같음). 괜찮으면 '' */
+export function checkNewSlot(date: string, time: string, now: number): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(slotStart(date, '00:00'))) return '날짜를 2026-12-26 형식으로 적어 주세요.';
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return '시간을 16:00 형식으로 적어 주세요.';
+  if (isBaseSlot(date, time)) return '이미 있는 타임입니다.';
+  if (now >= slotBookingClosesAt(date, time)) return '면접 24시간 전이 지난 타임은 열 수 없습니다.';
+  return '';
+}
+
 function cancel(r: MiRow, now: number, reason: string) {
+  if (r.status === MI_STATUS.pending || r.status === MI_STATUS.confirmed || r.status === MI_STATUS.check) r.freedSeat = true;
   r.status = MI_STATUS.cancelled;
   r.cancelReason = reason;
   r.log.push(`${formatKst(now)} 취소: ${reason}`);

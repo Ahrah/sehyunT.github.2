@@ -119,3 +119,30 @@
 .mi-refund > li { margin-bottom: 10px; }
 .mi-refund ul { margin: 4px 0 0; padding-left: 18px; }
 .mi-pay-guide { margin-top: 4px; }
+
+/* ---- 관리자 화면(/mock-interview/?admin) ---- */
+.mi-admin-wrap { max-width: 1100px; padding-bottom: 40px; }
+.mi-admin-title { font-size: 24px; margin: 20px 0 12px; }
+.mi-admin-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.mi-admin-tabs button { font: inherit; font-size: 14px; border: 1px solid var(--mi-line); background: #fff; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.mi-admin-tabs button.is-active { background: var(--mi-green); border-color: var(--mi-green); color: #fff; font-weight: 700; }
+.mi-admin-tabs .mi-admin-refresh { margin-left: auto; }
+.mi-admin-msg { background: #eef7f1; border: 1px solid #b9dcc6; border-radius: 10px; padding: 10px 12px; margin: 12px 0 0; font-size: 14px; }
+.mi-admin-check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; margin: 4px 0 10px; }
+.mi-admin-table-wrap { overflow-x: auto; }
+.mi-admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mi-admin-table th, .mi-admin-table td { border-bottom: 1px solid var(--mi-line); padding: 7px 6px; text-align: left; white-space: nowrap; vertical-align: top; }
+.mi-admin-table th { color: var(--mi-muted); font-weight: 700; }
+.mi-admin-table tr.is-wait td { background: #fffbea; }
+.mi-admin-table tr.is-cancelled td { color: var(--mi-muted); text-decoration: line-through; }
+.mi-admin-pre { white-space: pre-line !important; color: var(--mi-muted); }
+.mi-admin-cancel { font: inherit; font-size: 13px; border: 1px solid var(--mi-red); color: var(--mi-red); background: #fff; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.mi-admin-cancel:disabled { opacity: .5; cursor: default; }
+.mi-admin-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin: 6px 0 12px; }
+.mi-admin-form label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.mi-admin-form input[type="date"], .mi-admin-form input[type="time"] { font: inherit; padding: 6px 8px; border: 1px solid var(--mi-line); border-radius: 8px; }
+.mi-admin-form fieldset { border: 1px solid var(--mi-line); border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+.mi-admin-form fieldset label { flex-direction: row; align-items: center; gap: 6px; }
+.mi-admin-preview { background: #f6f6f4; border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.mi-admin-outbox li { font-size: 13px; margin-bottom: 8px; }
+.mi-cancel-inquiry { text-align: center; margin: 12px 0; }

@@ -10,8 +10,10 @@ import {
   type MiForm,
   type MiWish,
   type PublicSlot,
+  CANCEL_INQUIRY,
   checkLinkSearch,
   extraRequestFrom,
+  setExtraSlots,
   formatDateLabel,
   formatMonthDay,
   formatShortKst,
@@ -40,6 +42,7 @@ import {
   submitExtraRequest,
 } from '../lib/mockInterviewApi';
 import { type MemberProfile, type PrefillMap, applyMemberPrefill, loadMemberProfile } from '../lib/memberPrefill';
+import { MockInterviewAdmin } from '../components/MockInterviewAdmin';
 import './mock-interview.css';
 
 /** 회원 프로필 → 신청서 칸: 학생 이름(childName) → 학생이름(입금자명), 휴대폰 → 휴대폰 */
@@ -123,7 +126,16 @@ function checkUrlOf(res: SubmitResponse | null): string {
   return `${window.location.origin}${window.location.pathname}${checkLinkSearch(res.id, res.token)}`;
 }
 
+/** 취소 안내 한 줄(카카오채널로 문의) */
+const CANCEL_LINE = `${CANCEL_INQUIRY} 연락이 도착한 시각을 기준으로 합니다.`;
+
+/** /mock-interview/?admin 이면 관리자 화면, 아니면 신청 화면 */
 export function MockInterviewPage() {
+  const admin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('admin');
+  return admin ? <MockInterviewAdmin /> : <MockInterviewApply />;
+}
+
+function MockInterviewApply() {
   const [now, overridden, setServerNow] = useNow();
   const notReady = isLiveSiteWithoutBackend();
   const open = isOpen(now) && !notReady;
@@ -180,6 +192,8 @@ export function MockInterviewPage() {
     try {
       const res = await fetchStatus(now);
       if (res.ok) {
+        // 관리자가 연 추가 타임도 신청할 수 있게 합니다.
+        setExtraSlots(res.extraSlots ?? []);
         setSlots(res.slots);
         setServerNow(res.now);
         setLoadError('');
@@ -231,6 +245,15 @@ export function MockInterviewPage() {
 
   const booking = form.slots.length > 0;
   const extraOnly = !booking && form.extraDates.length > 0;
+  // 기본 날짜·시간에 관리자가 연 추가 타임을 더해 날짜별로 보여 줍니다.
+  const days = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const d of MI_CONFIG.dates) map.set(d, new Set(MI_CONFIG.times));
+    for (const x of slots) (map.get(x.date) ?? map.set(x.date, new Set()).get(x.date)!).add(x.time);
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, t]) => ({ date, times: [...t].sort() }));
+  }, [slots]);
   const picked = sortSlots(form.slots);
   const pickedWait = picked.filter((x) => !!slots.find((s) => s.date === x.date && s.time === x.time)?.wait);
   const pickedPay = picked.length - pickedWait.length;
@@ -434,11 +457,11 @@ export function MockInterviewPage() {
             </p>
             {loadError && <p className="mi-error">{loadError}</p>}
             <div className="mi-days">
-              {MI_CONFIG.dates.map((date) => (
+              {days.map(({ date, times }) => (
                 <div key={date} className="mi-day">
                   <h3>{formatDateLabel(date)}</h3>
                   <div className="mi-slot-row">
-                    {MI_CONFIG.times.map((time) => {
+                    {times.map((time) => {
                       const s = slots.find((x) => x.date === date && x.time === time);
                       const waitlist = !!s?.wait;
                       const active = form.slots.some((x) => x.date === date && x.time === time);
@@ -457,7 +480,9 @@ export function MockInterviewPage() {
                         </button>
                       );
                     })}
-                    <ExtraToggle active={form.extraDates.includes(date)} disabled={!open || sending} onClick={() => pickExtra(date)} />
+                    {(MI_CONFIG.dates as readonly string[]).includes(date) && (
+                      <ExtraToggle active={form.extraDates.includes(date)} disabled={!open || sending} onClick={() => pickExtra(date)} />
+                    )}
                   </div>
                 </div>
               ))}
@@ -502,7 +527,7 @@ export function MockInterviewPage() {
                 </p>
               )}
               {pickedWait.length > 0 && (
-                <p className="mi-note">대기로 접수되는 타임은 지금 입금하지 않습니다. 자리가 나면 연락드립니다.</p>
+                <p className="mi-note">대기로 접수되는 타임은 지금 입금하지 않습니다. 앞선 신청자가 취소하면 대기 순서대로 연락드립니다.</p>
               )}
             </div>
 
@@ -590,7 +615,7 @@ function QnaSection({ refundAbove = false }: { refundAbove?: boolean }) {
         </Qna>
         <Qna q="여러 타임을 한 번에 신청할 수 있나요?">
           네. 원하는 타임을 모두 눌러 고른 뒤 신청서를 한 번 보내면 됩니다. 입금은 자리를 잡은 타임 수만큼(타임마다{' '}
-          {FEE_LABEL}) 한 번에 보내 주세요. 대기로 접수된 타임은 자리가 나면 그때 따로 입금합니다.
+          {FEE_LABEL}) 한 번에 보내 주세요. 대기로 접수된 타임은 입금 안내 문자를 받은 뒤 따로 입금합니다.
         </Qna>
         <Qna q="수강료는 얼마인가요?">
           1회 {FEE_LABEL}입니다. 1시간이고, 대기 시간과 공통문항 푸는 시간이 들어 있습니다.
@@ -603,7 +628,7 @@ function QnaSection({ refundAbove = false }: { refundAbove?: boolean }) {
         </Qna>
         <Qna q="취소하면 환불되나요?">
           면접 10일 전까지 취소하면 낸 금액을 모두 돌려 드립니다. 면접 9일 전부터 7일 전까지는 ⅔, 6일 전부터 5일 전까지는
-          ⅓을 돌려 드리고, 4일 전부터와 노쇼는 환불되지 않습니다. 취소는 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을 기준으로 합니다.{' '}
+          ⅓을 돌려 드리고, 4일 전부터와 노쇼는 환불되지 않습니다. {CANCEL_LINE}{' '}
           {refundAbove ? '자세한 내용은 위 환불 안내를 봐 주세요.' : '자세한 환불 기준은 신청 뒤 신청완료 화면에서 안내합니다.'}
         </Qna>
         <Qna q="다른 날짜에도 열리나요?">
@@ -627,7 +652,7 @@ export function waitlistGuideItems(items: readonly { date: string; time: string 
   return [
     '대기 중에는 입금하지 않습니다.',
     ...(atOpen ? [`처음부터 대기로 받는 타임은 대기 신청이 ${n}명이 되면 대기 순서대로 입금 안내 문자를 보내 드립니다.`] : []),
-    ...(full ? ['자리가 다 찬 타임은 빈자리가 생기면 대기 1번부터 순서대로 입금 안내 문자를 보내 드립니다.'] : []),
+    ...(full ? ['자리가 다 찬 타임은 앞서 신청한 학생이 취소하면 대기 1번부터 순서대로 입금 안내 문자를 보내 드립니다.'] : []),
     `문자를 받은 때부터 ${PROMOTED_HOURS}시간 이내에 입금해 주세요. 입금이 확인되면 예약확정 문자를 보내 드리고 예약이 확정됩니다.`,
     `${PROMOTED_HOURS}시간 안에 입금하지 않으면 신청이 취소되고 다음 대기 학생에게 차례가 넘어갑니다.`,
   ];
@@ -767,6 +792,13 @@ function DoneScreen({ done, now, open, onNew }: { done: Done; now: number; open:
       {waiting.length > 0 && <WaitlistGuide items={waiting} />}
 
       {wantsExtra && form && <WishPicker form={form} applicationId={res?.id ?? ''} now={now} open={open} />}
+
+      {bookingDone && (
+        <p className="mi-note mi-cancel-inquiry">
+          {CANCEL_INQUIRY}{' '}
+          <a href={SITE.kakaoChannelUrl} target="_blank" rel="noreferrer">카카오채널 열기</a>
+        </p>
+      )}
 
       <RefundSection />
       <QnaSection refundAbove />
@@ -925,7 +957,7 @@ export const REFUND_SECTIONS: { title: string; items: string[] }[] = [
     title: '면접 전에 취소할 때',
     items: [
       '면접 질문 준비가 10일 전부터 이루어집니다. 면접 10일 전까지 취소하면 낸 금액을 모두 돌려 드립니다.',
-      '취소는 문자나 카카오채널로 알려 주세요. 연락이 도착한 시각을 기준으로 합니다.',
+      CANCEL_LINE,
     ],
   },
   {

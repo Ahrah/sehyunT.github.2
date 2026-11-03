@@ -59,6 +59,23 @@ var MI = {
   SMS_MARK_CONFIRM: '예약확정 문자 메일 보냄',
   SMS_MARK_CONFIRM_SKIP: '예약확정 문자 못 보냄(휴대폰 번호 확인 필요)',
   SMS_MARK_PROMOTE: '승격 문자 메일 보냄',
+  SMS_MARK_UNPAID: '미입금 취소 문자 메일 보냄',
+  /** 미입금 자동 취소 문자(세연님 11/3 문구). 신청 한 건(묶음)에 한 번 보냅니다. */
+  UNPAID_CANCEL_TEXT: '[입시는세연쌤] 3:1 모의면접 신청이 미입금으로 취소되었습니다.',
+  /** 관리자 화면에서 '취소'를 누르면 남는 취소 사유. 이 사유로 자리가 비면 그 타임 대기 1번이 올라갑니다. */
+  ADMIN_CANCEL_REASON: '관리자 취소',
+  /** 신청 취소 문의 안내(신청완료 화면·안내 문구와 같음). 학생이 직접 취소하는 버튼은 없습니다. */
+  CANCEL_INQUIRY: '신청 취소를 원하시면 카카오채널 입시는세연쌤으로 문의해 주세요.',
+  /** 관리자 화면에서 연 추가 타임(스크립트 속성 MI_EXTRA_SLOTS 에 'yyyy-mm-dd HH:mm' 목록으로 저장). mi_loadExtraSlots_ 가 채웁니다. */
+  EXTRA_SLOTS: [],
+  EXTRA_SLOTS_PROP: 'MI_EXTRA_SLOTS',
+  /** 관리자 키(스크립트 속성 MI_ADMIN_KEY, 20자 이상). 없으면 관리자 기능이 꺼집니다. */
+  ADMIN_KEY_PROP: 'MI_ADMIN_KEY',
+  ADMIN_KEY_MIN: 20,
+  /** 관리자 키를 10번 틀리면 10분 동안 관리자 기능을 막습니다. */
+  ADMIN_FAIL_LIMIT: 10,
+  ADMIN_FAIL_WINDOW_S: 600,
+  SITE_URL: 'sehyunt.re.kr/mock-interview',
   /** [입금알림] 메일 자동 확인(선택 기능). 켜기 전에 README '선택: 입금 알림 자동 확인'을 따르세요. */
   AUTO_DEPOSIT_CHECK: false,
   DEPOSIT_SHEET: '입금알림 기록',
@@ -90,14 +107,30 @@ var CHECKBOX_COLS = ['입금 확정', '미입금', '서류 받음'];
 var EXTRA_REQ_COLS = ['신청번호', '신청 시각', '희망 날짜', '희망 시간', '이름', '연락처', '만 14세 미만', '보호자 이름',
   '보호자 연락처', '보호자 동의', '개인정보 동의', '동의 시각', '이용 목적', '보관 기한', '메모',
   /** 새 열은 맨 뒤에 붙입니다 */
-  '모의면접 신청번호'];
+  '모의면접 신청번호',
+  /** 추가 타임을 열 때 보낸 알림 기록(날짜마다 한 줄). 이 기록이 있는 날짜는 같은 연락처로 다시 보내지 않습니다. */
+  '오픈 알림 기록'];
 var DEPOSIT_COLS = ['메일 시각', '금액', '입금자명', '결과', '신청번호', '메일 ID'];
 
 /* ===================== 규칙(순수 함수, 테스트 대상) ===================== */
 
 function mi_slotStart(date, time) { return Date.parse(date + 'T' + time + ':00+09:00'); }
 function mi_isOpen(now) { return now >= Date.parse(MI.OPEN_AT); }
-function mi_isValidSlot(date, time) { return MI.DATES.indexOf(date) >= 0 && MI.TIMES.indexOf(time) >= 0; }
+/** 정규 타임(DATES × TIMES)인지 */
+function mi_isBaseSlot(date, time) { return MI.DATES.indexOf(date) >= 0 && MI.TIMES.indexOf(time) >= 0; }
+function mi_isValidSlot(date, time) { return mi_isBaseSlot(date, time) || MI.EXTRA_SLOTS.indexOf(date + ' ' + time) >= 0; }
+/** 신청을 받는 모든 타임: 정규 타임 + 관리자 화면에서 연 추가 타임(시작 시각 순) */
+function mi_allSlots() {
+  var out = [], seen = {};
+  MI.DATES.forEach(function (date) {
+    MI.TIMES.forEach(function (time) { out.push({ date: date, time: time }); seen[date + ' ' + time] = true; });
+  });
+  MI.EXTRA_SLOTS.forEach(function (k) {
+    var m = String(k).match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/);
+    if (m && !seen[k]) { out.push({ date: m[1], time: m[2] }); seen[k] = true; }
+  });
+  return out.sort(function (a, b) { return mi_slotStart(a.date, a.time) - mi_slotStart(b.date, b.time); });
+}
 function mi_bookingClosesAt(date, time) { return mi_slotStart(date, time) - MI.BOOKING_CLOSE_MS; }
 function mi_baseDocsDeadline(date) {
   return Date.parse(date + 'T00:00:00+09:00') - (MI.DOCS_DAYS_BEFORE - 1) * 86400000 - 1;
@@ -129,19 +162,16 @@ function mi_initialStatus(rows, date, time) {
   return (full || queued || mi_isGated(rows, date, time)) ? ST.waitlist : ST.pending;
 }
 function mi_summarize(rows, now) {
-  var out = [];
-  MI.DATES.forEach(function (date) {
-    MI.TIMES.forEach(function (time) {
-      var left = Math.max(0, MI.CAPACITY - mi_heldCount(rows, date, time));
-      var waitlist = mi_waitlistOf(rows, date, time).length;
-      out.push({
-        date: date, time: time, capacity: MI.CAPACITY, left: left, waitlist: waitlist,
-        wait: left === 0 || waitlist > 0 || mi_isGated(rows, date, time),
-        closed: now >= mi_bookingClosesAt(date, time)
-      });
-    });
+  return mi_allSlots().map(function (s) {
+    var date = s.date, time = s.time;
+    var left = Math.max(0, MI.CAPACITY - mi_heldCount(rows, date, time));
+    var waitlist = mi_waitlistOf(rows, date, time).length;
+    return {
+      date: date, time: time, capacity: MI.CAPACITY, left: left, waitlist: waitlist,
+      wait: left === 0 || waitlist > 0 || mi_isGated(rows, date, time),
+      closed: now >= mi_bookingClosesAt(date, time)
+    };
   });
-  return out;
 }
 /** 홈페이지로 보내는 타임 정보: 남은 자리·대기 인원 숫자는 보내지 않습니다. */
 function mi_publicSlots(list) {
@@ -185,6 +215,9 @@ function mi_tokenOk(view, k) {
   return diff === 0;
 }
 function mi_cancel(r, now, reason) {
+  // 자리를 잡고 있던 줄(입금 대기·확정, 자리를 비워 둔 '확인 필요')이 취소되면 그 타임 대기 1번을 올릴 수 있습니다.
+  if (r.status === ST.pending || r.status === ST.confirmed || r.status === ST.check) r.freedSeat = true;
+  r.justCancelled = true;
   r.status = ST.cancelled;
   r.cancelReason = reason;
   r.log.push(mi_fmt(now) + ' 취소: ' + reason);
@@ -263,11 +296,19 @@ function mi_sweep(rows, now) {
       mi_cancel(r, now, '서류 미제출');
     }
   });
-  MI.DATES.forEach(function (date) {
-    MI.TIMES.forEach(function (time) {
+  // 대기 승격(세연님 11/3 결정)
+  // - 오픈 때부터 대기로 둔 타임(WAITLIST_AT_OPEN): 대기가 WAITLIST_RELEASE_COUNT 명 모이면 빈자리만큼 대기 순서대로 올립니다.
+  // - 그 밖의 타임: 앞선 신청자가 취소했을 때만(미입금 자동 취소·관리자 취소) 취소된 자리 수만큼 대기 1번부터 올립니다.
+  //   '확인 필요'로 바뀌어 빈 자리는 세연님이 확정·환불을 정할 때까지 올리지 않습니다.
+  mi_allSlots().forEach(function (s) {
+    var date = s.date, time = s.time;
+    (function () {
       if (now >= mi_bookingClosesAt(date, time)) return;
       if (mi_isGated(rows, date, time)) return;
-      var free = MI.CAPACITY - mi_heldCount(rows, date, time);
+      var slot = mi_slotRows(rows, date, time);
+      var releasing = MI.WAITLIST_AT_OPEN.indexOf(date + ' ' + time) >= 0 && !slot.some(function (r) { return r.holdStartedAt != null; });
+      var credits = releasing ? MI.CAPACITY : slot.filter(function (r) { return r.freedSeat; }).length;
+      var free = Math.min(credits, MI.CAPACITY - mi_heldCount(rows, date, time));
       var queue = mi_waitlistOf(rows, date, time);
       var position = 0;
       while (free > 0 && queue.length > 0) {
@@ -283,8 +324,9 @@ function mi_sweep(rows, now) {
         next.justPromoted = true;
         free -= 1;
       }
-    });
+    })();
   });
+  rows.forEach(function (r) { delete r.freedSeat; });
   return rows;
 }
 /** 서류 기한 예시(예약확정 문자): '12/12(토) 면접은 12/5(토) 밤 12시 전까지' (src/lib/mockInterview.ts docsDeadlineExample 와 같음) */
@@ -389,6 +431,24 @@ function mi_smsQueue(rows, now) {
     });
     if (mail) out.push({ kind: 'confirmed', rows: list, mark: MI.SMS_MARK_CONFIRM, mail: mail });
   });
+  // 미입금 자동 취소: 이번 정리에서 미입금으로 취소된 줄을 묶음마다 모아 한 통(신청 한 건에 한 번).
+  var ukeys = [], ugroups = {};
+  rows.forEach(function (r) {
+    if (r.kind !== '예약' || !r.justCancelled || r.status !== ST.cancelled || !mi_isUnpaidCancel(r.cancelReason)) return;
+    if (!(r.appliedAt >= since) || mi_hasMark_(r, MI.SMS_MARK_UNPAID)) return;
+    var k = mi_payUnitKey(r);
+    if (!ugroups[k]) { ugroups[k] = []; ukeys.push(k); }
+    ugroups[k].push(r);
+  });
+  ukeys.forEach(function (k) {
+    var list = ugroups[k];
+    var mail = mi_smsMail(list[0].phone, MI.UNPAID_CANCEL_TEXT, mi_details_(list).concat(['취소 사유: ' + list[0].cancelReason]));
+    list.forEach(function (r) {
+      r.log.push(stamp + (mail ? MI.SMS_MARK_UNPAID : '미입금 취소 문자 못 보냄(휴대폰 번호 확인 필요)'));
+      r.changed = true;
+    });
+    if (mail) out.push({ kind: 'unpaid', rows: list, mark: MI.SMS_MARK_UNPAID, mail: mail });
+  });
   return out;
 }
 /**
@@ -407,10 +467,125 @@ function mi_sendSmsMails_(queue, send) {
         if (i >= 0 && r.log[i].indexOf(q.mark) >= 0) r.log.splice(i, 1);
         // 승격 문자는 다시 만들 수 없으므로 실패를 남기고 확정 알림처럼 세연님이 직접 보냅니다.
         if (q.kind === 'promoted') r.log.push(mi_fmt(Date.now()) + ' 승격 문자 메일 실패(직접 보내 주세요)');
+        // 미입금 취소 문자도 다음 정리에서는 다시 만들지 않습니다(이번 정리에서 취소된 줄만 보냄).
+        if (q.kind === 'unpaid') r.log.push(mi_fmt(Date.now()) + ' 미입금 취소 문자 메일 실패(직접 보내 주세요)');
       });
     }
   });
 }
+/* ===================== 관리자 기능(취소·추가 오픈 신청 목록·타임 추가) ===================== */
+
+/**
+ * 관리자 취소. 이미 취소된 줄이면 아무것도 바꾸지 않습니다(두 번 눌러도 같음).
+ * 자리를 잡고 있던 줄이면 바로 정리(mi_sweep)해서 그 타임 대기 1번을 입금 대기(8시간 + 10분)로 올립니다.
+ * 승격 문자는 이어서 mi_smsQueue 가 '[문자발송]' 메일로 만듭니다.
+ */
+function mi_adminCancel(rows, id, now) {
+  var r = rows.filter(function (x) { return x.kind === '예약' && x.id === String(id || ''); })[0];
+  if (!r) return { ok: false, error: '신청번호를 찾지 못했습니다.' };
+  if (r.status === ST.cancelled) return { ok: true, already: true, id: r.id, promoted: [] };
+  mi_cancel(r, now, MI.ADMIN_CANCEL_REASON);
+  mi_sweep(rows, now);
+  var promoted = rows.filter(function (x) { return x.justPromoted && x.date === r.date && x.time === r.time; })
+    .map(function (x) { return { id: x.id, name: x.studentName || x.depositor, position: x.promotedFrom || 1, payDeadline: x.payDeadline }; });
+  return { ok: true, already: false, id: r.id, promoted: promoted };
+}
+/** 타임을 새로 열 때 보내는 문자(세연님 11/3 문구) */
+function mi_openNoticeText(date, time) {
+  return MI.SMS_PREFIX + '3:1 모의면접 추가 날짜(' + mi_slotLabel_(date, time) + ')가 열렸습니다. ' +
+    '신청 페이지에서 먼저 신청하신 순서대로 접수됩니다. ' + MI.SITE_URL;
+}
+/**
+ * 추가 오픈 신청의 '희망 날짜' 칸에서 날짜(yyyy-mm-dd)를 꺼냅니다. 목록 날짜(2026-12-19)와 직접 적은 날짜(12/26, 12월 26일)를 모두 읽습니다.
+ * 11·12월은 2026년, 1·2월은 2027년으로 봅니다.
+ */
+function mi_wishDates(text) {
+  var s = String(text || ''), out = [];
+  function add(y, m, d) {
+    m = Number(m); d = Number(d);
+    if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) return;
+    y = y ? Number(y) : (m <= 2 ? 2027 : 2026);
+    var k = y + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+    if (out.indexOf(k) < 0) out.push(k);
+  }
+  var re = /(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})\s*[\/.]\s*(\d{1,2})|(\d{1,2})\s*월\s*(\d{1,2})\s*일?/g, m;
+  while ((m = re.exec(s))) {
+    if (m[1]) add(m[1], m[2], m[3]); else if (m[4]) add(null, m[4], m[5]); else add(null, m[6], m[7]);
+  }
+  return out;
+}
+/**
+ * 새로 연 타임을 알릴 사람(같은 연락처는 한 명). audience 'date' 는 희망 날짜에 그 날짜가 있는 사람, 'all' 은 추가 오픈 신청한 모든 사람.
+ * '오픈 알림 기록'에 그 날짜가 이미 있으면(같은 연락처의 어느 줄이든) 다시 보내지 않습니다.
+ * requests: [{ rowNumber, id, at, name, phone, wishDate, wishTime, notified }]
+ */
+function mi_openNoticeQueue(requests, date, time, audience, now) {
+  var sentPhones = {}, picked = {}, order = [];
+  requests.forEach(function (q) {
+    var ph = mi_phone(q.phone);
+    if (String(q.notified || '').split('\n').some(function (l) { return l.indexOf(date) === 0; })) sentPhones[ph] = true;
+  });
+  requests.slice().sort(function (a, b) { return (a.at || 0) - (b.at || 0); }).forEach(function (q) {
+    var ph = mi_phone(q.phone);
+    if (!mi_isPhone(ph) || sentPhones[ph] || picked[ph]) return;
+    if (audience !== 'all' && mi_wishDates(q.wishDate).indexOf(date) < 0) return;
+    picked[ph] = q; order.push(ph);
+  });
+  var text = mi_openNoticeText(date, time);
+  return order.map(function (ph) {
+    var q = picked[ph];
+    return {
+      kind: 'open', request: q, phone: ph,
+      mark: date + ' ' + time + ' 알림 메일 보냄(' + mi_fmt(now) + ')',
+      mail: mi_smsMail(ph, text, ['추가 오픈 신청: ' + q.id + ', ' + q.name, '희망: ' + q.wishDate + ' / ' + q.wishTime,
+        '연 타임: ' + date + ' ' + time])
+    };
+  });
+}
+/** 추가 타임 알림 메일 보내기. 보낸 줄에만 기록을 붙입니다(실패한 사람은 다시 누르면 보냅니다). */
+function mi_sendOpenNotices_(queue, send) {
+  send = send || function (to, subject, body) { MailApp.sendEmail(to, subject, body); };
+  var sent = 0, failed = [];
+  queue.forEach(function (q) {
+    try {
+      send(MI.OWNER_EMAIL, q.mail.subject, q.mail.body);
+      q.request.notified = (q.request.notified ? q.request.notified + '\n' : '') + q.mark;
+      q.request.changed = true;
+      sent += 1;
+    } catch (err) {
+      console.warn('추가 타임 알림 메일 실패: ' + err);
+      failed.push(q.request.name);
+    }
+  });
+  return { sent: sent, failed: failed };
+}
+/** 새로 열 타임 확인. 잘못이면 오류 문구, 괜찮으면 ''. */
+function mi_checkNewSlot(date, time, now) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || isNaN(mi_slotStart(date, '00:00'))) return '날짜를 2026-12-26 형식으로 적어 주세요.';
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time))) return '시간을 16:00 형식으로 적어 주세요.';
+  if (mi_isBaseSlot(date, time)) return '이미 있는 타임입니다.';
+  if (now >= mi_bookingClosesAt(date, time)) return '면접 24시간 전이 지난 타임은 열 수 없습니다.';
+  return '';
+}
+/** 관리자 키 비교(키가 짧거나 비어 있으면 늘 거절) */
+function mi_adminKeyOk(expected, given) {
+  var a = String(expected || '');
+  if (a.length < MI.ADMIN_KEY_MIN) return false;
+  return mi_tokenOk({ token: a }, given);
+}
+/** 관리자 화면에 보내는 신청 목록(필요한 칸만) */
+function mi_adminRows(rows) {
+  var positions = {};
+  mi_allSlots().forEach(function (s) {
+    mi_waitlistOf(rows, s.date, s.time).forEach(function (r, i) { positions[r.id] = i + 1; });
+  });
+  return rows.filter(function (r) { return r.kind === '예약'; }).map(function (r) {
+    return { id: r.id, groupId: r.groupId, appliedAt: r.appliedAt, date: r.date, time: r.time, status: r.status,
+      waitlistPos: positions[r.id] || null, payDeadline: r.status === ST.pending ? r.payDeadline : null,
+      studentName: r.studentName, depositor: r.depositor, phone: r.phone, cancelReason: r.cancelReason || '' };
+  });
+}
+
 function mi_fmt(ms) {
   var d = new Date(ms + 9 * 3600000);
   function p(n) { return (n < 10 ? '0' : '') + n; }
@@ -505,6 +680,7 @@ function mi_matchDeposit(rows, dep) {
 
 function doGet(e) {
   var now = Date.now();
+  mi_loadExtraSlots_();
   var p = (e && e.parameter) || {};
   var rows = mi_readRows_(mi_sheet_()).rows;
   if (p.check) {
@@ -514,14 +690,16 @@ function doGet(e) {
     if (!v || !mi_tokenOk(v, p.k)) return mi_json_({ ok: false, error: '신청을 찾지 못했습니다. 받은 확인 링크를 그대로 열어 주세요.' });
     return mi_json_(v);
   }
-  return mi_json_({ ok: true, open: mi_isOpen(now), openAt: MI.OPEN_AT, now: now, slots: mi_publicSlots(mi_summarize(rows, now)) });
+  return mi_json_({ ok: true, open: mi_isOpen(now), openAt: MI.OPEN_AT, now: now, slots: mi_publicSlots(mi_summarize(rows, now)), extraSlots: MI.EXTRA_SLOTS });
 }
 
 function doPost(e) {
   var now = Date.now();
   var f;
   try { f = JSON.parse(e.postData.contents); } catch (err) { return mi_json_({ ok: false, error: '신청서를 읽지 못했습니다.' }); }
+  mi_loadExtraSlots_();
   if (f.website) return mi_json_({ ok: true, id: 'ignored' }); // 스팸 방지 칸
+  if (f.action === 'admin') return mi_json_(mi_admin_(f, now));
   if (f.action === 'extraRequest') return mi_extraRequest_(f, now);
   if (!mi_isOpen(now)) return mi_json_({ ok: false, error: '11/9(월) 밤 9시에 신청이 열립니다.' });
   var errors = mi_validate(f);
@@ -614,6 +792,130 @@ function doPost(e) {
   }
 }
 
+/** 관리자 화면에서 연 추가 타임을 읽어 MI.EXTRA_SLOTS 에 넣습니다. */
+function mi_loadExtraSlots_() {
+  var list = [];
+  try {
+    // 시험 환경(PropertiesService 없음)이나 속성을 못 읽으면 기본 타임만 씁니다.
+    var raw = typeof PropertiesService === 'undefined' ? '' : PropertiesService.getScriptProperties().getProperty(MI.EXTRA_SLOTS_PROP);
+    list = JSON.parse(raw || '[]');
+  } catch (err) { list = []; }
+  MI.EXTRA_SLOTS = (Array.isArray(list) ? list : []).map(String).filter(function (k) { return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(k); });
+}
+
+/**
+ * 관리자 기능(홈페이지 /mock-interview/?admin 화면이 부릅니다). 스크립트 속성 MI_ADMIN_KEY 와 같은 키가 와야 합니다.
+ * op: 'list'(신청·추가 오픈 신청 목록), 'cancel'(id), 'openSlot'(date, time, audience 'date'|'all').
+ */
+function mi_admin_(f, now) {
+  var cache = CacheService.getScriptCache();
+  var fails = Number(cache.get('mi_admin_fail') || 0);
+  if (fails >= MI.ADMIN_FAIL_LIMIT) return { ok: false, error: '관리자 키가 여러 번 틀렸습니다. 10분 뒤에 다시 넣어 주세요.' };
+  var expected = PropertiesService.getScriptProperties().getProperty(MI.ADMIN_KEY_PROP);
+  if (!expected || expected.length < MI.ADMIN_KEY_MIN) return { ok: false, error: '관리자 키가 아직 설정되지 않았습니다(스크립트 속성 MI_ADMIN_KEY).' };
+  if (!mi_adminKeyOk(expected, f.key)) {
+    cache.put('mi_admin_fail', String(fails + 1), MI.ADMIN_FAIL_WINDOW_S);
+    return { ok: false, error: '관리자 키가 맞지 않습니다.' };
+  }
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return { ok: false, error: '다른 처리가 진행 중입니다. 잠시 뒤 다시 눌러 주세요.' };
+  try {
+    var sheet = mi_sheet_();
+    var data = mi_readRows_(sheet);
+    var res;
+    if (f.op === 'cancel') {
+      res = mi_adminCancel(data.rows, f.id, now);
+    } else if (f.op === 'openSlot') {
+      var date = String(f.date || ''), time = String(f.time || '');
+      var err = mi_checkNewSlot(date, time, now);
+      if (err) return { ok: false, error: err };
+      var key = date + ' ' + time;
+      var already = MI.EXTRA_SLOTS.indexOf(key) >= 0;
+      if (!already) {
+        MI.EXTRA_SLOTS = MI.EXTRA_SLOTS.concat([key]).sort();
+        PropertiesService.getScriptProperties().setProperty(MI.EXTRA_SLOTS_PROP, JSON.stringify(MI.EXTRA_SLOTS));
+      }
+      var xr = mi_readExtraRequests_();
+      var queue = mi_openNoticeQueue(xr.requests, date, time, f.audience === 'all' ? 'all' : 'date', now);
+      var r2 = mi_sendOpenNotices_(queue.filter(function (q) { return q.mail; }));
+      mi_writeExtraNotified_(xr);
+      res = { ok: true, already: already, slot: key, sent: r2.sent, failed: r2.failed };
+    } else if (f.op !== 'list') {
+      return { ok: false, error: '알 수 없는 요청입니다.' };
+    }
+    mi_sweep(data.rows, now);
+    mi_sendSmsMails_(mi_smsQueue(data.rows, now));
+    mi_writeChanged_(sheet, data);
+    mi_notifyOwner_(data.rows);
+    var list = mi_readExtraRequests_();
+    return Object.assign(res || { ok: true }, {
+      rows: mi_adminRows(data.rows),
+      extraRequests: list.requests.map(function (q) {
+        return { id: q.id, at: q.at, name: q.name, phone: q.phone, wishDate: q.wishDate, wishTime: q.wishTime, notified: q.notified };
+      }),
+      extraSlots: MI.EXTRA_SLOTS
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** '추가 오픈 신청' 탭 읽기('오픈 알림 기록' 열이 없으면 맨 뒤에 붙입니다) */
+function mi_readExtraRequests_() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(MI.EXTRA_REQUEST_SHEET);
+  if (!sheet || sheet.getLastColumn() === 0) return { sheet: null, col: {}, requests: [] };
+  var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
+  if (header.indexOf('오픈 알림 기록') < 0) {
+    sheet.getRange(1, header.length + 1).setValue('오픈 알림 기록').setFontWeight('bold');
+    header.push('오픈 알림 기록');
+  }
+  var col = {};
+  header.forEach(function (h, i) { col[h] = i; });
+  var last = sheet.getLastRow();
+  var vals = last > 1 ? sheet.getRange(2, 1, last - 1, header.length).getValues() : [];
+  var requests = vals.map(function (v, i) {
+    return { rowNumber: i + 2, id: String(v[col['신청번호']] || ''), at: mi_toMs_(v[col['신청 시각']]) || 0,
+      wishDate: mi_toDateStr_(v[col['희망 날짜']]), wishTime: mi_toTimeStr_(v[col['희망 시간']]),
+      name: String(v[col['이름']] || ''), phone: mi_phone(v[col['연락처']]),
+      notified: String(v[col['오픈 알림 기록']] || ''), changed: false };
+  }).filter(function (q) { return q.id || q.phone; });
+  return { sheet: sheet, col: col, requests: requests };
+}
+function mi_writeExtraNotified_(xr) {
+  if (!xr.sheet) return;
+  xr.requests.forEach(function (q) {
+    if (q.changed) xr.sheet.getRange(q.rowNumber, xr.col['오픈 알림 기록'] + 1).setValue(q.notified);
+  });
+}
+
+/** 시트 메뉴 '선택한 줄 관리자 취소': 지금 고른 줄을 관리자 취소합니다(관리자 화면 '취소' 버튼과 같음). */
+function adminCancelSelected() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = SpreadsheetApp.getActiveSheet();
+  if (sheet.getName() !== MI.SHEET) { ui.alert("'" + MI.SHEET + "' 탭에서 취소할 줄을 골라 주세요."); return; }
+  var rowNo = sheet.getActiveRange().getRow();
+  var data = mi_readRows_(sheet);
+  var r = data.rows.filter(function (x) { return x.rowNumber === rowNo; })[0];
+  if (!r) { ui.alert('신청 줄을 골라 주세요.'); return; }
+  if (ui.alert(r.id + ' ' + r.studentName + ' (' + r.date + ' ' + r.time + ')을 취소할까요?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) { ui.alert('다른 처리가 진행 중입니다. 잠시 뒤 다시 눌러 주세요.'); return; }
+  try {
+    var now = Date.now();
+    mi_loadExtraSlots_();
+    data = mi_readRows_(sheet);
+    var res = mi_adminCancel(data.rows, r.id, now);
+    mi_sweep(data.rows, now);
+    mi_sendSmsMails_(mi_smsQueue(data.rows, now));
+    mi_writeChanged_(sheet, data);
+    mi_notifyOwner_(data.rows);
+    ui.alert(res.already ? '이미 취소된 신청입니다.' : '취소했습니다.' + (res.promoted.length ? ' 대기에서 올라간 학생: ' +
+      res.promoted.map(function (p) { return p.name; }).join(', ') + "('[문자발송]' 메일 보냄)" : ''));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /** 시간 트리거(5분마다)가 부릅니다. 메뉴에서 직접 눌러도 됩니다. */
 function sweepNow() {
   var lock = LockService.getScriptLock();
@@ -621,6 +923,7 @@ function sweepNow() {
   try {
     var sheet = mi_sheet_();
     var now = Date.now();
+    mi_loadExtraSlots_();
     var data = mi_readRows_(sheet);
     if (MI.AUTO_DEPOSIT_CHECK) checkDepositMails_(sheet, data, now);
     mi_sweep(data.rows, now);
@@ -834,6 +1137,7 @@ function onSheetEdit(e) {
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('모의면접')
     .addItem('지금 정리하기(입금 확정 반영·취소·대기 승격)', 'sweepNow')
+    .addItem('선택한 줄 관리자 취소(대기 1번 승격)', 'adminCancelSelected')
     .addItem('처음 설정(한 번만)', 'setup')
     .addToUi();
 }
@@ -911,10 +1215,8 @@ function mi_writeChanged_(sheet, data) {
   var col = data.col;
   // 대기 순번은 매번 다시 매깁니다.
   var positions = {};
-  MI.DATES.forEach(function (date) {
-    MI.TIMES.forEach(function (time) {
-      mi_waitlistOf(data.rows, date, time).forEach(function (r, i) { positions[r.id] = i + 1; });
-    });
+  mi_allSlots().forEach(function (s) {
+    mi_waitlistOf(data.rows, s.date, s.time).forEach(function (r, i) { positions[r.id] = i + 1; });
   });
   data.rows.forEach(function (r) {
     var pos = positions[r.id] || '';
@@ -951,5 +1253,8 @@ if (typeof module !== 'undefined') {
     mi_extraRequestPurgeAt: mi_extraRequestPurgeAt, mi_parseDepositMail: mi_parseDepositMail, mi_matchDeposit: mi_matchDeposit,
     EXTRA_REQ_COLS: EXTRA_REQ_COLS, mi_isGated: mi_isGated, mi_publicSlots: mi_publicSlots, mi_findActiveDuplicate: mi_findActiveDuplicate, mi_sameName_: mi_sameName_, MI_DUP_OTHER_NAME: MI.DUP_OTHER_NAME,
     mi_view_: mi_view_, mi_tokenOk: mi_tokenOk, mi_docsExample: mi_docsExample, mi_promotionText: mi_promotionText, mi_confirmText: mi_confirmText, mi_oneLine: mi_oneLine,
-    mi_smsMail: mi_smsMail, mi_smsQueue: mi_smsQueue, mi_sendSmsMails_: mi_sendSmsMails_, SCRIPT_OWNED: SCRIPT_OWNED };
+    mi_smsMail: mi_smsMail, mi_smsQueue: mi_smsQueue, mi_sendSmsMails_: mi_sendSmsMails_, SCRIPT_OWNED: SCRIPT_OWNED,
+    mi_allSlots: mi_allSlots, mi_isValidSlot: mi_isValidSlot, mi_adminCancel: mi_adminCancel, mi_openNoticeText: mi_openNoticeText,
+    mi_wishDates: mi_wishDates, mi_openNoticeQueue: mi_openNoticeQueue, mi_sendOpenNotices_: mi_sendOpenNotices_,
+    mi_checkNewSlot: mi_checkNewSlot, mi_adminKeyOk: mi_adminKeyOk, mi_adminRows: mi_adminRows };
 }

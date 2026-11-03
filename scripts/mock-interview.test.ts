@@ -43,6 +43,18 @@ import {
   msUntilOpen,
   checkLinkSearch,
   statusLabel,
+  adminCancel,
+  setExtraSlots,
+  getExtraSlots,
+  allSlots,
+  isValidSlot,
+  openNoticeText,
+  openNoticeRecipients,
+  wishDates,
+  checkNewSlot,
+  UNPAID_CANCEL_TEXT,
+  CANCEL_INQUIRY,
+  ADMIN_CANCEL_REASON,
 } from '../src/lib/mockInterview';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,11 +108,12 @@ assert.equal(rows[4].status, MI_STATUS.pending, '대기 1번 승격');
 assert.equal(MI_CONFIG.promotedPayWindowMs, 8 * HOUR, '대기 승격 입금 기한은 8시간');
 assert.equal(rows[4].payDeadline, later + 8 * HOUR, '승격 시각부터 새 8시간');
 assert.equal(rows[4].promotedFrom, 1);
-assert.equal(rows[5].promotedFrom, 2);
+// 세연님 11/3: 일반 타임은 앞선 신청자가 취소했을 때만 승격. '확인 필요'로 빈 자리는 올리지 않습니다.
+assert.equal(rows[5].status, MI_STATUS.waitlist, "'확인 필요'로 빈 자리로는 승격하지 않음");
+assert.equal(rows[5].promotedFrom, undefined);
 assert.match(rows[4].log.join('\n'), /대기 1번에서 입금 대기로 승격/);
 assert.equal(rows[4].holdStartedAt, later);
-assert.equal(rows[5].status, MI_STATUS.pending, '대기 2번도 승격(빈자리 2개: 확인 필요 줄은 자리를 잡지 않음)');
-assert.equal(summarize(rows, later).find((x) => x.date === '2026-12-13' && x.time === '16:00')!.left, 0);
+assert.equal(summarize(rows, later).find((x) => x.date === '2026-12-13' && x.time === '16:00')!.left, 1, '확인 필요 줄 자리는 비워 둠');
 // 승격된 학생도 새 기한 + 10분이 지나면 자동 취소
 assert.equal(sweep(rows, later + 8 * HOUR + GRACE - 1)[4].status, MI_STATUS.pending, '8시간 + 10분 안에는 그대로');
 let promoted = sweep(rows, later + 8 * HOUR + GRACE + 1);
@@ -111,7 +124,7 @@ rows[3] = { ...rows[3], paidChecked: true };
 rows = sweep(rows, later + 60000);
 assert.equal(rows[3].status, MI_STATUS.check);
 assert.match(rows[3].checkReason!, /미입금 취소 뒤 입금 확정/);
-assert.equal(heldCount(rows, '2026-12-13', '16:00'), 4, '확인 필요 줄은 자리를 잡지 않음');
+assert.equal(heldCount(rows, '2026-12-13', '16:00'), 3, '확인 필요 줄은 자리를 잡지 않음');
 // 입금 시각 없이 기한 + 10분 뒤에 입금 확정 체크 → 확인 필요
 let lateCheck: MiRow[] = [newBookingRow([], 'l1', '2026-12-13', '18:00', open)];
 lateCheck[0] = { ...lateCheck[0], paidChecked: true };
@@ -145,9 +158,8 @@ assert.equal(docs[1].status, MI_STATUS.confirmed, '서류 받은 학생은 유�
 assert.equal(docs.filter((r) => r.status === MI_STATUS.confirmed).length, 4, '서류가 없어도 취소하지 않음');
 assert.equal(docs.filter((r) => r.cancelReason === '서류 미제출').length, 0);
 assert.equal(docs[4].status, MI_STATUS.waitlist, '빈자리가 없으니 대기 그대로');
-// 다른 사유로 자리가 나서 서류 기한 뒤에 승격되면 서류 기한은 24시간
-docs[0] = { ...docs[0], status: MI_STATUS.cancelled, cancelReason: '본인 취소' };
-docs = sweep(docs, afterDocs + 60000);
+// 관리자 취소로 자리가 나서 서류 기한 뒤에 승격되면 서류 기한은 24시간
+docs = adminCancel(docs, 'd1', afterDocs + 60000).rows;
 assert.equal(docs[4].status, MI_STATUS.pending, '대기자 승격');
 assert.equal(docs[4].docsDeadline, afterDocs + 60000 + MI_CONFIG.docsGraceMs, '서류 기한이 지난 뒤 승격하면 24시간');
 const docsForGs = docs.slice(1, 4).map((r) => ({ ...r, log: [...r.log] }));
@@ -292,7 +304,7 @@ assert.equal(gs.ST.check, MI_STATUS.check);
 assert.equal(gs.MI.PAY_GRACE_MS, MI_CONFIG.payGraceMs);
 assert.deepEqual([...gs.COLS.slice(-3)], ['확인 필요 사유', '묶음 번호', '확인 키'], '새 열은 맨 뒤(확인 키가 마지막)');
 assert.ok(gs.SCRIPT_OWNED.includes('확인 키'));
-assert.equal(gs.EXTRA_REQ_COLS[gs.EXTRA_REQ_COLS.length - 1], '모의면접 신청번호');
+assert.deepEqual([...gs.EXTRA_REQ_COLS.slice(-2)], ['모의면접 신청번호', '오픈 알림 기록'], '새 열은 맨 뒤');
 // GS·TS sweep 일치(여러 경우)
 {
   const base = (id: string, extra: Partial<MiRow>): MiRow => ({ ...newBookingRow([], id, '2026-12-19', '17:00', open), ...extra });
@@ -578,4 +590,189 @@ console.log('✅ mock interview slot/waitlist/deadline tests passed');
   assert.equal((code.match(/: '\[문자발송\] 모의면접'/g) || []).length, 1, '문자발송 제목은 MI.SMS_SUBJECT 한 곳');
   assert.ok(!code.includes("'[모의면접] 대기 승격, 문자 보내기 필요"), '옛 승격 제목 없음');
   console.log('✅ [문자발송] mail format/idempotency tests passed');
+}
+
+/* ---- 대기 승격 규칙 나눔·관리자 취소·미입금 취소 문자·타임 추가(세연님 11/3) ---- */
+{
+  const OPEN = T('2026-11-09T21:00:00');
+  const clone = (x: unknown) => JSON.parse(JSON.stringify(x));
+  const four = (date: string, time: string, n: number) => {
+    let list: MiRow[] = [];
+    for (let i = 1; i <= n; i += 1) list.push(newBookingRow(list, `${time}-${i}`, date, time, OPEN + i * 1000, `G${i}`));
+    return list;
+  };
+  const gsCopy = (list: MiRow[]) => list.map((r) => ({ ...clone(r), phone: `0101234000${r.id.slice(-1)}`, studentName: `학생${r.id.slice(-1)}`,
+    depositor: `학생${r.id.slice(-1)}`, rowNumber: 2, changed: false }));
+
+  // 1) 일반 타임: 4명 확정 + 대기 2명. 자리가 비지 않으면(취소 없음) 아무도 올라가지 않음
+  let n = four('2026-12-13', '17:00', 6).map((r, i) => (i < 4 ? { ...r, paidChecked: true, paidAt: OPEN + 5 * 60000 } : r));
+  n = sweep(n, OPEN + 10 * 60000);
+  assert.deepEqual(n.map((r) => r.status), ['확정', '확정', '확정', '확정', '대기', '대기']);
+  // 시트에서 한 줄을 '확인 필요'로 바꿔도 승격 없음
+  const checked = sweep(n.map((r, i) => (i === 0 ? { ...r, status: MI_STATUS.check } : r)), OPEN + 20 * 60000);
+  assert.equal(checked[4].status, MI_STATUS.waitlist, "'확인 필요'로 빈 자리는 승격하지 않음");
+  // 관리자 취소 → 대기 1번만 입금 대기(8시간 + 10분)
+  const now1 = T('2026-11-20T10:00:00');
+  const c1 = adminCancel(n, '17:00-2', now1);
+  assert.equal(c1.ok, true);
+  assert.equal(c1.rows[1].status, MI_STATUS.cancelled);
+  assert.equal(c1.rows[1].cancelReason, ADMIN_CANCEL_REASON);
+  assert.deepEqual(c1.promoted.map((r) => r.id), ['17:00-5']);
+  assert.equal(c1.rows[4].payDeadline, now1 + 8 * HOUR);
+  assert.equal(c1.rows[5].status, MI_STATUS.waitlist, '대기 2번은 그대로');
+  assert.ok(c1.rows.every((r) => r.freedSeat === undefined), '표시는 저장하지 않음');
+  // 두 번 눌러도 같음(멱등)
+  const c2 = adminCancel(c1.rows, '17:00-2', now1 + 1000);
+  assert.equal(c2.already, true);
+  assert.deepEqual(clone(c2.rows), clone(c1.rows));
+  assert.equal(adminCancel(c1.rows, 'nope', now1).ok, false);
+  // 대기자를 관리자 취소하면 승격 없음
+  const c3 = adminCancel(c1.rows, '17:00-6', now1 + 2000);
+  assert.equal(c3.promoted.length, 0);
+  // 승격된 학생이 8시간 + 10분 안에 입금하지 않으면 미입금 자동 취소 → 다음 대기가 올라감(이번엔 대기 없음)
+  const late = sweep(c1.rows, now1 + 8 * HOUR + MI_CONFIG.payGraceMs + 1);
+  assert.equal(late[4].status, MI_STATUS.cancelled);
+  assert.equal(late[5].status, MI_STATUS.pending, '미입금 자동 취소도 승격 사유');
+  assert.equal(late[5].promotedFrom, 1);
+
+  // 2) 오픈 때부터 대기 타임(12/12 16:00): 2명 모이면 빈자리만큼 승격, 그 뒤로는 취소가 있을 때만
+  let g = four('2026-12-12', '16:00', 1);
+  assert.equal(g[0].status, MI_STATUS.waitlist);
+  g.push(newBookingRow(g, 'g2', '2026-12-12', '16:00', OPEN + 9000, 'G9'));
+  g = sweep(g, OPEN + 10000);
+  assert.deepEqual(g.map((r) => r.status), ['입금 대기', '입금 대기'], '2명이 모이면 바로 승격');
+  g.push(newBookingRow(g, 'g3', '2026-12-12', '16:00', OPEN + 11000, 'G10'));
+  assert.equal(g[2].status, MI_STATUS.pending, '풀린 뒤에는 빈자리가 있으면 바로 입금 대기');
+
+  // GS 와 같은 결과
+  for (const [list, id, at] of [[n, '17:00-2', now1], [c1.rows, '17:00-6', now1 + 2000]] as const) {
+    const ts = adminCancel(list, id, at).rows.map((r) => [r.id, r.status, r.payDeadline]);
+    const gsRows2 = gsCopy([...list]);
+    const res = gs.mi_adminCancel(gsRows2, id, at);
+    assert.equal(res.ok, true);
+    assert.deepEqual(clone(gsRows2.map((r: any) => [r.id, r.status, r.payDeadline])), clone(ts), `GS·TS 관리자 취소 일치 ${id}`);
+  }
+  {
+    const gsRows3 = gsCopy([...c1.rows]);
+    assert.equal(gs.mi_adminCancel(gsRows3, '17:00-2', now1).already, true, 'GS 도 멱등');
+    const gsChecked = gsCopy(n.map((r, i) => (i === 0 ? { ...r, status: MI_STATUS.check } : r)));
+    gs.mi_sweep(gsChecked, OPEN + 20 * 60000);
+    assert.equal(gsChecked[4].status, MI_STATUS.waitlist, "GS: '확인 필요'로 빈 자리는 승격하지 않음");
+  }
+  // 관리자 취소 → 승격 [문자발송] 메일
+  {
+    const gsRows4 = gsCopy([...n]);
+    gs.mi_adminCancel(gsRows4, '17:00-2', now1);
+    const q = gs.mi_smsQueue(gsRows4, now1).filter((x: any) => x.kind !== 'confirmed');
+    assert.deepEqual(clone(q.map((x: any) => x.kind)), ['promoted'], '승격 한 통(관리자 취소 문자는 없음)');
+    assert.ok(q[0].mail.body.split('\n')[1].startsWith('문자: [입시는세연쌤] 대기 1번 학생5 학생, 현재 12월 13일 17시'));
+  }
+
+  // 3) 미입금 자동 취소 문자: 묶음마다 한 통, 다시 보내지 않음
+  {
+    const u = [
+      { ...newBookingRow([], 'U1', '2026-12-19', '16:00', T('2026-11-10T10:00:00'), 'GU'), phone: '01055556666', studentName: '김학생', depositor: '김학생', rowNumber: 5, changed: false },
+      { ...newBookingRow([], 'U2', '2026-12-19', '17:00', T('2026-11-10T10:00:00'), 'GU'), phone: '01055556666', studentName: '김학생', depositor: '김학생', rowNumber: 6, changed: false },
+    ].map(clone);
+    const at = T('2026-11-10T11:11:00');
+    gs.mi_sweep(u, at);
+    assert.deepEqual(u.map((r: any) => r.status), [MI_STATUS.cancelled, MI_STATUS.cancelled]);
+    const q = gs.mi_smsQueue(u, at);
+    assert.equal(q.length, 1, '묶음 한 통');
+    assert.equal(q[0].kind, 'unpaid');
+    assert.deepEqual(q[0].mail.body.split('\n').slice(0, 2), ['받는번호: 01055556666', `문자: ${UNPAID_CANCEL_TEXT}`]);
+    assert.equal(gs.MI.UNPAID_CANCEL_TEXT, UNPAID_CANCEL_TEXT);
+    assert.ok(u.every((r: any) => r.log.some((l: string) => l.includes('미입금 취소 문자 메일 보냄'))));
+    // 다음 정리(시트에서 다시 읽은 줄: justCancelled 없음)에는 보내지 않음
+    const reread = clone(u).map((r: any) => ({ ...r, justCancelled: undefined }));
+    gs.mi_sweep(reread, at + 300000);
+    assert.equal(gs.mi_smsQueue(reread, at + 300000).length, 0);
+    // 관리자 취소는 미입금 문자 없음
+    const a = [clone({ ...newBookingRow([], 'A1', '2026-12-19', '16:00', T('2026-11-10T10:00:00')), phone: '01055556666', rowNumber: 2 })];
+    gs.mi_adminCancel(a, 'A1', at);
+    assert.equal(gs.mi_smsQueue(a, at).filter((x: any) => x.kind === 'unpaid').length, 0);
+    // 실패하면 '직접 보내 주세요' 기록
+    const u2 = [clone({ ...newBookingRow([], 'U3', '2026-12-19', '16:00', T('2026-11-10T10:00:00')), phone: '01077778888', rowNumber: 7, changed: false })];
+    gs.mi_sweep(u2, at);
+    gs.mi_sendSmsMails_(gs.mi_smsQueue(u2, at), () => { throw new Error('quota'); });
+    assert.ok(u2[0].log.some((l: string) => l.includes('미입금 취소 문자 메일 실패(직접 보내 주세요)')));
+  }
+
+  // 4) 타임 추가: 정규 타임 + 추가 타임, 신청·요약·정리에 함께 쓰임
+  {
+    assert.deepEqual(getExtraSlots(), []);
+    assert.equal(isValidSlot('2026-12-26', '15:00'), false);
+    setExtraSlots(['2026-12-26 15:00', 'bad', '2026-12-26 15:00']);
+    assert.deepEqual(getExtraSlots(), ['2026-12-26 15:00']);
+    assert.equal(isValidSlot('2026-12-26', '15:00'), true);
+    assert.deepEqual(allSlots().at(-1), { date: '2026-12-26', time: '15:00' });
+    assert.ok(summarize([], OPEN).some((x) => x.date === '2026-12-26' && x.time === '15:00' && !x.wait));
+    assert.deepEqual(validateForm({ ...EMPTY_FORM, slots: [{ date: '2026-12-26', time: '15:00' }], studentName: '홍', school: 'a', track: 'b',
+      phone: '01012345678', consentPrivacy: true, consentVideo: true, consentPhoto: true }), []);
+    gs.MI.EXTRA_SLOTS = ['2026-12-26 15:00'];
+    assert.deepEqual(clone(gs.mi_allSlots().map((x: any) => `${x.date} ${x.time}`)), allSlots().map((x) => `${x.date} ${x.time}`), 'GS·TS 타임 목록 일치');
+    assert.equal(gs.mi_isValidSlot('2026-12-26', '15:00'), true);
+    gs.MI.EXTRA_SLOTS = [];
+    setExtraSlots([]);
+
+    assert.equal(checkNewSlot('2026-12-26', '15:00', OPEN), '');
+    assert.equal(checkNewSlot('2026-12-12', '16:00', OPEN), '이미 있는 타임입니다.');
+    assert.match(checkNewSlot('12/26', '15:00', OPEN), /형식/);
+    assert.match(checkNewSlot('2026-12-26', '25:00', OPEN), /형식/);
+    assert.match(checkNewSlot('2026-12-26', '15:00', T('2026-12-25T15:00:00')), /24시간/);
+    for (const [d, t, now] of [['2026-12-26', '15:00', OPEN], ['2026-12-12', '16:00', OPEN], ['12/26', '15:00', OPEN]] as const) {
+      assert.equal(gs.mi_checkNewSlot(d, t, now), checkNewSlot(d, t, now));
+    }
+
+    const text = openNoticeText('2026-12-26', '15:00');
+    assert.equal(text, '[입시는세연쌤] 3:1 모의면접 추가 날짜(12월 26일 15시)가 열렸습니다. 신청 페이지에서 먼저 신청하신 순서대로 접수됩니다. sehyunt.re.kr/mock-interview');
+    assert.equal(gs.mi_openNoticeText('2026-12-26', '15:00'), text);
+    assert.deepEqual(wishDates('2026-12-19, 12/26 오후, 12월 27일, 1/3'), ['2026-12-19', '2026-12-26', '2026-12-27', '2027-01-03']);
+    assert.deepEqual(clone(gs.mi_wishDates('2026-12-19, 12/26 오후, 12월 27일, 1/3')), wishDates('2026-12-19, 12/26 오후, 12월 27일, 1/3'));
+
+    const reqs = [
+      { rowNumber: 2, id: 'XR-1', at: OPEN + 1, name: '가', phone: '010-1111-2222', wishDate: '2026-12-19, 12/26', wishTime: '15:00', notified: '' },
+      { rowNumber: 3, id: 'XR-2', at: OPEN + 2, name: '나', phone: '01033334444', wishDate: '2026-12-19', wishTime: '16:00', notified: '' },
+      { rowNumber: 4, id: 'XR-3', at: OPEN + 3, name: '가', phone: '01011112222', wishDate: '12월 26일', wishTime: '17:00', notified: '' },
+      { rowNumber: 5, id: 'XR-4', at: OPEN + 4, name: '다', phone: '01055556666', wishDate: '12/26', wishTime: '', notified: '2026-12-26 15:00 알림 메일 보냄(…)' },
+    ];
+    assert.deepEqual(openNoticeRecipients(reqs, '2026-12-26', 'date').map((q) => q.id), ['XR-1'], '날짜 맞는 사람, 연락처마다 한 명, 이미 받은 사람 제외');
+    assert.deepEqual(openNoticeRecipients(reqs, '2026-12-26', 'all').map((q) => q.id), ['XR-1', 'XR-2']);
+    const gq = gs.mi_openNoticeQueue(clone(reqs), '2026-12-26', '15:00', 'date', OPEN);
+    assert.deepEqual(clone(gq.map((q: any) => q.request.id)), ['XR-1'], 'GS 도 같은 사람');
+    assert.deepEqual(gq[0].mail.body.split('\n').slice(0, 2), ['받는번호: 01011112222', `문자: ${text}`]);
+    assert.equal(gq[0].mail.subject, '[문자발송] 모의면접');
+    const sent: string[] = [];
+    const r1 = gs.mi_sendOpenNotices_(gq, (_to: string, _s: string, b: string) => sent.push(b));
+    assert.equal(r1.sent, 1);
+    assert.ok(gq[0].request.notified.startsWith('2026-12-26 15:00'));
+    // 같은 날짜로 다시 열어도(같은 날짜 다른 시간 포함) 같은 사람에게 다시 보내지 않음
+    const after = clone(reqs).map((q: any) => (q.id === 'XR-1' ? { ...q, notified: gq[0].request.notified } : q));
+    assert.equal(gs.mi_openNoticeQueue(after, '2026-12-26', '16:00', 'date', OPEN).length, 0, '한 사람에 한 날짜 한 번');
+    assert.equal(openNoticeRecipients(after, '2026-12-26', 'date').length, 0);
+    // 실패하면 기록을 남기지 않음(다시 누르면 보냄)
+    const gq2 = gs.mi_openNoticeQueue(clone(reqs), '2026-12-26', '15:00', 'all', OPEN);
+    const r2 = gs.mi_sendOpenNotices_(gq2, () => { throw new Error('quota'); });
+    assert.equal(r2.sent, 0);
+    assert.equal(r2.failed.length, 2);
+    assert.ok(gq2.every((q: any) => !q.request.notified));
+  }
+
+  // 관리자 키: 짧거나 비어 있으면 늘 거절
+  assert.equal(gs.mi_adminKeyOk('', ''), false);
+  assert.equal(gs.mi_adminKeyOk('short-key', 'short-key'), false);
+  assert.equal(gs.mi_adminKeyOk('a'.repeat(24), 'a'.repeat(24)), true);
+  assert.equal(gs.mi_adminKeyOk('a'.repeat(24), 'a'.repeat(23) + 'b'), false);
+  // 관리자 목록에는 확인 키가 없음
+  const ar = gs.mi_adminRows(gsCopy([...n]).map((r: any) => ({ ...r, token: 'secret-token' })));
+  assert.ok(ar.every((r: any) => !('token' in r)));
+  assert.equal(ar[4].waitlistPos, 1);
+
+  // 화면 문구: 학생 직접 취소 없음, 카카오채널 문의 안내
+  const page = fs.readFileSync(path.join(__dirname, '../src/pages/MockInterviewPage.tsx'), 'utf-8');
+  assert.equal(CANCEL_INQUIRY, '신청 취소를 원하시면 카카오채널 입시는세연쌤으로 문의해 주세요.');
+  assert.equal(gs.MI.CANCEL_INQUIRY, CANCEL_INQUIRY);
+  assert.ok(page.includes('CANCEL_INQUIRY'), '신청완료 화면·안내에 취소 문의 문구');
+  assert.ok(!page.includes('취소는 문자나 카카오채널로 알려 주세요'), '옛 취소 안내 없음');
+  console.log('✅ waitlist split / admin cancel / unpaid SMS / extra slot tests passed');
 }
