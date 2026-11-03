@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, ShieldCheck, Download } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Download, CalendarCheck } from 'lucide-react';
 import { AdminStatsCards, useGaStats } from './AdminGaStats';
 import {
   collection,
@@ -251,12 +251,21 @@ export const AdminDashboard = ({ onBack }: { onBack: () => void }) => {
             <p className="text-brand-gray text-xs uppercase tracking-widest font-black">실시간 사용자 가입 및 분석 현황</p>
           </div>
 
-          <button 
-            onClick={handleExportCSV}
-            className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3 cursor-pointer"
-          >
-            <Download size={16} /> Export Data
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* 같은 사이트 상대경로: 실사이트는 sehyunt.re.kr, 미리보기는 미리보기 주소로 갑니다. */}
+            <a
+              href="/mock-interview/?admin"
+              className="h-14 px-8 border-2 border-brand-text text-brand-text text-[12px] font-black tracking-widest hover:bg-brand-text hover:text-brand-bg transition-colors flex items-center gap-3"
+            >
+              <CalendarCheck size={16} /> 모의면접 관리
+            </a>
+            <button 
+              onClick={handleExportCSV}
+              className="h-14 px-8 bg-brand-text text-brand-bg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-colors flex items-center gap-3 cursor-pointer"
+            >
+              <Download size={16} /> Export Data
+            </button>
+          </div>
         </div>
 
         <AdminStatsCards memberCount={users.length} state={gaStats} />
