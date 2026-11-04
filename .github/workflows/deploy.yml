@@ -58,6 +58,9 @@ jobs:
           # 모의면접 신청 Apps Script 웹 앱 주소(Settings → Secrets and variables → Actions → Variables).
           # 비어 있으면 sehyunt.re.kr/mock-interview/ 는 '신청 접수 준비 중'으로 보이고 신청을 받지 않습니다.
           VITE_MOCK_INTERVIEW_API_URL: ${{ vars.VITE_MOCK_INTERVIEW_API_URL || 'https://script.google.com/macros/s/AKfycbyQ726AsYp-MZbeDHc94S8PDWSraQbFIsoa2JsjO5ohdZdHk1H7TUkeB3PYd6LiG1As/exec' }}
+          # 전자책 주문 Apps Script 웹 앱 주소(모의면접과 같은 웹 앱. Settings → Secrets and variables → Actions → Variables).
+          # 비어 있으면 sehyunt.re.kr/ebooks/ 는 '판매 준비 중'으로 보이고 주문을 받지 않습니다.
+          VITE_EBOOKS_API_URL: ${{ vars.VITE_EBOOKS_API_URL || 'https://script.google.com/macros/s/AKfycbyQ726AsYp-MZbeDHc94S8PDWSraQbFIsoa2JsjO5ohdZdHk1H7TUkeB3PYd6LiG1As/exec' }}
       - name: Writing style check
         continue-on-error: true
         run: npm run style:check
