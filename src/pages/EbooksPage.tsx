@@ -315,15 +315,18 @@ export function EbooksPage() {
 
               <div className="eb-grid">
                 <label>주문자 이름<input value={form.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" /></label>
-                <label>휴대폰<input type="tel" value={form.phone} inputMode="tel" placeholder="010-0000-0000" onChange={(e) => set('phone', e.target.value)} autoComplete="tel" /></label>
+                <label>휴대폰<input type="tel" value={form.phone} inputMode="tel" placeholder="010-0000-0000" onChange={(e) => set('phone', e.target.value)} autoComplete="tel" aria-describedby="eb-contact-notice" /></label>
                 <label>
                   PDF를 받을 이메일
-                  <input type="email" value={form.email} placeholder="name@example.com" onChange={(e) => set('email', e.target.value)} autoComplete="email" />
+                  <input type="email" value={form.email} placeholder="name@example.com" onChange={(e) => set('email', e.target.value)} autoComplete="email" aria-describedby="eb-contact-notice" />
                 </label>
                 <label>
                   이메일 한 번 더
-                  <input type="email" value={form.emailConfirm} onChange={(e) => set('emailConfirm', e.target.value)} autoComplete="off" onPaste={(e) => e.preventDefault()} />
+                  <input type="email" value={form.emailConfirm} onChange={(e) => set('emailConfirm', e.target.value)} autoComplete="off" onPaste={(e) => e.preventDefault()} aria-describedby="eb-contact-notice" />
                 </label>
+                <p id="eb-contact-notice" className="eb-contact-notice">
+                  수집 항목: 휴대폰 번호, 이메일 · 목적: 전자책 발송과 수정본 안내 · 보관 기간: 2027년 12월 31일까지(2027학년도 입시가 끝날 때까지) 보관한 뒤 파기합니다.
+                </p>
                 <label>
                   현금영수증용 전화번호(선택)
                   <input type="tel" value={form.cashReceiptPhone} inputMode="tel" placeholder="받지 않으면 비워 두세요" onChange={(e) => set('cashReceiptPhone', e.target.value)} />

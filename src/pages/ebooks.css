@@ -44,6 +44,14 @@
 .eb-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .eb-grid label, .eb-block { display: grid; gap: 4px; font-size: 14px; font-weight: 700; }
 .eb-span { grid-column: 1 / -1; }
+.eb-grid > .eb-contact-notice {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--eb-muted);
+}
 .eb-page input:not([type]), .eb-page input[type="text"], .eb-page select, .eb-page textarea {
   font: inherit; font-weight: 400; border: 1px solid var(--eb-line); border-radius: 8px; padding: 10px 12px; background: #fff; width: 100%;
 }

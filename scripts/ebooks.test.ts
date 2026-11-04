@@ -533,6 +533,26 @@ assert.deepEqual(walk(root).filter((f) => /\.pdf$/i.test(f)), [], '저장소에 
   assert.equal(EBOOKS.find((b) => b.id === 'gyeonggi')!.title, '2027학년도 경기외고 자소서 면접 및 원서접수 가이드');
   assert.equal(EBOOKS.find((b) => b.id === 'compare')!.title, '2027학년도 경기권 외고 8개교 비교 자료집');
 }
+// 주문서: 휴대폰·이메일 바로 아래 수집 안내. 마케팅 수신 동의는 두지 않습니다.
+{
+  const page = fs.readFileSync(path.join(__dirname, '../src/pages/EbooksPage.tsx'), 'utf-8');
+  const notice =
+    '수집 항목: 휴대폰 번호, 이메일 · 목적: 전자책 발송과 수정본 안내 · 보관 기간: 2027년 12월 31일까지(2027학년도 입시가 끝날 때까지) 보관한 뒤 파기합니다.';
+  const at = page.indexOf(notice);
+  const phoneAt = page.indexOf('>휴대폰<input');
+  const emailAt = page.indexOf('PDF를 받을 이메일');
+  const cashAt = page.indexOf('현금영수증용 전화번호');
+  assert.ok(at > 0, '연락처 안내 문구');
+  assert.ok(phoneAt > 0 && emailAt > phoneAt && at > emailAt && cashAt > at, '휴대폰·이메일 바로 아래, 현금영수증보다 앞');
+  const open = page.lastIndexOf('<p ', at);
+  assert.ok(open > emailAt && page.slice(open, at).includes('className="eb-contact-notice"'), '작은 안내 글');
+  assert.equal((page.match(/id="eb-contact-notice"/g) || []).length, 1, '안내 글은 한 곳');
+  assert.equal((page.match(/aria-describedby="eb-contact-notice"/g) || []).length, 3, '휴대폰·이메일 칸이 안내를 가리킴');
+  assert.ok(!/마케팅|광고성|consentMarketing/.test(page), '마케팅 동의 없음');
+  const mi = fs.readFileSync(path.join(__dirname, '../src/pages/MockInterviewPage.tsx'), 'utf-8');
+  assert.ok(!mi.includes('전자책 발송과 수정본 안내'), '모의면접 신청서에는 넣지 않음');
+}
+
 console.log('✅ ebooks order/deposit/send tests passed');
 
 // 상세(샘플·목차) 화면: 데이터·주소·샘플 파일·빌드용 HTML
