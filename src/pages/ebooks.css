@@ -1,7 +1,7 @@
 .eb-page {
   --eb-black: #111111;
   --eb-red: #c8202f;
-  --eb-off: #f7f5f2;
+  --eb-off: #f4f5f7;
   --eb-green: #1f5c55;
   --eb-line: #dedad3;
   --eb-muted: #5a5a5a;
@@ -155,10 +155,10 @@
 .eb-store-hero { padding: 44px 0 8px; }
 .eb-store-hero .eb-eyebrow { letter-spacing: .08em; }
 .eb-shelf { list-style: none; padding: 0; margin: 8px 0 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; }
-.eb-card { background: #fff; border: 0; border-radius: 16px; box-shadow: 0 10px 28px rgba(17, 17, 17, 0.08); overflow: hidden; display: flex; flex-direction: column; }
+.eb-card { background: #e9edf2; border: 0; border-radius: 16px; box-shadow: 0 10px 28px rgba(17, 17, 17, 0.08); overflow: hidden; display: flex; flex-direction: column; }
 .eb-card-link { display: flex; flex-direction: column; flex: 1; color: inherit; text-decoration: none; padding: 16px 16px 18px; min-width: 0; }
 .eb-card-link:focus-visible { outline: 3px solid var(--eb-green); outline-offset: 2px; }
-.eb-card-cover { display: block; background: #fff; overflow: hidden; border: 0; }
+.eb-card-cover { display: block; background: transparent; overflow: hidden; border: 0; }
 .eb-card-cover img { width: 100%; height: auto; display: block; border: 0; }
 .eb-card-body { padding: 14px 4px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; text-align: center; }
 .eb-card-title { font-weight: 700; font-size: 15px; line-height: 1.45; color: #222; }

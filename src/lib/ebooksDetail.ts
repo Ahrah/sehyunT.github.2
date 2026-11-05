@@ -135,6 +135,11 @@ export function detailById(id: string): EbookDetail | undefined {
   return EBOOK_DETAILS.find((d) => d.id === id);
 }
 
+/** 목록 카드 표지. 직전 커밋의 1쪽 표지 이미지입니다. */
+export function coverPath(id: string): string {
+  return `/ebooks/covers/${id}.webp`;
+}
+
 /** 상세 화면 주소 */
 export function detailPath(id: string): string {
   return `/ebooks/${id}/`;

@@ -22,7 +22,7 @@ import {
   resetMock,
   submitOrder,
 } from '../lib/ebooksApi';
-import { detailById, detailPath, preselectFromSearch } from '../lib/ebooksDetail';
+import { coverPath, detailPath, preselectFromSearch } from '../lib/ebooksDetail';
 import { cartSummary, removeManyFromCart } from '../lib/cart';
 import { BooksHeader, useCart } from './BooksCommon';
 import { type MemberProfile, type PrefillMap, applyMemberPrefill, loadMemberProfile } from '../lib/memberPrefill';
@@ -228,13 +228,12 @@ export function EbooksPage() {
               <h2 id="eb-series-title" className="eb-series">2027 경기권 외고 자소서·면접</h2>
               <ul className="eb-shelf">
                 {EBOOKS.map((b) => {
-                  const cover = detailById(b.id)?.samples[0]?.src;
                   const price = priceOf(b);
                   return (
                     <li key={b.id} className="eb-card">
                       <a className="eb-card-link" href={detailPath(b.id)}>
                         <span className="eb-card-cover">
-                          {cover && <img src={cover} alt="" loading="lazy" width={1656} height={2342} />}
+                          <img src={coverPath(b.id)} alt="" loading="lazy" width={1100} height={1554} />
                         </span>
                         <span className="eb-card-body">
                           <span className="eb-card-title">{b.title}</span>

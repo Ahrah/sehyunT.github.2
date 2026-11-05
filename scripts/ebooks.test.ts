@@ -561,7 +561,7 @@ console.log('✅ ebooks order/deposit/send tests passed');
 
 // 상세(샘플·목차) 화면: 데이터·주소·샘플 파일·빌드용 HTML
 {
-  const { EBOOK_DETAILS, detailById, detailIdFromPath, preselectFromSearch, buyPath, detailPath } = await import('../src/lib/ebooksDetail');
+  const { EBOOK_DETAILS, detailById, detailIdFromPath, preselectFromSearch, buyPath, detailPath, coverPath } = await import('../src/lib/ebooksDetail');
   const { detailHtml } = await import('./ebooks-detail-pages');
   const pub = path.join(__dirname, '../public');
   assert.equal(EBOOK_DETAILS.length, EBOOKS.length);
@@ -668,9 +668,18 @@ console.log('✅ ebooks order/deposit/send tests passed');
   assert.ok(detailSrc.includes('구매하기') && detailSrc.includes('AddToCart'), '구매하기와 담기');
   const listSrc = fs.readFileSync(path.join(__dirname, '../src/pages/EbooksPage.tsx'), 'utf-8');
   assert.ok(listSrc.includes('자세히 보기'));
+  assert.ok(listSrc.includes('coverPath(b.id)'), '목록 카드는 표지 이미지를 씁니다');
+  assert.ok(!listSrc.includes('samples[0]'), '목록 카드에 샘플 쪽을 올리지 않습니다');
   assert.ok(listSrc.includes('수집 항목: 휴대폰 번호, 이메일 · 목적: 전자책 발송과 수정본 안내'));
+  for (const b of EBOOKS) {
+    assert.equal(coverPath(b.id), `/ebooks/covers/${b.id}.webp`);
+    assert.ok(fs.existsSync(path.join(pub, coverPath(b.id))), `표지 ${b.id}`);
+  }
+  assert.deepEqual(fs.readdirSync(path.join(pub, 'ebooks/covers')).sort(), EBOOKS.map((b) => `${b.id}.webp`).sort());
   const css = fs.readFileSync(path.join(__dirname, '../src/pages/ebooks.css'), 'utf-8');
   assert.ok(!css.includes('2px solid #999'), '표지 테두리를 두지 않습니다');
   assert.ok(css.includes('#a89078'), '자세히 보기 버튼 색');
+  assert.ok(css.includes('background: #e9edf2'), '카드 배경');
+  assert.ok(css.includes('#f4f5f7'), '페이지 배경');
   console.log('✅ ebooks detail page tests passed');
 }
