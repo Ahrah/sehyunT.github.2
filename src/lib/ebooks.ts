@@ -30,72 +30,72 @@ export const EBOOKS: readonly Ebook[] = [
   {
     id: 'compare',
     attachName: '2027학년도_경기권외고_8개교_비교자료집.pdf',
-    title: '2027학년도 경기권 외고 8개교 비교 자료집',
-    pages: null,
+    title: '입시는세연쌤books 2027 경기권 외고 8개교 비교 자료집',
+    pages: 47,
     price: 79000,
     summary: '경기·고양·과천·김포·동두천·성남·수원·안양외고 일반전형을 한 권에서 나란히 비교할 수 있도록 정리한 자료집입니다. 학원 선생님이 여러 학생의 지원 학교를 함께 살펴볼 때 모집 인원, 전형 단계, 자기소개서, 면접 일정을 학교마다 따로 찾지 않고 바로 확인하실 수 있습니다.',
   },
   {
     id: 'gyeonggi',
     attachName: '2027학년도_경기외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 경기외고 자소서 면접 및 원서접수 가이드',
-    pages: 17,
+    title: '입시는세연쌤books 2027 경기외고 자소서·면접 가이드',
+    pages: 31,
     price: 15000,
     summary: '일반전형 166명, 1단계 2배수, 자기소개서 1,500자, 면접 12월 19일(토) 기준입니다.',
   },
   {
     id: 'goyang',
     attachName: '2027학년도_고양외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 고양외고 자소서 면접 및 원서접수 가이드',
-    pages: 19,
+    title: '입시는세연쌤books 2027 고양외고 자소서·면접 가이드',
+    pages: 23,
     price: 15000,
     summary: '면접일 12월 24일(목) 기준입니다.',
   },
   {
     id: 'gwacheon',
     attachName: '2027학년도_과천외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 과천외고 자소서 면접 및 원서접수 가이드',
-    pages: 18,
+    title: '입시는세연쌤books 2027 과천외고 자소서·면접 가이드',
+    pages: 24,
     price: 15000,
     summary: '면접일 12월 19일(토) 기준입니다.',
   },
   {
     id: 'gimpo',
     attachName: '2027학년도_김포외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 김포외고 자소서 면접 및 원서접수 가이드',
-    pages: 20,
+    title: '입시는세연쌤books 2027 김포외고 자소서·면접 가이드',
+    pages: 25,
     price: 15000,
     summary: '영어과 84명·중국어과 41명·일본어과 41명, 1단계 2배수, 자기소개서 1,500자, 면접 12월 19일(토) 기준입니다.',
   },
   {
     id: 'dongducheon',
     attachName: '2027학년도_동두천외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 동두천외고 자소서 면접 및 원서접수 가이드',
-    pages: 19,
+    title: '입시는세연쌤books 2027 동두천외고 자소서·면접 가이드',
+    pages: 24,
     price: 15000,
     summary: '1단계 1.5배수, 출결 1일 0.2점 감점, 면접 12월 20일(일) 기준입니다.',
   },
   {
     id: 'seongnam',
     attachName: '2027학년도_성남외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 성남외고 자소서 면접 및 원서접수 가이드',
-    pages: 18,
+    title: '입시는세연쌤books 2027 성남외고 자소서·면접 가이드',
+    pages: 22,
     price: 15000,
     summary: '일반전형 160명, 1단계 1.5배수, 자기소개서 1,500자, 면접 12월 19일(토) 기준입니다.',
   },
   {
     id: 'suwon',
     attachName: '2027학년도_수원외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 수원외고 자소서 면접 및 원서접수 가이드',
-    pages: 18,
+    title: '입시는세연쌤books 2027 수원외고 자소서·면접 가이드',
+    pages: 22,
     price: 15000,
     summary: '면접일 12월 21일(월) 기준입니다.',
   },
   {
     id: 'anyang',
     attachName: '2027학년도_안양외고_자소서면접및원서접수가이드.pdf',
-    title: '2027학년도 안양외고 자소서 면접 및 원서접수 가이드',
-    pages: 19,
+    title: '입시는세연쌤books 2027 안양외고 자소서·면접 가이드',
+    pages: 23,
     price: 15000,
     summary: '면접일 12월 19일(토) 기준입니다.',
   },
@@ -134,10 +134,16 @@ export type EbForm = {
   email: string;
   emailConfirm: string;
   phone: string;
+  /** 생년월일 (YYYY-MM-DD, 만 19세 미만 확인용) */
+  birthdate: string;
   books: string[];
   cashReceiptPhone: string;
   consentPrivacy: boolean;
   consentRefund: boolean;
+  /** 미성년자(만 19세 미만) 부모 동의 체크 여부 */
+  consentParent: boolean;
+  /** 부모 동의 체크 시각(ms). 제출 시점에 설정됩니다. */
+  consentParentAt?: number;
   /** 스팸 방지 칸(사람은 비워 둡니다) */
   website: string;
 };
@@ -147,10 +153,12 @@ export const EMPTY_EB_FORM: EbForm = {
   email: '',
   emailConfirm: '',
   phone: '',
+  birthdate: '',
   books: [],
   cashReceiptPhone: '',
   consentPrivacy: false,
   consentRefund: false,
+  consentParent: false,
   website: '',
 };
 
@@ -165,6 +173,35 @@ export function normalizeEmail(v: string): string {
 }
 export function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizeEmail(v));
+}
+
+/** YYYY-MM-DD 형식 체크 */
+export function isValidDate(v: string): boolean {
+  const date = String(v || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const d = new Date(date);
+  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(date);
+}
+
+/**
+ * 만 나이 계산 (한국 나이가 아닌 국제 나이).
+ * 생년월일(YYYY-MM-DD)과 기준일(ms)로 계산합니다.
+ */
+export function calculateAge(birthdate: string, nowMs: number): number {
+  const birth = new Date(birthdate);
+  const now = new Date(nowMs);
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
+/** 미성년자 여부 (만 19세 미만) */
+export function isMinor(birthdate: string, nowMs: number): boolean {
+  if (!isValidDate(birthdate)) return false;
+  return calculateAge(birthdate, nowMs) < 19;
 }
 
 export function bookById(id: string, books: readonly Ebook[] = EBOOKS): Ebook | undefined {
@@ -216,7 +253,7 @@ export function formatWon(n: number): string {
 }
 
 /** 빈 배열이면 통과. 각 항목은 주문하는 분에게 보여 줄 문장입니다. */
-export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS): string[] {
+export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS, nowMs = Date.now()): string[] {
   const errors: string[] = [];
   const name = String(f.name || '').trim();
   if (!name) errors.push('주문자 이름을 적어 주세요.');
@@ -224,6 +261,10 @@ export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS): stri
   if (!isEmail(f.email)) errors.push('PDF를 받을 이메일 주소를 확인해 주세요.');
   else if (normalizeEmail(f.email) !== normalizeEmail(f.emailConfirm)) errors.push('이메일 주소 두 칸이 서로 다릅니다.');
   if (!isPhone(f.phone)) errors.push('휴대폰 번호를 확인해 주세요.');
+  if (!isValidDate(f.birthdate)) errors.push('생년월일을 확인해 주세요.');
+  else if (isMinor(f.birthdate, nowMs) && f.consentParent !== true) {
+    errors.push('미성년자(만 19세 미만)는 부모님 또는 법정대리인 동의가 필요합니다.');
+  }
   const ids = Array.isArray(f.books) ? f.books : [];
   if (ids.length === 0) errors.push('책을 1권 이상 골라 주세요.');
   else if (new Set(ids).size !== ids.length || ids.some((id) => !bookById(id, books))) errors.push('고른 책을 다시 확인해 주세요.');

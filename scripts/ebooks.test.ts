@@ -10,10 +10,13 @@ import {
   EMPTY_EB_FORM,
   type EbForm,
   type EbRow,
+  calculateAge,
   decideAction,
   depositorBase,
   formatKst,
   hasUnsetPrices,
+  isMinor,
+  isValidDate,
   itemsTotal,
   matchDeposit,
   orderTotal,
@@ -27,6 +30,20 @@ import { buyerMail, orderReceivedMail } from '../src/lib/ebooksApi';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const formatWonT = (n: number) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원`;
+
+/* ---- 생년월일 검증과 나이 계산 ---- */
+assert.equal(isValidDate('2010-01-15'), true);
+assert.equal(isValidDate('2010-1-5'), false, 'MM과 DD는 2자리');
+assert.equal(isValidDate('bad'), false);
+assert.equal(isValidDate('2010-13-01'), false);
+const testNow = Date.UTC(2026, 10, 5); // 2026-11-05
+assert.equal(calculateAge('2010-01-15', testNow), 16, '2010년생은 2026년에 만 16세');
+assert.equal(calculateAge('2007-11-05', testNow), 19, '생일 당일은 만 19세');
+assert.equal(calculateAge('2007-11-06', testNow), 18, '생일 하루 전은 아직 만 18세');
+assert.equal(isMinor('2010-01-15', testNow), true, '만 16세는 미성년자');
+assert.equal(isMinor('2007-11-05', testNow), false, '만 19세는 성인');
+assert.equal(isMinor('2007-11-06', testNow), true, '만 18세는 미성년자');
+assert.equal(isMinor('1985-03-15', testNow), false, '만 41세는 성인');
 
 /* ---- 책 목록 ---- */
 assert.equal(EBOOKS.length, 9);
@@ -42,7 +59,10 @@ const ALL = EBOOKS.map((b) => b.id);
 assert.equal(itemsTotal(ALL), 199000);
 assert.equal(orderTotal(ALL), 199000, '9권을 모두 골라도 낱권 합계(묶음 할인 없음)');
 assert.equal(orderTotal(ALL.slice(1)), 120000, '학교별 가이드 8권은 낱권 합계');
-assert.equal(EBOOKS[0].pages, null, '비교 자료집은 분량이 바뀌는 중이라 쪽수를 보이지 않습니다');
+const PAGES: Record<string, number> = {
+  compare: 47, gyeonggi: 31, goyang: 23, gwacheon: 24, gimpo: 25, dongducheon: 24, seongnam: 22, suwon: 22, anyang: 23,
+};
+for (const b of EBOOKS) assert.equal(b.pages, PAGES[b.id], `${b.id} 쪽수`);
 const unpriced = EBOOKS.map((b) => (b.id === 'gimpo' ? { ...b, price: null } : b));
 assert.equal(orderTotal(['gimpo'], unpriced), null, '가격이 비면 주문을 받지 않습니다');
 
@@ -53,20 +73,26 @@ const good: EbForm = {
   email: 'Parent@Example.com ',
   emailConfirm: 'parent@example.com',
   phone: '010-1234-5678',
+  birthdate: '1985-03-15',
   books: ['gimpo', 'compare'],
   consentPrivacy: true,
   consentRefund: true,
 };
-assert.deepEqual(validateOrder(good), []);
-assert.equal(validateOrder({ ...good, emailConfirm: 'other@example.com' }).length, 1);
-assert.match(validateOrder({ ...good, emailConfirm: 'other@example.com' })[0], /두 칸/);
-assert.equal(validateOrder({ ...good, books: [] }).length, 1);
-assert.equal(validateOrder({ ...good, books: ['gimpo', 'gimpo'] }).length, 1);
-assert.equal(validateOrder({ ...good, consentRefund: false }).length, 1);
-assert.equal(validateOrder({ ...good, consentPrivacy: false }).length, 1);
-assert.equal(validateOrder({ ...good, cashReceiptPhone: '123' }).length, 1);
-assert.deepEqual(validateOrder({ ...good, cashReceiptPhone: '010 9999 8888' }), []);
-assert.equal(validateOrder({ ...good, email: 'bad', emailConfirm: 'bad' }).length, 1);
+const now = Date.UTC(2026, 10, 5);
+assert.deepEqual(validateOrder(good, EBOOKS, now), []);
+assert.equal(validateOrder({ ...good, emailConfirm: 'other@example.com' }, EBOOKS, now).length, 1);
+assert.match(validateOrder({ ...good, emailConfirm: 'other@example.com' }, EBOOKS, now)[0], /두 칸/);
+assert.equal(validateOrder({ ...good, books: [] }, EBOOKS, now).length, 1);
+assert.equal(validateOrder({ ...good, books: ['gimpo', 'gimpo'] }, EBOOKS, now).length, 1);
+assert.equal(validateOrder({ ...good, consentRefund: false }, EBOOKS, now).length, 1);
+assert.equal(validateOrder({ ...good, consentPrivacy: false }, EBOOKS, now).length, 1);
+assert.equal(validateOrder({ ...good, cashReceiptPhone: '123' }, EBOOKS, now).length, 1);
+assert.deepEqual(validateOrder({ ...good, cashReceiptPhone: '010 9999 8888' }, EBOOKS, now), []);
+assert.equal(validateOrder({ ...good, email: 'bad', emailConfirm: 'bad' }, EBOOKS, now).length, 1);
+assert.equal(validateOrder({ ...good, birthdate: '' }, EBOOKS, now).length, 1, '생년월일 필수');
+assert.equal(validateOrder({ ...good, birthdate: '2010-01-15' }, EBOOKS, now).length, 1, '미성년자는 부모 동의 필요');
+assert.deepEqual(validateOrder({ ...good, birthdate: '2010-01-15', consentParent: true }, EBOOKS, now), [], '미성년자 + 부모 동의 = 통과');
+assert.deepEqual(validateOrder({ ...good, birthdate: '2007-10-01' }, EBOOKS, now), [], '만 19세 이상은 부모 동의 불필요');
 
 /* ---- 입금자명 ---- */
 assert.equal(depositorBase(' 남궁 민수아라 '), '남궁민수아');
@@ -154,7 +180,7 @@ assert.equal(gs.EB.BANK_ACCOUNT, EBOOK_CONFIG.bankAccount);
 assert.equal(gs.EB.SEND_WITHIN_MINUTES, EBOOK_CONFIG.sendWithinMinutes);
 assert.equal(gs.EB.DEPOSITOR_NAME_MAX, EBOOK_CONFIG.depositorNameMax);
 for (const f of [good, { ...good, emailConfirm: 'x@y.com' }, { ...good, books: [] }, { ...good, consentRefund: false }, { ...good, cashReceiptPhone: '12' }]) {
-  assert.deepEqual([...gs.eb_validate(f)], validateOrder(f), 'Ebook.gs 검증 문구가 같아야 합니다');
+  assert.deepEqual([...gs.eb_validate(f, now)], validateOrder(f, EBOOKS, now), 'Ebook.gs 검증 문구가 같아야 합니다');
 }
 assert.ok(!('BUNDLE_PRICE' in gs.EB), 'Ebook.gs 에도 묶음 가격이 없습니다');
 assert.equal(gs.EB.BANK_NAME, EBOOK_CONFIG.bankName);
@@ -530,33 +556,114 @@ assert.deepEqual(walk(root).filter((f) => /\.pdf$/i.test(f)), [], '저장소에 
   assert.ok(pm.includes("파일이 열리지 않으면 카카오톡 채널 '입시는세연쌤'으로 알려 주세요."));
   assert.ok(!pm.includes('답장') && !pm.includes('구매하신 분만'));
   assert.ok(gs.eb_pdfMail({ id: 'EB-TEST-1', name: '홍길동' }, 1, 1, ['x']).body.includes('법적 처벌의 대상'));
-  assert.equal(EBOOKS.find((b) => b.id === 'gyeonggi')!.title, '2027학년도 경기외고 자소서 면접 및 원서접수 가이드');
-  assert.equal(EBOOKS.find((b) => b.id === 'compare')!.title, '2027학년도 경기권 외고 8개교 비교 자료집');
+  assert.equal(EBOOKS.find((b) => b.id === 'gyeonggi')!.title, '입시는세연쌤books 2027 경기외고 자소서·면접 가이드');
+  assert.equal(EBOOKS.find((b) => b.id === 'compare')!.title, '입시는세연쌤books 2027 경기권 외고 8개교 비교 자료집');
+  assert.ok(EBOOKS.every((b) => b.title.startsWith('입시는세연쌤books 2027 ')), '판매 제목은 입시는세연쌤books');
 }
+// 주문서: 휴대폰·이메일 바로 아래 수집 안내. 마케팅 수신 동의는 두지 않습니다.
+{
+  const page = fs.readFileSync(path.join(__dirname, '../src/pages/EbooksPage.tsx'), 'utf-8');
+  const notice =
+    '수집 항목: 휴대폰 번호, 이메일, 생년월일 · 목적: 전자책 발송과 수정본 안내, 미성년자 확인 · 보관 기간: 2027년 12월 31일까지(2027학년도 입시가 끝날 때까지) 보관한 뒤 파기합니다.';
+  const at = page.indexOf(notice);
+  const birthdateAt = page.indexOf('생년월일');
+  const phoneAt = page.indexOf('>휴대폰<input');
+  const emailAt = page.indexOf('PDF를 받을 이메일');
+  const cashAt = page.indexOf('현금영수증용 전화번호');
+  assert.ok(at > 0, '연락처 안내 문구');
+  assert.ok(birthdateAt > 0 && phoneAt > birthdateAt && emailAt > phoneAt && at > emailAt && cashAt > at, '생년월일·휴대폰·이메일 바로 아래, 현금영수증보다 앞');
+  const open = page.lastIndexOf('<p ', at);
+  assert.ok(open > emailAt && page.slice(open, at).includes('className="eb-contact-notice"'), '작은 안내 글');
+  assert.equal((page.match(/id="eb-contact-notice"/g) || []).length, 1, '안내 글은 한 곳');
+  assert.equal((page.match(/aria-describedby="eb-contact-notice"/g) || []).length, 3, '휴대폰·이메일 칸이 안내를 가리킴');
+  assert.ok(!/마케팅|광고성|consentMarketing/.test(page), '마케팅 동의 없음');
+  assert.ok(page.includes('미성년자 부모님·법정대리인 동의'), '미성년자 부모 동의');
+  assert.ok(page.includes('isMinor(form.birthdate'), '미성년자 체크 조건부 표시');
+  const mi = fs.readFileSync(path.join(__dirname, '../src/pages/MockInterviewPage.tsx'), 'utf-8');
+  assert.ok(!mi.includes('전자책 발송과 수정본 안내'), '모의면접 신청서에는 넣지 않음');
+}
+
 console.log('✅ ebooks order/deposit/send tests passed');
 
 // 상세(샘플·목차) 화면: 데이터·주소·샘플 파일·빌드용 HTML
 {
-  const { EBOOK_DETAILS, detailById, detailIdFromPath, preselectFromSearch, buyPath, detailPath } = await import('../src/lib/ebooksDetail');
+  const { EBOOK_DETAILS, detailById, detailIdFromPath, preselectFromSearch, buyPath, detailPath, coverPath } = await import('../src/lib/ebooksDetail');
   const { detailHtml } = await import('./ebooks-detail-pages');
   const pub = path.join(__dirname, '../public');
   assert.equal(EBOOK_DETAILS.length, EBOOKS.length);
+  const SAMPLES: Record<string, [number, boolean][]> = {
+    compare: [[14, false], [18, false], [20, false], [25, true], [27, true], [40, false], [44, false]],
+    gyeonggi: [[4, true], [8, false], [10, true], [16, true], [19, false]],
+    goyang: [[4, true], [8, false], [10, true], [16, true], [19, false]],
+    gwacheon: [[4, true], [8, false], [11, true], [16, true], [19, false]],
+    gimpo: [[3, true], [9, false], [11, true], [16, true], [19, false]],
+    dongducheon: [[4, true], [8, false], [10, true], [16, true], [19, false]],
+    seongnam: [[4, true], [8, false], [10, true], [15, true], [18, false]],
+    suwon: [[4, true], [8, false], [10, true], [15, true], [18, false]],
+    anyang: [[4, true], [9, false], [11, true], [17, true], [19, false]],
+  };
   for (const b of EBOOKS) {
     const d = detailById(b.id);
     assert.ok(d, `${b.id} 상세 데이터`);
-    // 목차 쪽 번호는 2쪽부터 커지고, 책 쪽수 안에 있습니다(완성본 PDF 기준).
-    let last = 1;
+    // 목차 쪽 번호는 커지고, 마지막 장이 책 쪽수와 같습니다.
+    let last = 0;
     for (const t of d!.toc) {
-      assert.ok(t.page > last && (b.pages == null || t.page <= b.pages), `${b.id} 목차 쪽 ${t.page}`);
+      assert.ok(t.page > last && b.pages != null && t.page <= b.pages, `${b.id} 목차 쪽 ${t.page}`);
       last = t.page;
     }
-    // 샘플은 책마다 4쪽, 마지막 1쪽만 흐리게 처리합니다(세연님 결정 2026-11-03).
-    assert.equal(d!.samples.length, 4, `${b.id} 샘플 4쪽`);
-    assert.deepEqual(d!.samples.map((x) => !!x.blurred), [false, false, false, true], `${b.id} 흐린 쪽`);
-    const expected = b.id === 'compare' ? [1, 3, 13, 37] : b.id === 'gimpo' || b.id === 'anyang' ? [1, 3, 6, 8] : [1, 3, 5, 7];
-    assert.deepEqual(d!.samples.map((x) => x.page), expected, `${b.id} 샘플 쪽`);
+    assert.equal(d!.toc[d!.toc.length - 1].page, b.pages, `${b.id} 마지막 장 쪽`);
+    if (b.id === 'compare') {
+      assert.deepEqual(
+        d!.toc.map((t) => [t.label, t.title, t.page]),
+        [
+          ['0장', '이 책을 쓰는 법', 3],
+          ['1장', '한눈에 보는 2027 일정', 5],
+          ['2장', '외고 공통 규칙', 7],
+          ['3장', '점수 환산 완전 정리', 11],
+          ['4장', '비교표① 학과별 일반전형 인원', 14],
+          ['5장', '비교표② 1단계 배수·출결 가중치', 16],
+          ['6장', '비교표③ 자소서 글자 수·문항 구조', 20],
+          ['7장', '비교표④ 면접 일정·영역별 배점·동점자', 21],
+          ['8장', '학교별 1쪽 프로필', 27],
+          ['9장', '학교 고르는 나만의 점검표', 36],
+          ['10장', '원서접수 준비와 접수 방법', 38],
+          ['11장', '자소서는 면접 대본이다', 44],
+          ['마지막 장', '유의할 점', 45],
+          ['12장', '다음 단계', 47],
+        ],
+      );
+    } else {
+      const partPages: Record<string, number[]> = {
+        gyeonggi: [3, 5, 7, 8, 15, 16, 19, 30, 31],
+        goyang: [3, 5, 7, 8, 15, 16, 19, 22, 23],
+        gwacheon: [3, 5, 7, 8, 15, 16, 19, 23, 24],
+        gimpo: [3, 6, 8, 9, 15, 16, 19, 24, 25],
+        dongducheon: [3, 5, 7, 8, 15, 16, 19, 23, 24],
+        seongnam: [3, 5, 7, 8, 14, 15, 18, 21, 22],
+        suwon: [3, 5, 7, 8, 14, 15, 18, 21, 22],
+        anyang: [3, 6, 8, 9, 16, 17, 19, 22, 23],
+      };
+      assert.deepEqual(d!.toc.map((t) => t.page), partPages[b.id], `${b.id} 목차 시작 쪽`);
+      assert.deepEqual(
+        d!.toc.map((t) => [t.label, t.title]),
+        [
+          ['PART 0', '한 장 요약'],
+          ['PART 1', '내 점수 계산해 보기'],
+          ['PART 2', '면접관은 내 자소서를 어떻게 읽는가'],
+          ['PART 3', '자소서 쓰기'],
+          ['PART 4', '내 문장이 질문으로 바뀌는 예 5세트'],
+          ['PART 5', '면접'],
+          ['PART 6', '원서접수 준비 step by step'],
+          ['PART 7', 'D-day 점검표'],
+          ['PART 8', '다음 단계'],
+        ],
+        `${b.id} 목차 제목`,
+      );
+    }
+    const spec = SAMPLES[b.id];
+    assert.deepEqual(d!.samples.map((x) => [x.page, !!x.blurred]), spec, `${b.id} 샘플 쪽`);
     for (const sp of d!.samples) {
-      assert.ok(sp.page >= 1 && (b.pages == null || sp.page <= b.pages));
+      assert.ok(sp.page >= 1 && b.pages != null && sp.page <= b.pages);
       assert.ok(/^\/ebooks\/samples\/[a-z]+-p\d+\.webp$/.test(sp.src), sp.src);
       assert.ok(fs.existsSync(path.join(pub, sp.src)), `샘플 파일 ${sp.src}`);
     }
@@ -581,6 +688,24 @@ console.log('✅ ebooks order/deposit/send tests passed');
   assert.deepEqual(walk(pub).filter((f) => f.toLowerCase().endsWith('.pdf')), []);
   // 샘플 폴더에는 상세 화면이 쓰는 이미지만 둡니다(쓰지 않는 옛 샘플이 남지 않게).
   const used = new Set(EBOOK_DETAILS.flatMap((d) => d.samples.map((x) => path.basename(x.src))));
-  assert.deepEqual(fs.readdirSync(path.join(pub, 'ebooks/samples')).filter((f) => !used.has(f)), []);
+  assert.deepEqual(fs.readdirSync(path.join(pub, 'ebooks/samples')).filter((f) => !used.has(f)).sort(), []);
+  const detailSrc = fs.readFileSync(path.join(__dirname, '../src/pages/EbookDetailPage.tsx'), 'utf-8');
+  assert.ok(!detailSrc.includes('샘플에는 워터마크가 들어 있고, 마지막 쪽은 내용을 흐리게 처리했습니다.'));
+  assert.ok(detailSrc.includes('구매하기') && detailSrc.includes('AddToCart'), '구매하기와 담기');
+  const listSrc = fs.readFileSync(path.join(__dirname, '../src/pages/EbooksPage.tsx'), 'utf-8');
+  assert.ok(listSrc.includes('자세히 보기'));
+  assert.ok(listSrc.includes('coverPath(b.id)'), '목록 카드는 표지 이미지를 씁니다');
+  assert.ok(!listSrc.includes('samples[0]'), '목록 카드에 샘플 쪽을 올리지 않습니다');
+  assert.ok(listSrc.includes('수집 항목: 휴대폰 번호, 이메일, 생년월일 · 목적: 전자책 발송과 수정본 안내, 미성년자 확인'));
+  for (const b of EBOOKS) {
+    assert.equal(coverPath(b.id), `/ebooks/covers/${b.id}.webp`);
+    assert.ok(fs.existsSync(path.join(pub, coverPath(b.id))), `표지 ${b.id}`);
+  }
+  assert.deepEqual(fs.readdirSync(path.join(pub, 'ebooks/covers')).sort(), EBOOKS.map((b) => `${b.id}.webp`).sort());
+  const css = fs.readFileSync(path.join(__dirname, '../src/pages/ebooks.css'), 'utf-8');
+  assert.ok(!css.includes('2px solid #999'), '표지 테두리를 두지 않습니다');
+  assert.ok(css.includes('#a89078'), '자세히 보기 버튼 색');
+  assert.ok(css.includes('background: #e9edf2'), '카드 배경');
+  assert.ok(css.includes('#f4f5f7'), '페이지 배경');
   console.log('✅ ebooks detail page tests passed');
 }
