@@ -24,15 +24,15 @@ var EB = {
    * 가격(11/3 세연님 결정): 학교별 가이드 15000. 11/3 21:48 변경: 비교 자료집 79000, 묶음 가격 없음. src/lib/ebooks.ts 와 같아야 합니다.
    */
   BOOKS: [
-    { id: 'compare', title: '2027학년도 경기권 외고 8개교 비교 자료집', price: 79000, fileId: 'PDF_파일_ID_01_비교자료집', attachName: '2027학년도_경기권외고_8개교_비교자료집.pdf' },
-    { id: 'gyeonggi', title: '2027학년도 경기외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_02_경기외고', attachName: '2027학년도_경기외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'goyang', title: '2027학년도 고양외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_03_고양외고', attachName: '2027학년도_고양외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'gwacheon', title: '2027학년도 과천외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_04_과천외고', attachName: '2027학년도_과천외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'gimpo', title: '2027학년도 김포외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_05_김포외고', attachName: '2027학년도_김포외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'dongducheon', title: '2027학년도 동두천외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_06_동두천외고', attachName: '2027학년도_동두천외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'seongnam', title: '2027학년도 성남외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_07_성남외고', attachName: '2027학년도_성남외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'suwon', title: '2027학년도 수원외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_08_수원외고', attachName: '2027학년도_수원외고_자소서면접및원서접수가이드.pdf' },
-    { id: 'anyang', title: '2027학년도 안양외고 자소서 면접 및 원서접수 가이드', price: 15000, fileId: 'PDF_파일_ID_09_안양외고', attachName: '2027학년도_안양외고_자소서면접및원서접수가이드.pdf' }
+    { id: 'compare', title: '입시는세연쌤books 2027 경기권 외고 8개교 비교 자료집', price: 79000, fileId: 'PDF_파일_ID_01_비교자료집', attachName: '2027학년도_경기권외고_8개교_비교자료집.pdf' },
+    { id: 'gyeonggi', title: '입시는세연쌤books 2027 경기외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_02_경기외고', attachName: '2027학년도_경기외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'goyang', title: '입시는세연쌤books 2027 고양외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_03_고양외고', attachName: '2027학년도_고양외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'gwacheon', title: '입시는세연쌤books 2027 과천외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_04_과천외고', attachName: '2027학년도_과천외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'gimpo', title: '입시는세연쌤books 2027 김포외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_05_김포외고', attachName: '2027학년도_김포외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'dongducheon', title: '입시는세연쌤books 2027 동두천외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_06_동두천외고', attachName: '2027학년도_동두천외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'seongnam', title: '입시는세연쌤books 2027 성남외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_07_성남외고', attachName: '2027학년도_성남외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'suwon', title: '입시는세연쌤books 2027 수원외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_08_수원외고', attachName: '2027학년도_수원외고_자소서면접및원서접수가이드.pdf' },
+    { id: 'anyang', title: '입시는세연쌤books 2027 안양외고 자소서·면접 가이드', price: 15000, fileId: 'PDF_파일_ID_09_안양외고', attachName: '2027학년도_안양외고_자소서면접및원서접수가이드.pdf' }
   ],
   /** 입금 기한: 주문 뒤 1시간(모의면접과 같음). src/lib/ebooks.ts EBOOK_CONFIG.payWindowMs 와 같아야 합니다. */
   PAY_WINDOW_MS: 60 * 60 * 1000,

@@ -24,7 +24,7 @@ import {
 } from '../lib/ebooksApi';
 import { detailById, detailPath, preselectFromSearch } from '../lib/ebooksDetail';
 import { cartSummary, removeManyFromCart } from '../lib/cart';
-import { AddToCart, BooksHeader, useCart } from './BooksCommon';
+import { BooksHeader, useCart } from './BooksCommon';
 import { type MemberProfile, type PrefillMap, applyMemberPrefill, loadMemberProfile } from '../lib/memberPrefill';
 import './ebooks.css';
 
@@ -215,7 +215,7 @@ export function EbooksPage() {
             <section className="eb-hero eb-store-hero">
               <p className="eb-eyebrow">입시는세연쌤books</p>
               <h1>입시는세연쌤 books</h1>
-              <p className="eb-lead">입시는세연쌤books가 펴낸 전자책(PDF)입니다. 책을 누르면 목차와 샘플 쪽을 볼 수 있고, '담기'를 누르면 마이페이지 장바구니에 담깁니다.</p>
+              <p className="eb-lead">입시는세연쌤books가 펴낸 전자책(PDF)입니다. '자세히 보기'를 누르면 목차와 샘플 쪽을 볼 수 있습니다. 상세 화면에서 '구매하기'로 주문하거나 '담기'로 장바구니에 담을 수 있습니다.</p>
               <ul className="eb-facts">
                 {GUIDE_PRICE != null && <li><b>학교별 가이드</b> 1권 {formatWon(GUIDE_PRICE)}</li>}
                 {COMPARE_PRICE != null && <li><b>비교 자료집</b> {formatWon(COMPARE_PRICE)}</li>}
@@ -225,24 +225,23 @@ export function EbooksPage() {
             </section>
 
             <section aria-labelledby="eb-series-title">
-              <h2 id="eb-series-title" className="eb-series">2027학년도 경기권 외고 자소서 면접 및 원서접수 가이드</h2>
+              <h2 id="eb-series-title" className="eb-series">2027 경기권 외고 자소서·면접</h2>
               <ul className="eb-shelf">
                 {EBOOKS.map((b) => {
                   const cover = detailById(b.id)?.samples[0]?.src;
                   const price = priceOf(b);
                   return (
                     <li key={b.id} className="eb-card">
-                      <a className="eb-card-cover" href={detailPath(b.id)} aria-label={`${b.title} 자세히 보기`}>
-                        {cover && <img src={cover} alt="" loading="lazy" />}
+                      <a className="eb-card-link" href={detailPath(b.id)}>
+                        <span className="eb-card-cover">
+                          {cover && <img src={cover} alt="" loading="lazy" width={1656} height={2342} />}
+                        </span>
+                        <span className="eb-card-body">
+                          <span className="eb-card-title">{b.title}</span>
+                          <span className="eb-card-price">{price == null ? '가격 준비 중' : formatWon(price)}</span>
+                          <span className="eb-detail-link">자세히 보기</span>
+                        </span>
                       </a>
-                      <div className="eb-card-body">
-                        <a className="eb-card-title" href={detailPath(b.id)}>{b.title}</a>
-                        <span className="eb-card-meta">{b.pages != null ? `PDF ${b.pages}쪽` : 'PDF'}</span>
-                        <span className="eb-card-price">{price == null ? '가격 준비 중' : formatWon(price)}</span>
-                        <div className="eb-card-foot">
-                          <AddToCart id={b.id} user={cart.user} ready={cart.ready} inCart={cart.ids.includes(b.id)} disabled={!open || price == null} here="/ebooks/" />
-                        </div>
-                      </div>
                     </li>
                   );
                 })}
@@ -258,7 +257,7 @@ export function EbooksPage() {
             <section className="eb-section" aria-labelledby="eb-about-title">
               <h2 id="eb-about-title">이 시리즈는</h2>
               <p>경기권 외고 일반전형을 학교별로 한 권씩 정리했습니다. 기준은 각 학교의 「2027학년도 신입생 전형요항」과 경기도교육청 「2027학년도 고등학교 입학전형 기본계획」입니다. 자료 기준일은 2026년 10월 29일입니다.</p>
-              <p className="eb-note">형식 PDF(학교별 가이드 17~20쪽) · 입금 확인 후 {MINUTES}분 안에 이메일로 보내 드립니다.</p>
+              <p className="eb-note">형식 PDF(학교별 가이드 22~31쪽, 비교 자료집 47쪽) · 입금 확인 후 {MINUTES}분 안에 이메일로 보내 드립니다.</p>
             </section>
           </>
         )}

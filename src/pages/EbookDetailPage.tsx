@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { SITE, loadPretendard } from '../config/site';
 import { EBOOKS, EBOOK_CONFIG, formatWon, priceOf } from '../lib/ebooks';
-import { detailById, detailPath, type SamplePage } from '../lib/ebooksDetail';
+import { buyPath, detailById, detailPath, type SamplePage } from '../lib/ebooksDetail';
 import { isLiveSiteWithoutBackend } from '../lib/ebooksApi';
 import { AddToCart, BooksHeader, useCart } from './BooksCommon';
 import './ebooks.css';
@@ -38,7 +38,7 @@ export function EbookDetailPage({ id }: { id: string }) {
             <li><b>받는 방법</b> 입금 확인 후 {EBOOK_CONFIG.sendWithinMinutes}분 안에 이메일</li>
             <li><b>자료 기준일</b> 2026.10.29</li>
           </ul>
-          <div className="eb-detail-add"><AddToCart id={id} user={cart.user} ready={cart.ready} inCart={cart.ids.includes(id)} disabled={!open} here={here} /></div>
+          <SaleActions id={id} open={open} user={cart.user} ready={cart.ready} inCart={cart.ids.includes(id)} here={here} />
         </section>
 
         <section className="eb-section" aria-labelledby="eb-sample-title">
@@ -47,12 +47,12 @@ export function EbookDetailPage({ id }: { id: string }) {
             <p className="eb-sample-empty">샘플 준비 중입니다.</p>
           ) : (
             <>
-              <p className="eb-note">실제 PDF에서 고른 4쪽입니다. 누르면 크게 볼 수 있습니다. 샘플에는 워터마크가 들어 있고, 마지막 쪽은 내용을 흐리게 처리했습니다.</p>
+              <p className="eb-note">실제 PDF에서 고른 쪽입니다. 누르면 크게 볼 수 있습니다.</p>
               <ul className="eb-samples">
                 {detail.samples.map((s, i) => (
                   <li key={s.src}>
                     <button type="button" className="eb-sample" onClick={() => setZoom(i)} aria-label={`${s.page}쪽 ${s.caption} 크게 보기`}>
-                      <img src={s.src} alt={`${book.title} ${s.page}쪽 ${s.caption}`} loading="lazy" width={1100} height={1556} />
+                      <img src={s.src} alt={`${book.title} ${s.page}쪽 ${s.caption}`} loading="lazy" width={1656} height={2342} />
                     </button>
                     <span className="eb-sample-cap">{s.page}쪽 · {s.caption}</span>
                   </li>
@@ -92,8 +92,8 @@ export function EbookDetailPage({ id }: { id: string }) {
 
 
         <section className="eb-section eb-buy-end">
-          <div className="eb-detail-add"><AddToCart id={id} user={cart.user} ready={cart.ready} inCart={cart.ids.includes(id)} disabled={!open} here={here} /></div>
-          <p className="eb-note">'담기'를 누르면 마이페이지 장바구니에 담깁니다. 장바구니에서 주문하면 계좌이체로 결제합니다.</p>
+          <SaleActions id={id} open={open} user={cart.user} ready={cart.ready} inCart={cart.ids.includes(id)} here={here} />
+          <p className="eb-note">'구매하기'를 누르면 이 책의 주문서로 이동합니다. '담기'를 누르면 마이페이지 장바구니에 담깁니다. 결제는 계좌이체입니다.</p>
           <p><a href="/ebooks/">← 입시는세연쌤 books 목록으로</a></p>
         </section>
 
@@ -123,6 +123,29 @@ export function EbookDetailPage({ id }: { id: string }) {
   );
 }
 
+
+function SaleActions({
+  id,
+  open,
+  user,
+  ready,
+  inCart,
+  here,
+}: {
+  id: string;
+  open: boolean;
+  user: ReturnType<typeof useCart>['user'];
+  ready: boolean;
+  inCart: boolean;
+  here: string;
+}) {
+  return (
+    <div className="eb-detail-actions">
+      {open && <a className="eb-buy" href={buyPath(id)}>구매하기</a>}
+      <AddToCart id={id} user={user} ready={ready} inCart={inCart} disabled={!open} here={here} />
+    </div>
+  );
+}
 
 function Lightbox({
   samples,

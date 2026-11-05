@@ -1,13 +1,14 @@
 /**
  * 전자책 상세 화면(/ebooks/<id>/) 데이터.
- * 목차·쪽수는 세연님이 준 완성본 PDF(2026.10.29 기준)에서 옮겼습니다. 내용을 지어내지 않습니다.
- * 샘플 이미지는 public/ebooks/samples/<id>-p<쪽>.webp 입니다(워터마크 '샘플 · 입시는세연쌤books').
+ * 제목·쪽수·목차는 2026-11-05 변경 목록과 같습니다. 장 제목과 시작 쪽만 적습니다.
+ * 샘플 이미지는 public/ebooks/samples/<id>-p<쪽>.webp 입니다.
+ * blurred 는 본문을 모자이크로 가린 쪽입니다(변경 목록의 mosaic 쪽).
  * PDF 파일은 저장소에 넣지 않습니다. 샘플이 없으면 samples 를 비워 두면 화면에 '샘플 준비 중'이 나옵니다.
  */
 import { EBOOKS, type Ebook } from './ebooks';
 
 export type TocItem = { label: string; title: string; page: number };
-/** blurred: 내용을 읽기 어렵게 흐리게 처리한 쪽(구성만 보여 줍니다). */
+/** blurred: 내용을 읽기 어렵게 모자이크로 가린 쪽입니다. */
 export type SamplePage = { page: number; src: string; caption: string; blurred?: boolean };
 export type EbookDetail = {
   id: string;
@@ -26,22 +27,48 @@ const sample = (id: string, page: number, caption: string, blurred = false): Sam
   ...(blurred ? { blurred: true } : {}),
 });
 
-type SchoolSpec = { id: string; school: string; pages: [number, number, number, number, number, number, number] };
+/** 샘플 쪽이 들어 있는 장의 제목 */
+function captionFor(toc: readonly TocItem[], page: number): string {
+  let hit = toc[0];
+  for (const t of toc) if (t.page <= page) hit = t;
+  return hit.label ? `${hit.label} ${hit.title}` : hit.title;
+}
 
-/** 학교별 가이드 8권은 같은 구성입니다. 쪽 번호만 책마다 다릅니다(PART 1~7 시작 쪽). */
+const PARTS: readonly { label: string; title: string }[] = [
+  { label: 'PART 0', title: '한 장 요약' },
+  { label: 'PART 1', title: '내 점수 계산해 보기' },
+  { label: 'PART 2', title: '면접관은 내 자소서를 어떻게 읽는가' },
+  { label: 'PART 3', title: '자소서 쓰기' },
+  { label: 'PART 4', title: '내 문장이 질문으로 바뀌는 예 5세트' },
+  { label: 'PART 5', title: '면접' },
+  { label: 'PART 6', title: '원서접수 준비 step by step' },
+  { label: 'PART 7', title: 'D-day 점검표' },
+  { label: 'PART 8', title: '다음 단계' },
+];
+
+type SchoolSpec = {
+  id: string;
+  school: string;
+  /** PART 0~8 시작 쪽 */
+  parts: [number, number, number, number, number, number, number, number, number];
+  /** [쪽, 모자이크 여부] */
+  samples: readonly (readonly [number, boolean])[];
+};
+
+/** 학교별 가이드 8권은 같은 장 제목입니다. 시작 쪽만 책마다 다릅니다. */
 const SCHOOLS: SchoolSpec[] = [
-  { id: 'gyeonggi', school: '경기외고', pages: [5, 7, 9, 13, 14, 16, 17] },
-  { id: 'goyang', school: '고양외고', pages: [5, 7, 9, 14, 15, 18, 19] },
-  { id: 'gwacheon', school: '과천외고', pages: [5, 7, 9, 14, 15, 17, 18] },
-  { id: 'gimpo', school: '김포외고', pages: [6, 8, 10, 15, 16, 19, 20] },
-  { id: 'dongducheon', school: '동두천외고', pages: [5, 7, 9, 14, 15, 18, 19] },
-  { id: 'seongnam', school: '성남외고', pages: [5, 7, 9, 13, 14, 17, 18] },
-  { id: 'suwon', school: '수원외고', pages: [5, 7, 9, 13, 14, 17, 18] },
-  { id: 'anyang', school: '안양외고', pages: [6, 8, 10, 15, 16, 18, 19] },
+  { id: 'gyeonggi', school: '경기외고', parts: [3, 5, 7, 8, 15, 16, 19, 30, 31], samples: [[4, true], [8, false], [10, true], [16, true], [19, false]] },
+  { id: 'goyang', school: '고양외고', parts: [3, 5, 7, 8, 15, 16, 19, 22, 23], samples: [[4, true], [8, false], [10, true], [16, true], [19, false]] },
+  { id: 'gwacheon', school: '과천외고', parts: [3, 5, 7, 8, 15, 16, 19, 23, 24], samples: [[4, true], [8, false], [11, true], [16, true], [19, false]] },
+  { id: 'gimpo', school: '김포외고', parts: [3, 6, 8, 9, 15, 16, 19, 24, 25], samples: [[3, true], [9, false], [11, true], [16, true], [19, false]] },
+  { id: 'dongducheon', school: '동두천외고', parts: [3, 5, 7, 8, 15, 16, 19, 23, 24], samples: [[4, true], [8, false], [10, true], [16, true], [19, false]] },
+  { id: 'seongnam', school: '성남외고', parts: [3, 5, 7, 8, 14, 15, 18, 21, 22], samples: [[4, true], [8, false], [10, true], [15, true], [18, false]] },
+  { id: 'suwon', school: '수원외고', parts: [3, 5, 7, 8, 14, 15, 18, 21, 22], samples: [[4, true], [8, false], [10, true], [15, true], [18, false]] },
+  { id: 'anyang', school: '안양외고', parts: [3, 6, 8, 9, 16, 17, 19, 22, 23], samples: [[4, true], [9, false], [11, true], [17, true], [19, false]] },
 ];
 
 function schoolDetail(s: SchoolSpec): EbookDetail {
-  const [p1, p2, p3, p4, p5, p6, p7] = s.pages;
+  const toc: TocItem[] = PARTS.map((p, i) => ({ label: p.label, title: p.title, page: s.parts[i] }));
   return {
     id: s.id,
     audience: [
@@ -55,26 +82,27 @@ function schoolDetail(s: SchoolSpec): EbookDetail {
       '사실과 세연쌤의 해석을 나눠 적었습니다. 예시 학생과 점수는 모두 가상입니다.',
       '자료 기준일은 2026년 10월 29일입니다.',
     ],
-    toc: [
-      { label: '', title: '이 책을 읽기 전에', page: 2 },
-      { label: 'PART 0', title: `${s.school} 2027 일반전형 한 장 요약`, page: 3 },
-      { label: 'PART 1', title: '내 점수 계산해 보기', page: p1 },
-      { label: 'PART 2', title: '면접관은 내 자소서를 어떻게 읽는가', page: p2 },
-      { label: 'PART 3', title: '자소서 쓰기', page: p3 },
-      { label: 'PART 4', title: '내 문장이 질문으로 바뀌는 예 5세트', page: p4 },
-      { label: 'PART 5', title: `${s.school} 면접`, page: p5 },
-      { label: 'PART 6', title: 'D-day 점검표', page: p6 },
-      { label: 'PART 7', title: '다음 단계', page: p7 },
-    ],
-    samples: [
-      // 세연님 결정(2026-11-03): 표지·PART 0·PART 1 첫 쪽·PART 2 첫 쪽(흐리게).
-      sample(s.id, 1, '표지'),
-      sample(s.id, 3, `PART 0 ${s.school} 2027 일반전형 한 장 요약`),
-      sample(s.id, p1, 'PART 1 내 점수 계산해 보기'),
-      sample(s.id, p2, 'PART 2 면접관은 내 자소서를 어떻게 읽는가 (일부 흐리게)', true),
-    ],
+    toc,
+    samples: s.samples.map(([page, blurred]) => sample(s.id, page, captionFor(toc, page), blurred)),
   };
 }
+
+const COMPARE_TOC: TocItem[] = [
+  { label: '0장', title: '이 책을 쓰는 법', page: 3 },
+  { label: '1장', title: '한눈에 보는 2027 일정', page: 5 },
+  { label: '2장', title: '외고 공통 규칙', page: 7 },
+  { label: '3장', title: '점수 환산 완전 정리', page: 11 },
+  { label: '4장', title: '비교표① 학과별 일반전형 인원', page: 14 },
+  { label: '5장', title: '비교표② 1단계 배수·출결 가중치', page: 16 },
+  { label: '6장', title: '비교표③ 자소서 글자 수·문항 구조', page: 20 },
+  { label: '7장', title: '비교표④ 면접 일정·영역별 배점·동점자', page: 21 },
+  { label: '8장', title: '학교별 1쪽 프로필', page: 27 },
+  { label: '9장', title: '학교 고르는 나만의 점검표', page: 36 },
+  { label: '10장', title: '원서접수 준비와 접수 방법', page: 38 },
+  { label: '11장', title: '자소서는 면접 대본이다', page: 44 },
+  { label: '마지막 장', title: '유의할 점', page: 45 },
+  { label: '12장', title: '다음 단계', page: 47 },
+];
 
 const COMPARE: EbookDetail = {
   id: 'compare',
@@ -88,30 +116,17 @@ const COMPARE: EbookDetail = {
     '사실과 세연쌤의 해석을 나눠 적었습니다.',
     '자료 기준일은 2026년 10월 29일입니다.',
   ],
-  toc: [
-    { label: '', title: '이 책을 읽기 전에', page: 2 },
-    { label: '0장', title: '이 책을 쓰는 법', page: 3 },
-    { label: '1장', title: '한눈에 보는 2027 일정', page: 4 },
-    { label: '2장', title: '외고 공통 규칙', page: 6 },
-    { label: '3장', title: '점수 환산 완전 정리', page: 10 },
-    { label: '4장', title: '비교표① 학과별 일반전형 인원', page: 13 },
-    { label: '5장', title: '비교표② 1단계 배수·출결 가중치', page: 15 },
-    { label: '6장', title: '비교표③ 자소서 글자 수·문항 구조', page: 19 },
-    { label: '7장', title: '비교표④ 면접 일정·영역별 배점·동점자', page: 21 },
-    { label: '8장', title: '학교별 1쪽 프로필', page: 25 },
-    { label: '9장', title: '졸업생 진로·교육과정(작성용 양식)', page: 35 },
-    { label: '10장', title: '학교 고르는 나만의 점검표', page: 37 },
-    { label: '11장', title: '자소서는 면접 대본이다', page: 39 },
-    { label: '마지막 장', title: '유의할 점 / 하지 말아야 할 점', page: 41 },
-    { label: '12장', title: '다음 단계', page: 43 },
-  ],
-  // 세연님 결정(2026-11-03 15:13): 1·3·13·37쪽, 37쪽은 흐리게.
-  samples: [
-    sample('compare', 1, '표지'),
-    sample('compare', 3, '0장 이 책을 쓰는 법'),
-    sample('compare', 13, '4장 비교표① 학과별 일반전형 인원'),
-    sample('compare', 37, '10장 학교 고르는 나만의 점검표 (일부 흐리게)', true),
-  ],
+  toc: COMPARE_TOC,
+  // 25·27쪽은 본문을 모자이크로 가렸습니다.
+  samples: ([
+    [14, false],
+    [18, false],
+    [20, false],
+    [25, true],
+    [27, true],
+    [40, false],
+    [44, false],
+  ] as const).map(([page, blurred]) => sample('compare', page, captionFor(COMPARE_TOC, page), blurred)),
 };
 
 export const EBOOK_DETAILS: readonly EbookDetail[] = [COMPARE, ...SCHOOLS.map(schoolDetail)];
