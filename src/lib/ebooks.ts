@@ -134,10 +134,16 @@ export type EbForm = {
   email: string;
   emailConfirm: string;
   phone: string;
+  /** 생년월일 (YYYY-MM-DD, 만 19세 미만 확인용) */
+  birthdate: string;
   books: string[];
   cashReceiptPhone: string;
   consentPrivacy: boolean;
   consentRefund: boolean;
+  /** 미성년자(만 19세 미만) 부모 동의 체크 여부 */
+  consentParent: boolean;
+  /** 부모 동의 체크 시각(ms). 제출 시점에 설정됩니다. */
+  consentParentAt?: number;
   /** 스팸 방지 칸(사람은 비워 둡니다) */
   website: string;
 };
@@ -147,10 +153,12 @@ export const EMPTY_EB_FORM: EbForm = {
   email: '',
   emailConfirm: '',
   phone: '',
+  birthdate: '',
   books: [],
   cashReceiptPhone: '',
   consentPrivacy: false,
   consentRefund: false,
+  consentParent: false,
   website: '',
 };
 
@@ -165,6 +173,35 @@ export function normalizeEmail(v: string): string {
 }
 export function isEmail(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizeEmail(v));
+}
+
+/** YYYY-MM-DD 형식 체크 */
+export function isValidDate(v: string): boolean {
+  const date = String(v || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const d = new Date(date);
+  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(date);
+}
+
+/**
+ * 만 나이 계산 (한국 나이가 아닌 국제 나이).
+ * 생년월일(YYYY-MM-DD)과 기준일(ms)로 계산합니다.
+ */
+export function calculateAge(birthdate: string, nowMs: number): number {
+  const birth = new Date(birthdate);
+  const now = new Date(nowMs);
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
+/** 미성년자 여부 (만 19세 미만) */
+export function isMinor(birthdate: string, nowMs: number): boolean {
+  if (!isValidDate(birthdate)) return false;
+  return calculateAge(birthdate, nowMs) < 19;
 }
 
 export function bookById(id: string, books: readonly Ebook[] = EBOOKS): Ebook | undefined {
@@ -216,7 +253,7 @@ export function formatWon(n: number): string {
 }
 
 /** 빈 배열이면 통과. 각 항목은 주문하는 분에게 보여 줄 문장입니다. */
-export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS): string[] {
+export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS, nowMs = Date.now()): string[] {
   const errors: string[] = [];
   const name = String(f.name || '').trim();
   if (!name) errors.push('주문자 이름을 적어 주세요.');
@@ -224,6 +261,10 @@ export function validateOrder(f: EbForm, books: readonly Ebook[] = EBOOKS): stri
   if (!isEmail(f.email)) errors.push('PDF를 받을 이메일 주소를 확인해 주세요.');
   else if (normalizeEmail(f.email) !== normalizeEmail(f.emailConfirm)) errors.push('이메일 주소 두 칸이 서로 다릅니다.');
   if (!isPhone(f.phone)) errors.push('휴대폰 번호를 확인해 주세요.');
+  if (!isValidDate(f.birthdate)) errors.push('생년월일을 확인해 주세요.');
+  else if (isMinor(f.birthdate, nowMs) && f.consentParent !== true) {
+    errors.push('미성년자(만 19세 미만)는 부모님 또는 법정대리인 동의가 필요합니다.');
+  }
   const ids = Array.isArray(f.books) ? f.books : [];
   if (ids.length === 0) errors.push('책을 1권 이상 골라 주세요.');
   else if (new Set(ids).size !== ids.length || ids.some((id) => !bookById(id, books))) errors.push('고른 책을 다시 확인해 주세요.');

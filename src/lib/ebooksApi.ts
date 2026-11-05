@@ -62,7 +62,7 @@ export function resetMock() {
 
 export function mockOrder(f: EbForm, now: number, rand: () => number = Math.random): OrderResponse {
   if (f.website) return { ok: true, id: 'ignored' };
-  const errors = validateOrder(f);
+  const errors = validateOrder(f, undefined, now);
   if (errors.length) return { ok: false, error: errors.join(' ') };
   const total = orderTotal(f.books);
   if (total == null) return { ok: false, error: '가격을 정하는 중인 책이 있습니다.' };

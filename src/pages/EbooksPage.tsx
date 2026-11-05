@@ -7,6 +7,7 @@ import {
   type EbForm,
   formatKst,
   formatWon,
+  isMinor,
   itemsTotal,
   orderTotal,
   priceOf,
@@ -116,7 +117,9 @@ export function EbooksPage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!open || sending) return;
-    const errs = validateOrder(form);
+    const now = Date.now();
+    const formWithTimestamp = { ...form, consentParentAt: form.consentParent ? now : undefined };
+    const errs = validateOrder(formWithTimestamp, EBOOKS, now);
     if (errs.length) {
       setErrors(errs);
       return;
@@ -124,7 +127,7 @@ export function EbooksPage() {
     setErrors([]);
     setSending(true);
     try {
-      const res = await submitOrder(form, Date.now());
+      const res = await submitOrder(formWithTimestamp, now);
       if (res.ok) {
         // 주문한 책은 장바구니에서 뺍니다.
         if (fromCart && cart.user) removeManyFromCart(cart.user.uid, form.books);
@@ -313,6 +316,10 @@ export function EbooksPage() {
 
               <div className="eb-grid">
                 <label>주문자 이름<input value={form.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" /></label>
+                <label>
+                  생년월일
+                  <input type="date" value={form.birthdate} onChange={(e) => set('birthdate', e.target.value)} autoComplete="bday" placeholder="YYYY-MM-DD" />
+                </label>
                 <label>휴대폰<input type="tel" value={form.phone} inputMode="tel" placeholder="010-0000-0000" onChange={(e) => set('phone', e.target.value)} autoComplete="tel" aria-describedby="eb-contact-notice" /></label>
                 <label>
                   PDF를 받을 이메일
@@ -323,7 +330,7 @@ export function EbooksPage() {
                   <input type="email" value={form.emailConfirm} onChange={(e) => set('emailConfirm', e.target.value)} autoComplete="off" onPaste={(e) => e.preventDefault()} aria-describedby="eb-contact-notice" />
                 </label>
                 <p id="eb-contact-notice" className="eb-contact-notice">
-                  수집 항목: 휴대폰 번호, 이메일 · 목적: 전자책 발송과 수정본 안내 · 보관 기간: 2027년 12월 31일까지(2027학년도 입시가 끝날 때까지) 보관한 뒤 파기합니다.
+                  수집 항목: 휴대폰 번호, 이메일, 생년월일 · 목적: 전자책 발송과 수정본 안내, 미성년자 확인 · 보관 기간: 2027년 12월 31일까지(2027학년도 입시가 끝날 때까지) 보관한 뒤 파기합니다.
                 </p>
                 <label>
                   현금영수증용 전화번호(선택)
@@ -339,8 +346,8 @@ export function EbooksPage() {
 
               <div className="eb-consents">
                 <Consent checked={form.consentPrivacy} onChange={(v) => set('consentPrivacy', v)} title="(필수) 개인정보 수집·이용 동의">
-                  <li>수집 항목: 주문자 이름, 이메일 주소, 휴대폰 번호, 입금자명, 현금영수증용 전화번호(적은 경우).</li>
-                  <li>이용 목적: 주문과 입금 확인, PDF 발송, 현금영수증 발급, 문의 답변.</li>
+                  <li>수집 항목: 주문자 이름, 이메일 주소, 휴대폰 번호, 생년월일, 입금자명, 현금영수증용 전화번호(적은 경우), 미성년자인 경우 부모 동의 여부.</li>
+                  <li>이용 목적: 주문과 입금 확인, PDF 발송, 현금영수증 발급, 문의 답변, 미성년자 확인.</li>
                   <li>보관 기간: 거래일로부터 {EBOOK_CONFIG.keepYears}년(전자상거래법에 따른 거래 기록 보관). 기간이 지나면 파기합니다.</li>
                   <li>동의하지 않을 수 있습니다. 동의하지 않으면 주문할 수 없습니다.</li>
                 </Consent>
@@ -349,6 +356,12 @@ export function EbooksPage() {
                   <li>이메일로 PDF를 받은 뒤에는 전자상거래법 제17조 제2항에 따라 단순 변심 환불이 제한됩니다.</li>
                   <li>PDF를 받기 전에는 낸 금액을 모두 돌려 드립니다.</li>
                 </Consent>
+                {form.birthdate && isMinor(form.birthdate, Date.now()) && (
+                  <Consent checked={form.consentParent} onChange={(v) => set('consentParent', v)} title="(필수) 미성년자 부모님·법정대리인 동의">
+                    <li>주문자가 만 19세 미만 미성년자인 경우, 부모님 또는 법정대리인의 동의가 필요합니다.</li>
+                    <li>부모님 또는 법정대리인이 이 주문을 확인하고 동의했음을 체크해 주세요.</li>
+                  </Consent>
+                )}
               </div>
 
               {errors.length > 0 && (
