@@ -39,7 +39,7 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey>
  * Returns { lockSalt, lockIv, lockIter, lockCipher } in base64.
  */
 export async function encryptPayload(
-  payload: { content: string | null; fileUrl: string; fileName: string },
+  payload: { content: string | null; fileUrl: string; fileName: string; images?: string[] },
   password: string
 ): Promise<{ lockSalt: string; lockIv: string; lockIter: number; lockCipher: string }> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
@@ -72,7 +72,7 @@ export async function decryptPayload(
   lockIv: string,
   lockCipher: string,
   password: string
-): Promise<{ content: string | null; fileUrl: string; fileName: string }> {
+): Promise<{ content: string | null; fileUrl: string; fileName: string; images?: string[] }> {
   const salt = base64ToArrayBuffer(lockSalt);
   const iv = base64ToArrayBuffer(lockIv);
   const ciphertext = base64ToArrayBuffer(lockCipher);

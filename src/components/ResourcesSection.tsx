@@ -287,7 +287,7 @@ export const ResourcesSection = ({ isAdmin: propIsAdmin, onOpenAuth }: { isAdmin
 
   const handleImageFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
+      const selectedFiles: File[] = Array.from(e.target.files);
       const oversizedFiles = selectedFiles.filter(f => f.size > 18 * 1024 * 1024);
       
       if (oversizedFiles.length > 0) {
