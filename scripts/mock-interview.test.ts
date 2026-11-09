@@ -345,7 +345,7 @@ assert.equal(gs.MI.EXTRA_REQUEST_SHEET, '추가 오픈 신청');
 assert.equal(gs.MI.EXTRA_REQUEST_PURPOSE, '대기·추가 타임 연락');
 assert.equal(gs.MI.OPEN_REQUEST_TIME, undefined);
 assert.equal(gs.MI.FEE, MI_CONFIG.fee);
-assert.equal(gs.MI.AUTO_DEPOSIT_CHECK, false, '입금알림 자동 확인은 기본 꺼짐');
+assert.equal(gs.MI.AUTO_DEPOSIT_CHECK, true, '입금알림 자동 확인 켜짐 (2026-11-09 오픈)');
 assert.equal(gs.mi_extraRequestPurgeAt(), extraRequestPurgeAt());
 for (const f of [orGood, orFree, { ...orGood, dates: ['2026-12-14'] }, { ...orFree, timeText: '' }, { ...orGood, under14: true, guardianName: '' } as typeof orGood, { ...orGood, dates: [], times: [] }]) {
   assert.deepEqual([...gs.mi_validateExtraRequest(f)], validateExtraRequest(f), 'GS·TS 추가 오픈 검사 일치');
@@ -534,7 +534,7 @@ console.log('✅ mock interview slot/waitlist/deadline tests passed');
   const t1 = lines(q1[0].mail.body)[1];
   assert.equal(
     t1,
-    `문자: [입시는세연쌤] 홍길동 학생, 12월 12일 17시, 12월 13일 16시 3:1 모의면접 예약이 확정되었습니다. 서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ${gs.MI.OWNER_EMAIL}으로 보내주세요. 예: 12/12(토) 면접은 12/5(토) 밤 12시 전까지, 12/13(일) 면접은 12/6(일) 밤 12시 전까지 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.`,
+    `문자: [입시는세연쌤] 12월 3:1 모의면접 예약 확정 안내 홍길동 학생, 12월 12일 17시, 12월 13일 16시 3:1 모의면접 예약이 확정되었습니다. 서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ${gs.MI.OWNER_EMAIL}으로 보내주세요. 예: 12/12(토) 면접은 12/5(토) 밤 12시 전까지, 12/13(일) 면접은 12/6(일) 밤 12시 전까지 보내 주세요. 서류를 보내지 않으면 면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로 진행합니다.`,
   );
   assert.ok(q1[0].mail.body.includes('시트 행: 2, 3') && q1[0].mail.body.includes('신청번호: MI-1, MI-2 (묶음 G1)'));
   assert.equal(lines(q1[1].mail.body)[0], '받는번호: 01099998888');
