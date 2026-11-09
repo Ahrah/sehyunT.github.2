@@ -370,22 +370,28 @@ function mi_promotionText(position, depositor, date, time, payDeadline) {
     '입금 계좌: ' + MI.BANK_ACCOUNT + ', ' + fee + '원';
 }
 /**
- * 예약확정 문자(묶음 하나에 한 통). 기존 확정 메일의 문자 예시를 한 줄로 만든 것입니다.
- * 예: '[입시는세연쌤] 홍길동 학생, 12월 12일 16시 3:1 모의면접 예약이 확정되었습니다. 서류는 면접 1주 전까지 …'
+ * 예약확정 문자(묶음 하나에 한 통). 세연님 지정 줄바꿈 형식으로 만듭니다.
+ * 예: '[입시는세연쌤] 12월 3:1 모의면접 예약 확정 안내\n세연테스트 학생,\n12월 13일 16시 3:1 모의면접 예약이 확정되었습니다.\n\nQ. 서류는 언제 보내나요?…'
  */
 function mi_confirmText(rows) {
   var list = rows.slice().sort(function (a, b) { return mi_slotStart(a.date, a.time) - mi_slotStart(b.date, b.time); });
   var slots = list.map(function (x) { return mi_slotLabel_(x.date, x.time); }).join(', ');
   var dates = [];
   list.forEach(function (x) { if (dates.indexOf(x.date) < 0) dates.push(x.date); });
-  return MI.SMS_PREFIX + '12월 3:1 모의면접 예약 확정 안내 ' + (list[0].studentName || list[0].depositor) + ' 학생, ' + slots + ' 3:1 모의면접 예약이 확정되었습니다. ' +
-    '서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
-    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않으면 면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로 진행합니다.';
+  return MI.SMS_PREFIX + '12월 3:1 모의면접 예약 확정 안내\n' +
+    (list[0].studentName || list[0].depositor) + ' 학생,\n' +
+    slots + ' 3:1 모의면접 예약이 확정되었습니다.\n\n' +
+    'Q. 서류는 언제 보내나요?\n' +
+    '면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요.\n' +
+    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않으면\n' +
+    '면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로\n' +
+    '진행합니다.';
 }
-/** 문자 본문은 한 줄로(단축어가 '문자:' 줄 하나만 읽습니다) */
+/** 승격·미입금 취소 문자는 한 줄로 만듭니다(예약확정 문자는 줄바꿈 유지). */
 function mi_oneLine(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
 /**
- * '[문자발송]' 메일 한 통. 본문 첫 두 줄이 늘 '받는번호: 숫자만' / '문자: 한 줄'이고, 빈 줄 뒤에 사람이 볼 내용이 옵니다.
+ * '[문자발송]' 메일 한 통. 본문 첫 두 줄이 늘 '받는번호: 숫자만' / '문자: …'이고, 빈 줄 뒤에 사람이 볼 내용이 옵니다.
+ * 단축어는 '문자:' 줄부터 '---' 앞까지를 읽어 보냅니다(예약확정 문자는 여러 줄, 승격·미입금 취소 문자는 한 줄).
  * 번호가 휴대폰 번호가 아니면 null(보내지 않음).
  */
 function mi_smsMail(phone, text, details) {
@@ -396,7 +402,7 @@ function mi_smsMail(phone, text, details) {
     .map(function (l) { return l.replace(/받는번호\s*:/g, '받는번호 -').replace(/문자\s*:/g, '문자 -'); });
   return {
     subject: MI.SMS_SUBJECT,
-    body: '받는번호: ' + to + '\n문자: ' + mi_oneLine(text) + '\n\n' +
+    body: '받는번호: ' + to + '\n문자: ' + text + '\n---\n\n' +
       extra.concat(['이 메일은 iPhone 단축어가 읽어 위 번호로 문자를 보냅니다. 제목과 첫 두 줄을 고치지 마세요.']).join('\n')
   };
 }
@@ -421,7 +427,7 @@ function mi_smsQueue(rows, now) {
   rows.forEach(function (r) {
     if (!r.justPromoted) return;
     var dl = r.payDeadline;
-    var mail = mi_smsMail(r.phone, MI.SMS_PREFIX + mi_promotionText(r.promotedFrom || 1, r.depositor || r.studentName, r.date, r.time, dl),
+    var mail = mi_smsMail(r.phone, mi_oneLine(MI.SMS_PREFIX + mi_promotionText(r.promotedFrom || 1, r.depositor || r.studentName, r.date, r.time, dl)),
       mi_details_([r]).concat(['입금 기한: ' + mi_fmt(dl) + ' (승격 뒤 ' + Math.round(MI.PROMOTED_PAY_WINDOW_MS / 3600000) + '시간, 기한 + 10분이 지나면 자동 취소)']));
     r.log.push(stamp + (mail ? MI.SMS_MARK_PROMOTE : '승격 문자 못 보냄(휴대폰 번호 확인 필요)'));
     r.changed = true;
@@ -456,7 +462,7 @@ function mi_smsQueue(rows, now) {
   });
   ukeys.forEach(function (k) {
     var list = ugroups[k];
-    var mail = mi_smsMail(list[0].phone, MI.UNPAID_CANCEL_TEXT, mi_details_(list).concat(['취소 사유: ' + list[0].cancelReason]));
+    var mail = mi_smsMail(list[0].phone, mi_oneLine(MI.UNPAID_CANCEL_TEXT), mi_details_(list).concat(['취소 사유: ' + list[0].cancelReason]));
     list.forEach(function (r) {
       r.log.push(stamp + (mail ? MI.SMS_MARK_UNPAID : '미입금 취소 문자 못 보냄(휴대폰 번호 확인 필요)'));
       r.changed = true;
@@ -531,7 +537,7 @@ function mi_lastSeatPlan(rows, now, state, ownerPhone, alertEmail) {
   var st = state.key === slot.key ? { key: slot.key, sms: !!state.sms, mail: !!state.mail } : { key: slot.key, sms: false, mail: false };
   var send = [];
   if (!st.sms) {
-    var m = mi_smsMail(ownerPhone, mi_lastSeatText(slot.date, slot.time), [
+    var m = mi_smsMail(ownerPhone, mi_oneLine(mi_lastSeatText(slot.date, slot.time)), [
       '타임: ' + slot.key + ' (새로 신청할 수 있는 마지막 타임, 남은 자리 1명)',
       '다른 타임은 모두 차서 대기 신청만 받습니다.',
       '같은 타임에는 한 번만 보냅니다. 자리가 다시 비었다가 1명이 되면 또 보냅니다.'
@@ -634,7 +640,7 @@ function mi_openNoticeQueue(requests, date, time, audience, now) {
     return {
       kind: 'open', request: q, phone: ph,
       mark: date + ' ' + time + ' 알림 메일 보냄(' + mi_fmt(now) + ')',
-      mail: mi_smsMail(ph, text, ['추가 오픈 신청: ' + q.id + ', ' + q.name, '희망: ' + q.wishDate + ' / ' + q.wishTime,
+      mail: mi_smsMail(ph, mi_oneLine(text), ['추가 오픈 신청: ' + q.id + ', ' + q.name, '희망: ' + q.wishDate + ' / ' + q.wishTime,
         '연 타임: ' + date + ' ' + time])
     };
   });
