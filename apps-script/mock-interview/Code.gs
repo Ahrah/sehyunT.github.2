@@ -390,20 +390,17 @@ function mi_confirmText(rows) {
 /** 승격·미입금 취소 문자는 한 줄로 만듭니다(예약확정 문자는 줄바꿈 유지). */
 function mi_oneLine(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
 /**
- * '[문자발송]' 메일 한 통. 본문 첫 두 줄이 늘 '받는번호: 숫자만' / '문자: …'이고, 빈 줄 뒤에 사람이 볼 내용이 옵니다.
- * 단축어는 '문자:' 줄부터 '---' 앞까지를 읽어 보냅니다(예약확정 문자는 여러 줄, 승격·미입금 취소 문자는 한 줄).
+ * '[문자발송]' 메일 한 통(세연님 iPhone 단축어가 읽어 문자로 보냅니다).
+ * 제목: '[문자발송] 모의면접 01012345678' (전화번호 포함)
+ * 본문: SMS 메시지 텍스트 그대로(줄바꿈 유지). 추가 내용 없음.
  * 번호가 휴대폰 번호가 아니면 null(보내지 않음).
  */
 function mi_smsMail(phone, text, details) {
   var to = mi_phone(phone);
   if (!mi_isPhone(to)) return null;
-  var extra = (details || []).map(mi_oneLine).filter(String)
-    // 단축어가 잘못 읽지 않도록 사람이 볼 줄에는 '받는번호:'·'문자:'를 쓰지 않습니다.
-    .map(function (l) { return l.replace(/받는번호\s*:/g, '받는번호 -').replace(/문자\s*:/g, '문자 -'); });
   return {
-    subject: MI.SMS_SUBJECT,
-    body: '받는번호: ' + to + '\n문자: ' + text + '\n---\n\n' +
-      extra.concat(['이 메일은 iPhone 단축어가 읽어 위 번호로 문자를 보냅니다. 제목과 첫 두 줄을 고치지 마세요.']).join('\n')
+    subject: MI.SMS_SUBJECT + ' ' + to,
+    body: text
   };
 }
 function mi_hasMark_(r, mark) { return r.log.some(function (l) { return l.indexOf(mark) >= 0; }); }
