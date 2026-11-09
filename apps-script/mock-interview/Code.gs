@@ -382,10 +382,9 @@ function mi_confirmText(rows) {
     (list[0].studentName || list[0].depositor) + ' 학생,\n' +
     slots + ' 3:1 모의면접 예약이 확정되었습니다.\n\n' +
     'Q. 서류는 언제 보내나요?\n' +
-    '면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요.\n' +
-    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않으면\n' +
-    '면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로\n' +
-    '진행합니다.';
+    '면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요.\n\n' +
+    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요.\n\n' +
+    '*서류를 보내지 않으면 면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로 진행합니다.';
 }
 /** 승격·미입금 취소 문자는 한 줄로 만듭니다(예약확정 문자는 줄바꿈 유지). */
 function mi_oneLine(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
