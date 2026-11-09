@@ -91,7 +91,7 @@ var MI = {
   LAST_SEAT_KAKAO_TEXT: '마감 임박! 이후 대기 신청만 가능합니다',
   SITE_URL: 'sehyunt.re.kr/mock-interview',
   /** [입금알림] 메일 자동 확인(선택 기능). 켜기 전에 README '선택: 입금 알림 자동 확인'을 따르세요. */
-  AUTO_DEPOSIT_CHECK: false,
+  AUTO_DEPOSIT_CHECK: true,
   DEPOSIT_SHEET: '입금알림 기록',
   TZ: 'Asia/Seoul'
 };
@@ -378,9 +378,9 @@ function mi_confirmText(rows) {
   var slots = list.map(function (x) { return mi_slotLabel_(x.date, x.time); }).join(', ');
   var dates = [];
   list.forEach(function (x) { if (dates.indexOf(x.date) < 0) dates.push(x.date); });
-  return MI.SMS_PREFIX + (list[0].studentName || list[0].depositor) + ' 학생, ' + slots + ' 3:1 모의면접 예약이 확정되었습니다. ' +
+  return MI.SMS_PREFIX + '12월 3:1 모의면접 예약 확정 안내 ' + (list[0].studentName || list[0].depositor) + ' 학생, ' + slots + ' 3:1 모의면접 예약이 확정되었습니다. ' +
     '서류는 언제 보내나요? 면접 1주 전까지 생기부·자소서를 ' + MI.OWNER_EMAIL + '으로 보내주세요. ' +
-    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않아도 면접은 그대로 진행하며, 당일 즉석 질문으로 진행합니다.';
+    '예: ' + dates.map(mi_docsExample).join(', ') + ' 보내 주세요. 서류를 보내지 않으면 면접은 진행 가능하나, 당일 지참한 자소서를 바탕으로 즉석 질문으로 진행합니다.';
 }
 /** 문자 본문은 한 줄로(단축어가 '문자:' 줄 하나만 읽습니다) */
 function mi_oneLine(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
