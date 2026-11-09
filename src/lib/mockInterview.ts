@@ -26,7 +26,7 @@ export const MI_CONFIG = {
    * 대기 신청이 waitlistReleaseCount 명 이상 모이면 그때 대기 순서대로 입금 대기로 올립니다(입금 안내).
    * 한 번 열린 타임은 다시 잠그지 않습니다. Code.gs MI.WAITLIST_AT_OPEN 과 같아야 합니다.
    */
-  waitlistAtOpen: ['2026-12-12 16:00', '2026-12-20 18:00'] as readonly string[],
+  waitlistAtOpen: [] as readonly string[],
   waitlistReleaseCount: 2,
   fee: 80000,
   /** 신청 뒤 입금 기한 */
