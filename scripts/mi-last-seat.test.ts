@@ -21,7 +21,7 @@ setExtraSlots([]);
 gs.MI.EXTRA_SLOTS = [];
 const gated = new Set(MI_CONFIG.waitlistAtOpen as readonly string[]);
 const registrable = allSlots().filter((s) => !gated.has(`${s.date} ${s.time}`));
-assert.equal(registrable.length, 10, '정규 12타임 가운데 오픈 때부터 대기인 2타임을 빼면 10타임');
+assert.equal(registrable.length, 12, '정규 12타임 모두 신청 가능 (더 이상 waitlist-at-open 없음)');
 
 let n = 0;
 const row = (date: string, time: string, status = '입금 대기'): MiRow =>
