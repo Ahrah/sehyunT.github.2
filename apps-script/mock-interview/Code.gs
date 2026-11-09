@@ -27,7 +27,7 @@ var MI = {
   FEE: 80000,
   CAPACITY: 4,
   /** 오픈 때부터 '대기'로 보여 주는 타임. 대기가 WAITLIST_RELEASE_COUNT 명 모이면 대기 순서대로 입금 대기로 올립니다(src/lib/mockInterview.ts 와 같음). */
-  WAITLIST_AT_OPEN: [],
+  WAITLIST_AT_OPEN: ['2026-12-12 18:00'],
   WAITLIST_RELEASE_COUNT: 2,
   DUP_OTHER_NAME: '같은 휴대폰 번호로 이미 신청한 타임이 있습니다. 신청완료 화면의 확인 링크를 열거나 카카오톡 채널 \'입시는세연쌤\'으로 문의해 주세요.',
   BANK_ACCOUNT: '카카오뱅크 3333-38-6269721 (입시는세연쌤)',
