@@ -17,6 +17,7 @@ import {
   keywordPageHtml,
   pickRelatedResources,
   resourcePageHtml,
+  homeResourcesHref,
   resourcesHref,
   resourcesIndexHtml,
 } from './seo-pages';
@@ -315,6 +316,11 @@ assert.equal(RESOURCES_HREF, '/resources/');
 assert.equal(resourcesHref('고입'), '/resources/#goip');
 assert.equal(resourcesHref('대입'), '/resources/#daeip');
 assert.equal(resourcesHref(), '/resources/');
+assert.equal(homeResourcesHref('고입'), '/?cat=goip#resources');
+assert.equal(homeResourcesHref(), '/#resources');
+const gatedStub = resourcePageHtml({ id: 'm-1', title: '회원 글', fileType: 'article', content: '본문', category: '대입', membersOnly: true });
+assert.equal(gatedStub.includes('회원가입 후 <a href="/?cat=daeip#resources">자료실</a>'), true);
+assert.equal(gatedStub.includes('본문'), false);
 assert.equal(appSrc.includes("['자료실', '/resources/']"), true);
 
 const resourcesIndex = resourcesIndexHtml([

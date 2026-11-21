@@ -165,13 +165,17 @@ export const EXISTING_HOME_DESCRIPTION =
 export const resourcesHref = (category?: '대입' | '고입' | '학습자료') =>
   category === '고입' ? '/resources/#goip' : category === '대입' ? '/resources/#daeip' : category === '학습자료' ? '/resources/#study' : '/resources/';
 
+/** Home 자료실 section (login, members-only, downloads) with the matching tab opened. */
+export const homeResourcesHref = (category?: '대입' | '고입' | '학습자료') =>
+  category === '고입' ? '/?cat=goip#resources' : category === '대입' ? '/?cat=daeip#resources' : category === '학습자료' ? '/?cat=study#resources' : '/#resources';
+
 export const COST_GUIDE_PLAIN = '비용은 회원가입 후 자료실에서 확인하실 수 있어요.';
 
 /** 자소서 상품 금액은 저장소 데이터에 없다. 상담 뒤 문자로 안내하고, 첫 수업 2일 전 입금으로 확정한다. */
 export const JASOSEO_COST_PLAIN = '비용은 상담 신청 뒤 문자로 안내드려요. 첫 수업 2일 전까지 입금해 주셔야 수업이 확정돼요.';
 
 export function costGuideHtml(category?: '대입' | '고입' | '학습자료') {
-  return `비용은 회원가입 후 <a href="${resourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.`;
+  return `비용은 회원가입 후 <a href="${homeResourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.`;
 }
 
 function pageCostHtml(slug: string, category?: '대입' | '고입' | '학습자료') {
@@ -594,10 +598,10 @@ export function resourcePageHtml(r: ResourceLike, relatedArticles: ResourceLike[
     content = articleToHtml(r.content as string);
   } else if (gated) {
     content = r.membersOnly && !r.locked
-      ? `<p>이 자료는 회원 전용입니다. 회원가입 후 <a href="${resourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.</p>`
-      : `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="${resourcesHref(category)}">자료실</a>에서 열람하실 수 있습니다.</p>`;
+      ? `<p>이 자료는 회원 전용입니다. 회원가입 후 <a href="${homeResourcesHref(category)}">자료실</a>에서 확인하실 수 있어요.</p>`
+      : `<p>이 자료는 비밀번호가 설정된 회원 전용 자료입니다. <a href="${homeResourcesHref(category)}">자료실</a>에서 열람하실 수 있습니다.</p>`;
   } else {
-    content = `${publicDescription ? `<p>${escapeHtml(publicDescription)}</p>` : ''}<p>이 자료는 <a href="${resourcesHref(category)}">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
+    content = `${publicDescription ? `<p>${escapeHtml(publicDescription)}</p>` : ''}<p>이 자료는 <a href="${homeResourcesHref(category)}">입시는세연쌤 자료실</a>에서 내려받거나 열람하실 수 있습니다.</p>`;
   }
 
   const body = `
