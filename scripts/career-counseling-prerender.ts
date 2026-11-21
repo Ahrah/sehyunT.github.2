@@ -21,6 +21,7 @@ import {
   WHY_COPY,
   CAREER_COUNSELING_PRODUCT,
   isCareerCounselingOpen,
+  JINRO_RELATED_ARTICLES,
 } from '../src/lib/careerCounseling';
 import { escapeHtml } from './seo-pages';
 
@@ -157,6 +158,7 @@ export function buildCareerCounselingPrerenderHtml(nowMs: number = Date.now()): 
       ${faqHtml()}
     </div>
   </div></section>
+  <nav class="related" aria-label="자료실">${JINRO_RELATED_ARTICLES.map((a) => `<a href="/resources/${a.id}">${escapeHtml(a.title)}</a>`).join('')}</nav>
   <footer class="site"><div class="wrap">
     <div><strong>SEHYUN T ADMISSIONS LAB</strong><br>입시는세연쌤 · <span class="sl">DESIGN YOUR SUCCESS.</span></div>
     <div>문의 <a href="${SITE.phoneHref}">${SITE.phone}</a> · <a href="mailto:${SITE.email}">${SITE.email}</a><br><a href="${SITE.domain}">sehyunt.re.kr</a> · Instagram ${SITE.instagramHandle}</div>
